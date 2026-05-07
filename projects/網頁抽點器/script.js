@@ -82,6 +82,17 @@ function normalizeHeader(header) {
   return header.replace(/^\uFEFF/, "").trim();
 }
 
+function compareSeatNumbers(a, b) {
+  const aNumber = Number.parseInt(a.seat, 10);
+  const bNumber = Number.parseInt(b.seat, 10);
+
+  if (Number.isNaN(aNumber) || Number.isNaN(bNumber)) {
+    return a.seat.localeCompare(b.seat, "zh-Hant", { numeric: true });
+  }
+
+  return aNumber - bNumber;
+}
+
 function buildRosterFromCsv(text) {
   const rows = parseCsv(text);
 
@@ -107,6 +118,7 @@ function buildRosterFromCsv(text) {
       return { className, seat, name };
     })
     .filter((student) => student.seat && student.name)
+    .sort(compareSeatNumbers)
     .map((student) => ({
       className: student.className,
       label: `${student.seat} ${student.name}`
