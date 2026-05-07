@@ -5,7 +5,7 @@
 ## 目前連結
 
 - 學校官網：https://www.lotes.ilc.edu.tw
-- 快樂 e 學院：https://i.ilc.edu.tw
+- 快樂 e 學院：https://i.ilc.edu.tw（學習入口平台）
 - Google 搜尋：https://www.google.com
 
 ## 開啟方式
