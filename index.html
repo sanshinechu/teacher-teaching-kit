@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>教師用教學套件</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: #243142;
+        font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+        background: linear-gradient(135deg, #e8f7ff, #fff4fa);
+      }
+
+      main {
+        width: min(920px, 100%);
+        margin: 0 auto;
+        padding: 48px 18px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2.2rem, 7vw, 4.4rem);
+        letter-spacing: 0;
+      }
+
+      p {
+        color: #64748b;
+        line-height: 1.8;
+      }
+
+      .project-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 28px;
+      }
+
+      a {
+        display: block;
+        min-height: 150px;
+        padding: 22px;
+        border: 1px solid rgba(36, 49, 66, 0.14);
+        border-radius: 18px;
+        color: inherit;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: 0 16px 36px rgba(63, 114, 155, 0.14);
+      }
+
+      strong {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 1.35rem;
+      }
+
+      span {
+        color: #64748b;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 680px) {
+        .project-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>教師用教學套件</h1>
+      <p>這裡整理可直接使用的教師小工具與教學頁面。</p>
+      <section class="project-list" aria-label="專案列表">
+        <a href="projects/教師個人數位名片/">
+          <strong>教師個人數位名片</strong>
+          <span>儲三翔老師的個人介紹、教學理念與課程連結。</span>
+        </a>
+        <a href="projects/網頁抽點器/">
+          <strong>網頁抽點器</strong>
+          <span>課堂隨機抽點工具，可開始、停止並編輯學生名單。</span>
+        </a>
+      </section>
+    </main>
+  </body>
+</html>

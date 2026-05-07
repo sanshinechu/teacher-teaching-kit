@@ -1,0 +1,290 @@
+:root {
+  --ink: #1f2d3d;
+  --muted: #64748b;
+  --surface: rgba(255, 255, 255, 0.9);
+  --line: rgba(31, 45, 61, 0.14);
+  --blue: #58b8e8;
+  --blue-dark: #1f79aa;
+  --green: #2ca66f;
+  --red: #dd5a6f;
+  --yellow: #f5c451;
+  --shadow: 0 22px 64px rgba(31, 91, 126, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+  background:
+    linear-gradient(135deg, rgba(225, 245, 255, 0.96), rgba(255, 241, 247, 0.96)),
+    repeating-linear-gradient(45deg, rgba(88, 184, 232, 0.08) 0 12px, transparent 12px 24px);
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px 16px;
+}
+
+.picker-panel {
+  width: min(980px, 100%);
+  display: grid;
+  gap: 24px;
+  padding: clamp(22px, 4vw, 42px);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.app-header {
+  text-align: center;
+}
+
+.eyebrow,
+.stage-label,
+.hint,
+.status-text {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--blue-dark);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+h1,
+h2,
+.subtitle {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 12px;
+  font-size: clamp(2.2rem, 8vw, 4.8rem);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.45rem;
+  letter-spacing: 0;
+}
+
+.subtitle {
+  max-width: 720px;
+  margin-inline: auto;
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.draw-stage {
+  min-height: clamp(220px, 36vw, 330px);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 28px;
+  border: 2px solid rgba(88, 184, 232, 0.28);
+  border-radius: 22px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(232, 247, 255, 0.9)),
+    linear-gradient(90deg, rgba(245, 196, 81, 0.12), rgba(221, 90, 111, 0.1));
+}
+
+.upload-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.file-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--blue-dark), #d85c95);
+  box-shadow: 0 12px 24px rgba(31, 121, 170, 0.18);
+}
+
+.stage-label {
+  color: var(--blue-dark);
+  font-weight: 800;
+}
+
+.student-name {
+  width: min(100%, 720px);
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+  padding: 14px 18px;
+  border-radius: 18px;
+  color: #ffffff;
+  font-size: clamp(2.6rem, 10vw, 6.2rem);
+  font-weight: 900;
+  line-height: 1.08;
+  text-align: center;
+  overflow-wrap: anywhere;
+  background: linear-gradient(135deg, var(--blue-dark), #d85c95);
+  box-shadow: 0 18px 42px rgba(31, 121, 170, 0.22);
+}
+
+.student-name.is-running {
+  animation: pulseName 520ms ease-in-out infinite alternate;
+}
+
+.status-text,
+.hint {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.control-button,
+.text-button {
+  border: 0;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.control-button {
+  min-height: 60px;
+  border-radius: 18px;
+  color: #ffffff;
+  font-size: 1.3rem;
+  box-shadow: 0 14px 28px rgba(31, 45, 61, 0.14);
+}
+
+.start-button {
+  background: linear-gradient(135deg, var(--green), var(--blue-dark));
+}
+
+.stop-button {
+  background: linear-gradient(135deg, var(--red), #a83f74);
+}
+
+.control-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  box-shadow: none;
+}
+
+.list-panel {
+  padding-top: 8px;
+}
+
+.list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.text-button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: var(--blue-dark);
+  background: rgba(88, 184, 232, 0.12);
+}
+
+textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--ink);
+  line-height: 1.7;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+textarea:focus,
+button:focus-visible {
+  outline: 3px solid rgba(88, 184, 232, 0.45);
+  outline-offset: 3px;
+}
+
+@keyframes pulseName {
+  from {
+    transform: scale(0.985);
+  }
+
+  to {
+    transform: scale(1.015);
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 12px;
+    align-items: stretch;
+  }
+
+  .picker-panel {
+    border-radius: 20px;
+  }
+
+  .controls,
+  .list-heading,
+  .upload-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    display: grid;
+  }
+
+  .list-heading {
+    display: grid;
+  }
+
+  .text-button {
+    width: 100%;
+  }
+
+  .file-button {
+    width: 100%;
+  }
+}

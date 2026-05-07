@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>網頁抽點器</title>
+    <meta name="description" content="給教師課堂使用的網頁抽點器，按開始隨機跳出學生名字，按停止完成抽點。">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="picker-panel" aria-labelledby="app-title">
+        <header class="app-header">
+          <p class="eyebrow">課堂工具</p>
+          <h1 id="app-title">網頁抽點器</h1>
+          <p class="subtitle">上傳含座號與姓名的 CSV 後，就會產生這一班專用的抽點器。</p>
+        </header>
+
+        <section class="upload-panel" aria-labelledby="upload-title">
+          <div>
+            <p class="eyebrow">產生名單</p>
+            <h2 id="upload-title">上傳學生名單</h2>
+            <p class="hint">支援 CSV 欄位：班級、座號、姓名。帳號與電子郵件不會匯入抽點器。</p>
+          </div>
+          <label class="file-button" for="rosterFile">選擇 CSV 檔</label>
+          <input id="rosterFile" class="file-input" type="file" accept=".csv,text/csv">
+        </section>
+
+        <section class="draw-stage" aria-live="polite" aria-label="抽點結果">
+          <p class="stage-label">目前抽點</p>
+          <div id="studentName" class="student-name">準備開始</div>
+          <p id="statusText" class="status-text">可先上傳 CSV，或使用下方範例名單測試。</p>
+        </section>
+
+        <div class="controls" aria-label="抽點控制">
+          <button id="startButton" class="control-button start-button" type="button">開始</button>
+          <button id="stopButton" class="control-button stop-button" type="button" disabled>停止</button>
+        </div>
+
+        <section class="list-panel" aria-labelledby="list-title">
+          <div class="list-heading">
+            <div>
+              <p class="eyebrow">名單</p>
+              <h2 id="list-title">學生名單</h2>
+            </div>
+            <button id="resetButton" class="text-button" type="button">還原範例</button>
+          </div>
+          <textarea id="studentList" spellcheck="false" aria-label="學生名單，每行一位學生"></textarea>
+          <p class="hint">格式為「座號 姓名」，每行一位。修改後只會儲存在這台瀏覽器。</p>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
