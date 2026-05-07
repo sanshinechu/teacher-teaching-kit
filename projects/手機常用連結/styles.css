@@ -92,6 +92,10 @@ p {
   background: linear-gradient(135deg, #16a34a, #14b8a6);
 }
 
+.student-links {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+}
+
 .search {
   background: linear-gradient(135deg, #db2777, #f59e0b);
 }
