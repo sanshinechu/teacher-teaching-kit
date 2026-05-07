@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>倒數計時器</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="stars" aria-hidden="true">
+    <span>⭐</span><span>✨</span><span>🌟</span><span>⭐</span><span>✨</span>
+    <span>🌟</span><span>⭐</span><span>✨</span><span>🌟</span><span>⭐</span>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="emoji-top" id="emojiTop">⏰</div>
+      <div class="timer-display" id="timerDisplay">05:00</div>
+      <div class="message" id="message">🎉 時間到，請看黑板 🎉</div>
+      <div class="controls" id="controls">
+        <div class="input-group">
+          <input type="number" id="minutesInput" min="0" max="99" value="5">
+          <span class="unit">分</span>
+          <input type="number" id="secondsInput" min="0" max="59" value="0">
+          <span class="unit">秒</span>
+        </div>
+        <div class="buttons">
+          <button id="startBtn" onclick="toggleTimer()">▶ 開始</button>
+          <button id="resetBtn" class="reset" onclick="resetTimer()">↺ 重設</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
