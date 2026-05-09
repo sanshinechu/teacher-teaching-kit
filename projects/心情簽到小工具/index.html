@@ -30,6 +30,14 @@
       <p id="message">點一下心情詞，完成今天的心情簽到。</p>
       <p id="status"></p>
     </section>
+
+    <section class="stats-panel" aria-labelledby="stats-title">
+      <div class="stats-header">
+        <h2 id="stats-title">今日心情統計</h2>
+        <button class="reset-button" id="resetStats" type="button">重新設置</button>
+      </div>
+      <div class="stats-grid" id="statsGrid" aria-live="polite"></div>
+    </section>
   </main>
 
   <script src="script.js"></script>
