@@ -201,7 +201,7 @@ body {
 .quote-box {
   position: absolute;
   left: 50%;
-  top: 0;
+  top: 58px;
   width: min(980px, 100%);
   min-height: clamp(300px, 45vw, 430px);
   display: grid;
@@ -223,6 +223,30 @@ body {
   opacity: 1;
   transform: translate(-50%, 0);
   transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.reset-button {
+  position: absolute;
+  left: 50%;
+  top: -70px;
+  min-height: 48px;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff7d8;
+  box-shadow: 0 12px 24px rgba(68, 46, 30, 0.18);
+  color: #3f2d24;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 900;
+  transform: translateX(-50%);
+}
+
+.reset-button:hover,
+.reset-button:focus-visible {
+  outline: 4px solid rgba(255, 255, 255, 0.75);
+  transform: translateX(-50%) translateY(-2px);
 }
 
 .quote-box::before {
@@ -350,9 +374,17 @@ body {
   }
 
   .quote-box {
+    top: 52px;
     min-height: 320px;
     border-width: 10px;
     padding: 28px 18px;
+  }
+
+  .reset-button {
+    top: -62px;
+    min-height: 44px;
+    font-size: 1rem;
+    padding: 9px 20px;
   }
 
   #quote {
