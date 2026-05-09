@@ -45,7 +45,7 @@ h1 {
   font-weight: 900;
 }
 
-.icon-cloud {
+.word-cloud {
   width: min(980px, 100%);
   min-height: 310px;
   display: flex;
@@ -57,47 +57,48 @@ h1 {
   padding: 10px 0;
 }
 
-.mood-icon {
+.mood-word {
   border: 0;
-  border-radius: 32px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 18px 36px rgba(100, 72, 52, 0.18);
   color: #2f3a35;
   cursor: pointer;
+  font-family: inherit;
+  font-weight: 900;
   line-height: 1.1;
-  min-height: 96px;
-  min-width: 96px;
-  padding: 16px;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  min-height: 70px;
+  padding: 18px 28px;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease;
 }
 
-.mood-icon:hover,
-.mood-icon:focus-visible,
-.mood-icon.is-selected {
+.mood-word:hover,
+.mood-word:focus-visible,
+.mood-word.is-selected {
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 22px 42px rgba(100, 72, 52, 0.22);
   outline: 4px solid rgba(255, 255, 255, 0.7);
   transform: translateY(-6px);
 }
 
-.mood-icon:active {
+.mood-word:active {
   transform: translateY(-1px) scale(0.98);
 }
 
 .size-sm {
-  font-size: clamp(3.2rem, 6vw, 5.2rem);
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
 }
 
 .size-md {
-  font-size: clamp(4rem, 7vw, 6.2rem);
+  font-size: clamp(2rem, 4vw, 3.4rem);
 }
 
 .size-lg {
-  font-size: clamp(4.8rem, 8vw, 7.2rem);
+  font-size: clamp(2.4rem, 5vw, 4.4rem);
 }
 
 .size-xl {
-  font-size: clamp(5.6rem, 9vw, 8.2rem);
+  font-size: clamp(2.9rem, 6vw, 5.4rem);
 }
 
 .tone-green {
@@ -152,15 +153,13 @@ h1 {
     padding: 24px;
   }
 
-  .icon-cloud {
+  .word-cloud {
     min-height: 340px;
     gap: 14px;
   }
 
-  .mood-icon {
-    border-radius: 24px;
-    min-height: 82px;
-    min-width: 82px;
-    padding: 12px;
+  .mood-word {
+    min-height: 58px;
+    padding: 14px 20px;
   }
 }
