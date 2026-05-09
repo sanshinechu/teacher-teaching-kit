@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>心情簽到小工具</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="mood-app">
+    <section class="intro">
+      <p class="eyebrow">今日心情簽到</p>
+      <h1>選一個最接近你現在心情的表情</h1>
+    </section>
+
+    <section class="mood-buttons" aria-label="心情選擇">
+      <button class="mood-button" type="button" data-mood="happy" aria-label="開心">
+        😊
+      </button>
+      <button class="mood-button" type="button" data-mood="calm" aria-label="普通">
+        😐
+      </button>
+      <button class="mood-button" type="button" data-mood="sad" aria-label="難過">
+        😢
+      </button>
+    </section>
+
+    <section class="result-panel" aria-live="polite">
+      <p id="message">點一下表情，完成今天的心情簽到。</p>
+      <p id="status"></p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
