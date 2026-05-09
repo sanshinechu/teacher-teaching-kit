@@ -57,6 +57,16 @@ const drawStage = document.querySelector("#drawStage");
 const drawBucket = document.querySelector("#drawBucket");
 const rollingStick = document.querySelector("#rollingStick");
 const drawHint = document.querySelector("#drawHint");
+const resetButton = document.querySelector("#resetButton");
+
+function resetDraw() {
+  quoteBox.classList.add("is-hidden");
+  drawStage.classList.remove("is-hidden");
+  drawBucket.classList.remove("is-drawing");
+  rollingStick.classList.remove("is-rolling");
+  drawHint.textContent = "點一下抽籤桶，抽出今日課堂鼓勵";
+  quoteElement.textContent = "";
+}
 
 drawBucket.addEventListener("click", () => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
@@ -80,3 +90,5 @@ drawBucket.addEventListener("click", () => {
     drawBucket.classList.remove("is-drawing");
   }, 1300);
 });
+
+resetButton.addEventListener("click", resetDraw);
