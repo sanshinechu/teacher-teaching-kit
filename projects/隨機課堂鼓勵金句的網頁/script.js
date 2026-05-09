@@ -52,6 +52,28 @@ const quotes = [
 ];
 
 const quoteElement = document.querySelector("#quote");
-const randomIndex = Math.floor(Math.random() * quotes.length);
+const quoteBox = document.querySelector("#quoteBox");
+const drawBucket = document.querySelector("#drawBucket");
+const rollingStick = document.querySelector("#rollingStick");
+const drawHint = document.querySelector("#drawHint");
 
-quoteElement.textContent = quotes[randomIndex];
+drawBucket.addEventListener("click", () => {
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+
+  quoteBox.classList.add("is-hidden");
+  drawBucket.classList.add("is-drawing");
+  rollingStick.classList.remove("is-rolling");
+  drawHint.textContent = "抽籤中...";
+  quoteElement.textContent = "";
+
+  window.setTimeout(() => {
+    rollingStick.classList.add("is-rolling");
+  }, 180);
+
+  window.setTimeout(() => {
+    quoteElement.textContent = quotes[randomIndex];
+    quoteBox.classList.remove("is-hidden");
+    drawHint.textContent = "重新整理可以再抽一次";
+    drawBucket.classList.remove("is-drawing");
+  }, 1300);
+});

@@ -8,9 +8,26 @@
 </head>
 <body>
   <main class="quote-screen">
-    <section class="quote-box" aria-live="polite">
+    <section class="draw-area">
+      <button class="draw-bucket" id="drawBucket" type="button" aria-label="點一下抽籤桶，抽出今日鼓勵金句">
+        <span class="stick stick-1"></span>
+        <span class="stick stick-2"></span>
+        <span class="stick stick-3"></span>
+        <span class="stick stick-4"></span>
+        <span class="stick stick-5"></span>
+        <span class="bucket-body">
+          <span class="bucket-label">抽籤桶</span>
+        </span>
+      </button>
+      <div class="rolling-stick" id="rollingStick" aria-hidden="true">
+        <span>今日鼓勵</span>
+      </div>
+      <p class="draw-hint" id="drawHint">點一下抽籤桶，抽出今日課堂鼓勵</p>
+    </section>
+
+    <section class="quote-box is-hidden" id="quoteBox" aria-live="polite">
       <p class="label">今日課堂鼓勵</p>
-      <h1 id="quote">正在準備鼓勵金句...</h1>
+      <h1 id="quote"></h1>
     </section>
   </main>
 
