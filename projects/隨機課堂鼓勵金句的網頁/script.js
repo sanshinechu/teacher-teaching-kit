@@ -53,6 +53,7 @@ const quotes = [
 
 const quoteElement = document.querySelector("#quote");
 const quoteBox = document.querySelector("#quoteBox");
+const drawStage = document.querySelector("#drawStage");
 const drawBucket = document.querySelector("#drawBucket");
 const rollingStick = document.querySelector("#rollingStick");
 const drawHint = document.querySelector("#drawHint");
@@ -61,6 +62,7 @@ drawBucket.addEventListener("click", () => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
 
   quoteBox.classList.add("is-hidden");
+  drawStage.classList.remove("is-hidden");
   drawBucket.classList.add("is-drawing");
   rollingStick.classList.remove("is-rolling");
   drawHint.textContent = "抽籤中...";
@@ -72,6 +74,7 @@ drawBucket.addEventListener("click", () => {
 
   window.setTimeout(() => {
     quoteElement.textContent = quotes[randomIndex];
+    drawStage.classList.add("is-hidden");
     quoteBox.classList.remove("is-hidden");
     drawHint.textContent = "重新整理可以再抽一次";
     drawBucket.classList.remove("is-drawing");
