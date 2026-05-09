@@ -22,26 +22,29 @@ body {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 34px;
-  padding: 32px;
+  gap: 22px;
+  padding: 28px 32px;
 }
 
 .draw-area {
   position: relative;
   width: min(760px, 100%);
-  min-height: 420px;
+  min-height: min(460px, 58vh);
   display: grid;
-  place-items: center;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  align-items: end;
   text-align: center;
 }
 
 .draw-bucket {
   position: relative;
-  width: clamp(210px, 36vw, 330px);
-  height: clamp(245px, 42vw, 380px);
+  width: clamp(180px, 28vw, 270px);
+  height: clamp(230px, 34vw, 320px);
   border: 0;
   background: transparent;
   cursor: pointer;
+  align-self: end;
 }
 
 .draw-bucket:hover .bucket-body,
@@ -66,7 +69,7 @@ body {
   left: 8%;
   right: 8%;
   bottom: 0;
-  height: 70%;
+  height: 64%;
   display: grid;
   place-items: center;
   border-radius: 0 0 34px 34px;
@@ -75,7 +78,7 @@ body {
     linear-gradient(135deg, #c98252 0%, #a65f3d 58%, #7e452f 100%);
   box-shadow: 0 22px 42px rgba(110, 70, 45, 0.2);
   color: #fff7e7;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 900;
   letter-spacing: 0;
   transition: transform 160ms ease, box-shadow 160ms ease;
@@ -102,10 +105,10 @@ body {
 
 .stick {
   position: absolute;
-  bottom: 62%;
+  bottom: 58%;
   left: 50%;
-  width: clamp(20px, 4vw, 34px);
-  height: clamp(145px, 28vw, 230px);
+  width: clamp(16px, 3vw, 25px);
+  height: clamp(100px, 18vw, 150px);
   border-radius: 999px;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.55), transparent 42%),
@@ -127,23 +130,23 @@ body {
 }
 
 .stick-1 {
-  transform: translateX(-86px) rotate(-22deg);
+  transform: translateX(-68px) rotate(-22deg);
 }
 
 .stick-2 {
-  transform: translateX(-44px) rotate(-10deg);
+  transform: translateX(-34px) rotate(-10deg);
 }
 
 .stick-3 {
-  transform: translateX(-6px) rotate(3deg);
+  transform: translateX(-4px) rotate(3deg);
 }
 
 .stick-4 {
-  transform: translateX(34px) rotate(14deg);
+  transform: translateX(28px) rotate(14deg);
 }
 
 .stick-5 {
-  transform: translateX(74px) rotate(25deg);
+  transform: translateX(58px) rotate(25deg);
 }
 
 .rolling-stick {
@@ -172,13 +175,9 @@ body {
 }
 
 .draw-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0;
+  margin: 22px 0 0;
   color: rgba(63, 45, 36, 0.72);
-  font-size: 1.75rem;
+  font-size: 1.55rem;
   font-weight: 850;
 }
 
@@ -259,16 +258,16 @@ body {
 
 @media (max-width: 640px) {
   .quote-screen {
-    padding: 24px;
-    gap: 24px;
+    padding: 20px 24px;
+    gap: 20px;
   }
 
   .draw-area {
-    min-height: 380px;
+    min-height: min(400px, 58vh);
   }
 
   .bucket-body {
-    font-size: 1.75rem;
+    font-size: 1.55rem;
   }
 
   .rolling-stick {
@@ -276,7 +275,7 @@ body {
   }
 
   .draw-hint {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
   }
 
   .label {
