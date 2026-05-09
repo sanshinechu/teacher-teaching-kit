@@ -13,7 +13,7 @@ const moodMessages = {
 
 const messageElement = document.querySelector("#message");
 const statusElement = document.querySelector("#status");
-const buttons = document.querySelectorAll(".mood-icon");
+const buttons = document.querySelectorAll(".mood-word");
 
 buttons.forEach((button) => {
   button.addEventListener("click", () => {

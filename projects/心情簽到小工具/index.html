@@ -10,44 +10,24 @@
   <main class="mood-app">
     <section class="intro">
       <p class="eyebrow">今日心情簽到</p>
-      <h1>選一個最接近你現在心情的圖案</h1>
+      <h1>選一個最接近你現在心情的詞</h1>
     </section>
 
-    <section class="icon-cloud" aria-label="心情圖案雲">
-      <button class="mood-icon size-xl tone-green" type="button" data-mood="happy" aria-label="開心">
-        <span aria-hidden="true">😊</span>
-      </button>
-      <button class="mood-icon size-md tone-coral" type="button" data-mood="nervous" aria-label="緊張">
-        <span aria-hidden="true">😳</span>
-      </button>
-      <button class="mood-icon size-lg tone-blue" type="button" data-mood="calm" aria-label="平靜">
-        <span aria-hidden="true">🌿</span>
-      </button>
-      <button class="mood-icon size-sm tone-gold" type="button" data-mood="tired" aria-label="疲累">
-        <span aria-hidden="true">😴</span>
-      </button>
-      <button class="mood-icon size-lg tone-pink" type="button" data-mood="sad" aria-label="難過">
-        <span aria-hidden="true">😢</span>
-      </button>
-      <button class="mood-icon size-md tone-green" type="button" data-mood="confident" aria-label="有信心">
-        <span aria-hidden="true">💪</span>
-      </button>
-      <button class="mood-icon size-sm tone-blue" type="button" data-mood="curious" aria-label="好奇">
-        <span aria-hidden="true">🔍</span>
-      </button>
-      <button class="mood-icon size-xl tone-gold" type="button" data-mood="excited" aria-label="期待">
-        <span aria-hidden="true">✨</span>
-      </button>
-      <button class="mood-icon size-md tone-pink" type="button" data-mood="help" aria-label="需要幫忙">
-        <span aria-hidden="true">🙋</span>
-      </button>
-      <button class="mood-icon size-sm tone-coral" type="button" data-mood="focused" aria-label="專心">
-        <span aria-hidden="true">🎯</span>
-      </button>
+    <section class="word-cloud" aria-label="心情文字雲">
+      <button class="mood-word size-xl tone-green" type="button" data-mood="happy">開心</button>
+      <button class="mood-word size-md tone-coral" type="button" data-mood="nervous">緊張</button>
+      <button class="mood-word size-lg tone-blue" type="button" data-mood="calm">平靜</button>
+      <button class="mood-word size-sm tone-gold" type="button" data-mood="tired">疲累</button>
+      <button class="mood-word size-lg tone-pink" type="button" data-mood="sad">難過</button>
+      <button class="mood-word size-md tone-green" type="button" data-mood="confident">有信心</button>
+      <button class="mood-word size-sm tone-blue" type="button" data-mood="curious">好奇</button>
+      <button class="mood-word size-xl tone-gold" type="button" data-mood="excited">期待</button>
+      <button class="mood-word size-md tone-pink" type="button" data-mood="help">需要幫忙</button>
+      <button class="mood-word size-sm tone-coral" type="button" data-mood="focused">專心</button>
     </section>
 
     <section class="result-panel" aria-live="polite">
-      <p id="message">點一下心情圖案，完成今天的心情簽到。</p>
+      <p id="message">點一下心情詞，完成今天的心情簽到。</p>
       <p id="status"></p>
     </section>
   </main>
