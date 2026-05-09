@@ -112,6 +112,32 @@ h1 {
   gap: 14px;
 }
 
+.tool-section {
+  display: grid;
+  gap: 14px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.section-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+h3 {
+  margin: 0;
+  font-size: clamp(1.4rem, 4vw, 2.3rem);
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
 .tool-card {
   min-height: 190px;
   display: grid;
@@ -138,6 +164,18 @@ h1 {
 
 .links {
   background: linear-gradient(135deg, var(--pink), var(--amber));
+}
+
+.timer {
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+}
+
+.quotes {
+  background: linear-gradient(135deg, #b45309, #16a34a);
+}
+
+.mood {
+  background: linear-gradient(135deg, #0f766e, #f97316);
 }
 
 .tool-icon {
@@ -205,6 +243,10 @@ time {
     grid-template-columns: 1fr;
   }
 
+  .section-heading {
+    display: grid;
+  }
+
   .tool-card {
     min-height: 128px;
     grid-template-columns: auto 1fr;
@@ -212,4 +254,3 @@ time {
     align-items: center;
   }
 }
-
