@@ -11,9 +11,36 @@ const moodMessages = {
   focused: "專心的你很有力量，現在就把一件事做好。"
 };
 
+const moodLabels = {
+  happy: "開心",
+  nervous: "緊張",
+  calm: "平靜",
+  tired: "疲累",
+  sad: "難過",
+  confident: "有信心",
+  curious: "好奇",
+  excited: "期待",
+  help: "需要幫忙",
+  focused: "專心"
+};
+
 const messageElement = document.querySelector("#message");
 const statusElement = document.querySelector("#status");
 const buttons = document.querySelectorAll(".mood-word");
+const statsGrid = document.querySelector("#statsGrid");
+const resetButton = document.querySelector("#resetStats");
+const stats = Object.fromEntries(Object.keys(moodLabels).map((mood) => [mood, 0]));
+
+function renderStats() {
+  statsGrid.innerHTML = Object.entries(moodLabels)
+    .map(([mood, label]) => `
+      <div class="stat-item">
+        <span>${label}</span>
+        <span class="stat-count">${stats[mood]}</span>
+      </div>
+    `)
+    .join("");
+}
 
 buttons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -22,7 +49,24 @@ buttons.forEach((button) => {
     buttons.forEach((item) => item.classList.remove("is-selected"));
     button.classList.add("is-selected");
 
+    stats[mood] += 1;
+    renderStats();
+
     messageElement.textContent = moodMessages[mood];
     statusElement.textContent = "今日簽到成功";
   });
 });
+
+resetButton.addEventListener("click", () => {
+  Object.keys(stats).forEach((mood) => {
+    stats[mood] = 0;
+  });
+
+  buttons.forEach((item) => item.classList.remove("is-selected"));
+  renderStats();
+
+  messageElement.textContent = "點一下心情詞，完成今天的心情簽到。";
+  statusElement.textContent = "";
+});
+
+renderStats();

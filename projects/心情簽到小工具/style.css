@@ -22,7 +22,7 @@ body {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 36px;
+  gap: 30px;
   padding: 32px;
   text-align: center;
 }
@@ -123,7 +123,7 @@ h1 {
 
 .result-panel {
   width: min(900px, 100%);
-  min-height: 150px;
+  min-height: 120px;
   display: grid;
   align-content: center;
   gap: 12px;
@@ -147,6 +147,76 @@ h1 {
   color: #2d7b5f;
 }
 
+.stats-panel {
+  width: min(980px, 100%);
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: 0 16px 34px rgba(100, 72, 52, 0.12);
+}
+
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  line-height: 1.2;
+}
+
+.reset-button {
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(100, 72, 52, 0.14);
+  color: #2f3a35;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 900;
+  min-height: 48px;
+  padding: 10px 22px;
+}
+
+.reset-button:hover,
+.reset-button:focus-visible {
+  outline: 4px solid rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 12px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #2f3a35;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-weight: 850;
+}
+
+.stat-count {
+  min-width: 2.4em;
+  color: #2d7b5f;
+  font-size: 1.18em;
+  text-align: right;
+}
+
 @media (max-width: 560px) {
   .mood-app {
     gap: 28px;
@@ -161,5 +231,18 @@ h1 {
   .mood-word {
     min-height: 58px;
     padding: 14px 20px;
+  }
+
+  .stats-panel {
+    padding: 18px;
+  }
+
+  .stats-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reset-button {
+    width: 100%;
   }
 }
