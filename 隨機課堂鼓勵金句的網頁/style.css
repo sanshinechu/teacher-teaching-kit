@@ -1,0 +1,57 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  color: #3f2d24;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 32%),
+    linear-gradient(135deg, #ffe6b7 0%, #ffd3c4 42%, #cfe9d8 100%);
+}
+
+.quote-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.quote-box {
+  width: min(1100px, 100%);
+  text-align: center;
+}
+
+.label {
+  margin: 0 0 28px;
+  font-size: clamp(1.1rem, 2vw, 1.8rem);
+  font-weight: 700;
+  color: rgba(63, 45, 36, 0.72);
+  letter-spacing: 0;
+}
+
+#quote {
+  margin: 0;
+  font-size: clamp(3rem, 8vw, 7.5rem);
+  line-height: 1.25;
+  font-weight: 900;
+  text-wrap: balance;
+  text-shadow: 0 8px 26px rgba(110, 70, 45, 0.18);
+}
+
+@media (max-width: 640px) {
+  .quote-screen {
+    padding: 24px;
+  }
+
+  .label {
+    margin-bottom: 20px;
+  }
+}
