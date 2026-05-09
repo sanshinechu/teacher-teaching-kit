@@ -11,6 +11,7 @@ body {
 body {
   font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   color: #3f2d24;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 32%),
     linear-gradient(135deg, #ffe6b7 0%, #ffd3c4 42%, #cfe9d8 100%);
@@ -196,6 +197,10 @@ body {
   color: rgba(63, 45, 36, 0.72);
   font-size: 1.55rem;
   font-weight: 850;
+}
+
+.draw-hint.is-hidden {
+  visibility: hidden;
 }
 
 .quote-box {

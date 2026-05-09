@@ -253,4 +253,9 @@ time {
     align-content: center;
     align-items: center;
   }
+
+  .tool-card strong {
+    font-size: 1.12rem;
+    line-height: 1.28;
+  }
 }
