@@ -32,7 +32,14 @@ const resetButton = document.querySelector("#resetStats");
 const stats = Object.fromEntries(Object.keys(moodLabels).map((mood) => [mood, 0]));
 
 function renderStats() {
-  statsGrid.innerHTML = Object.entries(moodLabels)
+  const selectedMoods = Object.entries(moodLabels).filter(([mood]) => stats[mood] > 0);
+
+  if (selectedMoods.length === 0) {
+    statsGrid.innerHTML = '<p class="empty-stats">尚未有心情簽到</p>';
+    return;
+  }
+
+  statsGrid.innerHTML = selectedMoods
     .map(([mood, label]) => `
       <div class="stat-item">
         <span>${label}</span>
