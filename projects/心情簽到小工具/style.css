@@ -217,6 +217,17 @@ h2 {
   text-align: right;
 }
 
+.empty-stats {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  color: rgba(47, 58, 53, 0.7);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-weight: 850;
+}
+
 @media (max-width: 560px) {
   .mood-app {
     gap: 28px;
