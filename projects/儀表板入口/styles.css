@@ -190,7 +190,8 @@ h3 {
 }
 
 strong,
-small {
+small,
+em {
   display: block;
 }
 
@@ -202,6 +203,17 @@ strong {
 
 small {
   color: rgba(255, 255, 255, 0.82);
+  line-height: 1.55;
+}
+
+.tool-copy em {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.92rem;
+  font-style: normal;
+  font-weight: 700;
   line-height: 1.55;
 }
 

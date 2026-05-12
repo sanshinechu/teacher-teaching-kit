@@ -45,3 +45,17 @@
 - 今日成果頁：
   - `https://sanshinechu.github.io/teacher-teaching-kit/projects/隨機課堂鼓勵金句的網頁/`
   - `https://sanshinechu.github.io/teacher-teaching-kit/projects/心情簽到小工具/`
+
+## 2026-05-09 收工紀錄
+
+- 檢查 `projects/儀表板入口` 手機版版面，使用 320px、360px、375px、390px、430px 寬度確認沒有橫向跑版。
+- 調整儀表板入口手機版工具卡片標題字級，讓長標題在窄螢幕上比較不擁擠。
+- 修正 `projects/隨機課堂鼓勵金句的網頁` 手機版抽出金句後，黑板下方露出提示小文字的問題。
+- 將隨機課堂鼓勵金句清單擴充為 200 句。
+- 將金句抽選邏輯改為抽籤桶模式：一輪 200 句抽完前不重複，抽完後自動重新洗牌。
+- 已完成手機版實測與 GitHub 上傳，commit：`b8c3d8c Update quote tool and mobile dashboard`。
+
+## 2026-05-12
+
+- 更新 `projects/儀表板入口` 工具卡片：在網頁抽點器、班級倒數計時器、隨機課堂鼓勵金句、心情簽到小工具加入「使用時機」說明。
+- 調整工具卡片內的使用時機樣式，使用分隔線與較淡文字，讓卡片資訊更清楚。
