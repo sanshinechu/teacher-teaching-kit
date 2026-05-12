@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>學思達課堂任務設計器</title>
-    <meta name="description" content="產生三軌差異化任務、學思達五環課堂流程與 Exit Ticket 的前端工具。">
+    <meta name="description" content="用 Wizard 流程產生三軌任務、學思達課堂流程與 Exit Ticket。">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -12,13 +12,28 @@
       <header class="app-header">
         <a class="back-link" href="../儀表板入口/">返回儀表板</a>
         <div>
-          <p class="eyebrow">Sharestart Lesson Designer</p>
+          <p class="eyebrow">Sharestart Lesson Wizard</p>
           <h1>學思達課堂任務設計器</h1>
-          <p class="lead">老師輸入課程資料後，先產生 S1 / S2 / S3 三軌差異化任務，也能延伸整理課堂流程與 Exit Ticket。</p>
+          <p class="lead">從課程資料開始，連續產生三軌任務、五環課堂流程、Exit Ticket，最後整理成可複製的備課版與學生講義版。</p>
         </div>
       </header>
 
-      <section class="workspace" aria-label="課程資料輸入">
+      <nav class="step-nav" aria-label="設計流程">
+        <button class="step-tab is-active" type="button" data-step="1"><span>Step 1</span>課程基本資料</button>
+        <button class="step-tab" type="button" data-step="2"><span>Step 2</span>三軌任務</button>
+        <button class="step-tab" type="button" data-step="3"><span>Step 3</span>課堂流程</button>
+        <button class="step-tab" type="button" data-step="4"><span>Step 4</span>Exit Ticket</button>
+        <button class="step-tab" type="button" data-step="5"><span>Step 5</span>複製全部結果</button>
+      </nav>
+
+      <section class="wizard-panel is-active" data-step-panel="1" aria-labelledby="step1-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 1</p>
+            <h2 id="step1-title">老師輸入課程基本資料</h2>
+          </div>
+        </div>
+
         <form class="lesson-form" id="lessonForm">
           <div class="form-grid">
             <label>
@@ -26,12 +41,16 @@
               <input id="topic" name="topic" type="text" placeholder="例：海洋污染、過去式、閱讀理解、情緒教育">
             </label>
             <label>
-              <span>核心問題</span>
-              <input id="essentialQuestion" name="essentialQuestion" type="text" placeholder="例：Why did the beach change?">
+              <span>年級</span>
+              <input id="grade" name="grade" type="text" placeholder="例：國小高年級、國中七年級">
             </label>
             <label>
-              <span>年級</span>
-              <input id="grade" name="grade" type="text" placeholder="例：國小高年級、國中七年級、國中八年級">
+              <span>課程時間</span>
+              <input id="duration" name="duration" type="number" min="20" max="120" step="5" placeholder="例：45">
+            </label>
+            <label>
+              <span>核心問題</span>
+              <input id="essentialQuestion" name="essentialQuestion" type="text" placeholder="例：Why did the beach change?">
             </label>
             <label>
               <span>學習目標</span>
@@ -40,6 +59,15 @@
             <label>
               <span>教材內容</span>
               <textarea id="materials" name="materials" rows="4" placeholder="可貼上課文、對話、短文或任務素材。"></textarea>
+            </label>
+            <label>
+              <span>班級狀態</span>
+              <select id="classStatus" name="classStatus">
+                <option value="安靜型">安靜型</option>
+                <option value="活潑型">活潑型</option>
+                <option value="程度落差大">程度落差大</option>
+                <option value="需要更多秩序提醒">需要更多秩序提醒</option>
+              </select>
             </label>
             <label>
               <span>任務類型</span>
@@ -51,192 +79,132 @@
                 <option value="SEL 反思">SEL 反思</option>
               </select>
             </label>
+            <label>
+              <span>Exit Ticket 語言</span>
+              <select id="ticketLanguage" name="ticketLanguage">
+                <option value="中文">中文</option>
+                <option value="英文">英文</option>
+                <option value="中英雙語">中英雙語</option>
+              </select>
+            </label>
             <label class="checkbox-label">
               <input id="sentenceSupport" name="sentenceSupport" type="checkbox" value="yes">
               <span>產生英文句型支架</span>
             </label>
-            <label>
-              <span>上課時間</span>
-              <select id="duration" name="duration">
-                <option value="40">40 分鐘</option>
-                <option value="45">45 分鐘</option>
-                <option value="80">80 分鐘</option>
-              </select>
+            <label class="checkbox-label">
+              <input id="useGroupDiscussion" name="useGroupDiscussion" type="checkbox" value="yes">
+              <span>課堂流程加入小組討論</span>
+            </label>
+            <label class="checkbox-label">
+              <input id="useExitTicket" name="useExitTicket" type="checkbox" value="yes">
+              <span>課堂流程加入 Exit Ticket</span>
             </label>
           </div>
 
           <div class="action-row">
-            <button class="primary-button" type="submit">產生三軌任務</button>
+            <button class="primary-button" type="submit">產生完整課程設計</button>
             <button class="secondary-button" id="resetButton" type="button">清空重來</button>
           </div>
         </form>
       </section>
 
-      <section class="module-tabs" aria-label="功能切換">
-        <button class="tab-button is-active" type="button" data-panel="tasksPanel">三軌任務產生器</button>
-        <button class="tab-button" type="button" data-panel="flowPanel">課堂流程產生器</button>
-        <button class="tab-button" type="button" data-panel="ticketPanel">Exit Ticket 產生器</button>
+      <section class="wizard-panel" data-step-panel="2" aria-labelledby="step2-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 2</p>
+            <h2 id="step2-title">系統產生三軌任務</h2>
+          </div>
+          <button class="copy-button" id="copyTasksButton" type="button">複製三軌任務</button>
+        </div>
+        <p class="copy-status" id="taskStatus" aria-live="polite"></p>
+        <div class="task-grid" id="taskOutput"></div>
+        <div class="action-row">
+          <button class="primary-button next-button" type="button" data-next-step="3">下一步：產生課堂流程</button>
+        </div>
       </section>
 
-      <section class="output-area" aria-live="polite">
-        <article class="output-panel is-active" id="tasksPanel">
-          <div class="panel-heading">
+      <section class="wizard-panel" data-step-panel="3" aria-labelledby="step3-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 3</p>
+            <h2 id="step3-title">系統根據三軌任務產生課堂流程</h2>
+          </div>
+          <button class="secondary-button" id="addFlowRowButton" type="button">新增步驟</button>
+        </div>
+        <div class="table-scroll">
+          <table class="flow-table">
+            <thead>
+              <tr>
+                <th>時間</th>
+                <th>學思達階段</th>
+                <th>教師任務</th>
+                <th>學生任務</th>
+                <th>可使用工具</th>
+                <th>教師提醒語</th>
+                <th>差異化提醒</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="flowOutput"></tbody>
+          </table>
+        </div>
+        <div class="action-row">
+          <button class="primary-button next-button" type="button" data-next-step="4">下一步：產生 Exit Ticket</button>
+        </div>
+      </section>
+
+      <section class="wizard-panel" data-step-panel="4" aria-labelledby="step4-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 4</p>
+            <h2 id="step4-title">系統產生 Exit Ticket</h2>
+          </div>
+          <button class="copy-button" id="copyTicketButton" type="button">複製 Exit Ticket</button>
+        </div>
+        <p class="copy-status" id="ticketStatus" aria-live="polite"></p>
+        <section class="ticket-section" aria-labelledby="ticketPreviewTitle">
+          <h3 id="ticketPreviewTitle">畫面顯示</h3>
+          <div class="ticket-list" id="ticketOutput"></div>
+        </section>
+        <section class="student-ticket" aria-labelledby="studentTicketTitle">
+          <div class="student-ticket-header">
             <div>
-              <p class="section-label">Differentiated Tasks</p>
-              <h2>三軌差異化任務</h2>
+              <p class="section-label">Student Version</p>
+              <h3 id="studentTicketTitle">學生填寫版</h3>
             </div>
-            <button class="copy-button" id="copyTasksButton" type="button">複製結果</button>
+            <span>Exit Ticket</span>
           </div>
-          <p class="copy-status" id="copyStatus" aria-live="polite"></p>
-          <div class="task-grid" id="taskOutput"></div>
-        </article>
+          <div id="studentTicketOutput"></div>
+        </section>
+        <div class="action-row">
+          <button class="primary-button next-button" type="button" data-next-step="5">下一步：複製全部結果</button>
+        </div>
+      </section>
 
-        <article class="output-panel" id="flowPanel">
-          <div class="panel-heading">
-            <div>
-              <p class="section-label">Sharestart Flow</p>
-              <h2>課堂流程產生器</h2>
-            </div>
+      <section class="wizard-panel" data-step-panel="5" aria-labelledby="step5-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 5</p>
+            <h2 id="step5-title">老師可以複製全部結果</h2>
           </div>
-          <form class="lesson-form flow-form" id="flowForm">
-            <div class="form-grid">
-              <label>
-                <span>課程主題</span>
-                <input id="flowTopic" name="flowTopic" type="text" placeholder="例：海洋污染">
-              </label>
-              <label>
-                <span>課程總時間</span>
-                <input id="flowDuration" name="flowDuration" type="number" min="20" max="120" step="5" placeholder="例：45">
-              </label>
-              <label>
-                <span>班級狀態</span>
-                <select id="classStatus" name="classStatus">
-                  <option value="安靜型">安靜型</option>
-                  <option value="活潑型">活潑型</option>
-                  <option value="程度落差大">程度落差大</option>
-                  <option value="需要更多秩序提醒">需要更多秩序提醒</option>
-                </select>
-              </label>
-              <label>
-                <span>教學目標</span>
-                <textarea id="flowGoal" name="flowGoal" rows="4" placeholder="例：學生能用過去式描述環境變化。"></textarea>
-              </label>
-              <label>
-                <span>核心問題</span>
-                <textarea id="flowQuestion" name="flowQuestion" rows="4" placeholder="例：Why did the beach change?"></textarea>
-              </label>
-              <div class="option-stack" aria-label="流程選項">
-                <label class="checkbox-label">
-                  <input id="useThreeTracks" name="useThreeTracks" type="checkbox" value="yes">
-                  <span>使用三軌任務</span>
-                </label>
-                <label class="checkbox-label">
-                  <input id="useGroupDiscussion" name="useGroupDiscussion" type="checkbox" value="yes">
-                  <span>加入小組討論</span>
-                </label>
-                <label class="checkbox-label">
-                  <input id="useExitTicket" name="useExitTicket" type="checkbox" value="yes">
-                  <span>加入 Exit Ticket</span>
-                </label>
-              </div>
+        </div>
+        <div class="copy-grid">
+          <section class="copy-card">
+            <div class="copy-card-header">
+              <h3>教師備課版</h3>
+              <button class="copy-button" id="copyTeacherButton" type="button">複製教師備課版</button>
             </div>
-
-            <div class="action-row">
-              <button class="primary-button" type="submit">產生課堂流程</button>
-              <button class="secondary-button" id="addFlowRowButton" type="button">新增步驟</button>
-            </div>
-          </form>
-
-          <div class="table-scroll" id="flowTableWrap">
-            <table class="flow-table">
-              <thead>
-                <tr>
-                  <th>時間</th>
-                  <th>學思達階段</th>
-                  <th>教師任務</th>
-                  <th>學生任務</th>
-                  <th>可使用工具</th>
-                  <th>教師提醒語</th>
-                  <th>差異化提醒</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="flowOutput"></tbody>
-            </table>
-          </div>
-        </article>
-
-        <article class="output-panel" id="ticketPanel">
-          <div class="panel-heading">
-            <div>
-              <p class="section-label">Learning Feedback</p>
-              <h2>Exit Ticket 產生器</h2>
-            </div>
-            <button class="copy-button" id="copyTicketButton" type="button">複製成文字</button>
-          </div>
-          <form class="lesson-form ticket-form" id="ticketForm">
-            <div class="form-grid">
-              <label>
-                <span>今日課程主題</span>
-                <input id="ticketTopic" name="ticketTopic" type="text" placeholder="例：海洋污染">
-              </label>
-              <label>
-                <span>題目數量</span>
-                <select id="ticketCount" name="ticketCount">
-                  <option value="3">3 題</option>
-                  <option value="4">4 題</option>
-                  <option value="5">5 題</option>
-                </select>
-              </label>
-              <label>
-                <span>語言模式</span>
-                <select id="ticketLanguage" name="ticketLanguage">
-                  <option value="中文">中文</option>
-                  <option value="英文">英文</option>
-                  <option value="中英雙語">中英雙語</option>
-                </select>
-              </label>
-              <label>
-                <span>今日學習目標</span>
-                <textarea id="ticketGoal" name="ticketGoal" rows="4" placeholder="例：學生能用過去式描述環境變化。"></textarea>
-              </label>
-              <label>
-                <span>想檢查的重點</span>
-                <input id="ticketFocus" name="ticketFocus" type="text" placeholder="例：單字、文法、閱讀理解、口說表達、情緒反思">
-              </label>
-              <label>
-                <span>回饋類型</span>
-                <select id="feedbackType" name="feedbackType">
-                  <option value="學習理解">學習理解</option>
-                  <option value="困難回報">困難回報</option>
-                  <option value="自我評分">自我評分</option>
-                  <option value="情緒狀態">情緒狀態</option>
-                  <option value="下次想學什麼">下次想學什麼</option>
-                </select>
-              </label>
-            </div>
-
-            <div class="action-row">
-              <button class="primary-button" type="submit">產生 Exit Ticket</button>
-            </div>
-          </form>
-
-          <p class="copy-status" id="ticketCopyStatus" aria-live="polite"></p>
-          <section class="ticket-section" aria-labelledby="ticketPreviewTitle">
-            <h3 id="ticketPreviewTitle">畫面顯示</h3>
-            <div class="ticket-list" id="ticketOutput"></div>
+            <pre id="teacherOutput"></pre>
           </section>
-          <section class="student-ticket" aria-labelledby="studentTicketTitle">
-            <div class="student-ticket-header">
-              <div>
-                <p class="section-label">Student Version</p>
-                <h3 id="studentTicketTitle">學生填寫版</h3>
-              </div>
-              <span>Exit Ticket</span>
+          <section class="copy-card">
+            <div class="copy-card-header">
+              <h3>學生講義版</h3>
+              <button class="copy-button" id="copyStudentButton" type="button">複製學生講義版</button>
             </div>
-            <div id="studentTicketOutput"></div>
+            <pre id="studentOutput"></pre>
           </section>
-        </article>
+        </div>
+        <p class="copy-status" id="allCopyStatus" aria-live="polite"></p>
       </section>
     </main>
 
