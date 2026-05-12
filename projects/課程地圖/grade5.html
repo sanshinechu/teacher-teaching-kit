@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>五年級科技課程地圖</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #fff8f0; padding: 44px 40px 36px; }
+  .dl-btn {
+    position: fixed; top: 16px; right: 16px; z-index: 999;
+    padding: 9px 18px; border: none; border-radius: 8px;
+    background: #f97316; color: #fff;
+    font-size: 0.85rem; font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .page { width: 820px; margin: 0 auto; }
+
+  .page-title { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; }
+  .page-title h1 { font-size: 1.8rem; font-weight: 900; color: #7c2d12; letter-spacing: 3px; }
+  .page-title p { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+
+  .semester-header {
+    border-radius: 14px 14px 0 0;
+    padding: 13px 22px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+  .s1 { background: linear-gradient(135deg, #f97316, #ea580c); }
+  .s2 { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+
+  .semester-body {
+    background: #fff;
+    border-radius: 0 0 16px 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.09);
+    margin-bottom: 24px;
+  }
+
+  .topic { border-radius: 12px; overflow: hidden; }
+  .topic-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .period-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: rgba(255,255,255,0.25);
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  .t1 .topic-header { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+  .t2 .topic-header { background: linear-gradient(90deg, #f59e0b, #d97706); }
+  .t3 .topic-header { background: linear-gradient(90deg, #22c55e, #16a34a); }
+  .t4 .topic-header { background: linear-gradient(90deg, #a855f7, #7c3aed); }
+
+  .items { background: #fdf8f4; padding: 4px 12px; }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 2px;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 0.85rem;
+    color: #334155;
+  }
+  .item:last-child { border-bottom: none; }
+
+  .num {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fff;
+    background: #94a3b8;
+    border-radius: 5px;
+    padding: 2px 6px;
+    min-width: 30px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .num.hw  { background: #f59e0b; }
+  .num.res { background: #06b6d4; }
+  .num.rule { background: #64748b; }
+
+  .name { flex: 1; }
+  .date { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; }
+
+  footer { text-align: center; font-size: 0.75rem; color: #94a3b8; padding-bottom: 6px; }
+</style>
+</head>
+<body>
+<button class="dl-btn" onclick="saveImg()">⬇ 下載圖片</button>
+
+<div class="page">
+  <div class="page-title">
+    <h1>📚 五年級科技課程地圖</h1>
+    <p>114 學年度　Scratch 動畫專題製作　儲三翔 老師</p>
+  </div>
+
+  <!-- 上學期 -->
+  <div class="semester-header s1">🍊 上學期　Sep 2025 ～ Jan 2026</div>
+  <div class="semester-body">
+
+    <div class="topic t1">
+      <div class="topic-header">🖥️ 主題一：課程環境準備<span class="period-badge">Oct 2025</span></div>
+      <div class="items">
+        <div class="item"><span class="num rule">規</span><span class="name">上課教室規則</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">01</span><span class="name">如何登入快樂 e 學院</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">02</span><span class="name">如何進入 Google Classroom</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">03</span><span class="name">如何登入宜蘭 Scratch3 程式平台</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">04</span><span class="name">如何一邊看自學影片與一邊練習程式</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">05</span><span class="name">電腦教室主機聲音設定</span><span class="date">10月</span></div>
+      </div>
+    </div>
+
+    <div class="topic t2">
+      <div class="topic-header">🐾 主題二：第一個 Scratch 動畫（會移動的 OO）<span class="period-badge">Oct 2025</span></div>
+      <div class="items">
+        <div class="item"><span class="num res">導</span><span class="name">如何製作一份 Scratch 動畫專題？</span><span class="date">10/1</span></div>
+        <div class="item"><span class="num res">題目</span><span class="name">第一個小專案題目：會移動的 OO</span><span class="date">10/1</span></div>
+        <div class="item"><span class="num">01</span><span class="name">會移動的 OO 示範錄影 01</span><span class="date">10/1</span></div>
+        <div class="item"><span class="num">02</span><span class="name">會移動的 OO 示範錄影 02</span><span class="date">10/1</span></div>
+        <div class="item"><span class="num">03</span><span class="name">會移動的 OO 示範錄影 03</span><span class="date">10/1</span></div>
+        <div class="item"><span class="num">04</span><span class="name">會移動的 OO 示範錄影 04</span><span class="date">10/1</span></div>
+        <div class="item"><span class="num">05</span><span class="name">會移動的 OO 示範錄影 05</span><span class="date">10/7</span></div>
+        <div class="item"><span class="num">06</span><span class="name">如何繳交專案錄影解說影片</span><span class="date">10/14</span></div>
+      </div>
+    </div>
+
+    <div class="topic t3">
+      <div class="topic-header">🎨 主題三：向量繪圖技法<span class="period-badge">Oct 2025 ～ Jan 2026</span></div>
+      <div class="items">
+        <div class="item"><span class="num res">資源</span><span class="name">老師自行錄製的向量繪圖影片（練習用）</span><span class="date">10/30</span></div>
+        <div class="item"><span class="num res">素材</span><span class="name">Monkey 素材</span><span class="date">11/21</span></div>
+        <div class="item"><span class="num hw">✏️</span><span class="name">作業：依據向量繪圖頻道最後二部影片畫出自己的角色</span><span class="date">12/12</span></div>
+        <div class="item"><span class="num">—</span><span class="name">快速人物繪製教學影片</span><span class="date">12/16</span></div>
+        <div class="item"><span class="num">—</span><span class="name">人物喜怒哀樂繪製學習影片</span><span class="date">12/23</span></div>
+        <div class="item"><span class="num">—</span><span class="name">Scratch 向量繪圖總整理</span><span class="date">12/29</span></div>
+        <div class="item"><span class="num">—</span><span class="name">舞台背景繪製教學影片</span><span class="date">1/2</span></div>
+        <div class="item"><span class="num hw">✏️</span><span class="name">作業：繳交自行繪製的角色</span><span class="date">1/6</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 下學期 -->
+  <div class="semester-header s2">🤖 下學期　Jan ～ May 2026</div>
+  <div class="semester-body">
+
+    <div class="topic t4">
+      <div class="topic-header">✨ 主題四：AI 創作動畫（樂活島專題）<span class="period-badge">Jan ～ May 2026</span></div>
+      <div class="items">
+        <div class="item"><span class="num res">資源</span><span class="name">Scratch 動畫的短篇腳本提示詞</span><span class="date">1/23</span></div>
+        <div class="item"><span class="num">01</span><span class="name">撰寫動畫腳本</span><span class="date">2/24</span></div>
+        <div class="item"><span class="num hw">✏️</span><span class="name">作業：樂活島腳本</span><span class="date">2/24</span></div>
+        <div class="item"><span class="num">02</span><span class="name">如何繳交腳本作業影片</span><span class="date">3/6</span></div>
+        <div class="item"><span class="num">03</span><span class="name">腳本的角色與舞台生圖 Gemini 提示詞</span><span class="date">3/9</span></div>
+        <div class="item"><span class="num">04</span><span class="name">產生角色與舞台教學影片</span><span class="date">3/10</span></div>
+        <div class="item"><span class="num">05</span><span class="name">角色與舞台下載及編修</span><span class="date">3/17</span></div>
+        <div class="item"><span class="num">06</span><span class="name">程式寫作 01：場景 1</span><span class="date">4/17</span></div>
+        <div class="item"><span class="num">07</span><span class="name">程式寫作 02：場景 2</span><span class="date">4/24</span></div>
+        <div class="item"><span class="num">08</span><span class="name">程式寫作 03：場景 2（進階）</span><span class="date">5/8</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>114 學年度　羅東國小　科技課程地圖　製作：2026/05/12</footer>
+</div>
+<script>
+function saveImg() {
+  html2canvas(document.querySelector('.page'), {
+    scale: 2, useCORS: true, backgroundColor: '#fff8f0'
+  }).then(canvas => {
+    const a = document.createElement('a');
+    a.download = '五年級_科技課程地圖.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+}
+</script>
+</body>
+</html>
