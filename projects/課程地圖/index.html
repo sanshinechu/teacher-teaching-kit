@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>六年級科技課程地圖</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: #eef2ff;
+  }
+
+  .controls {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 999;
+    display: flex;
+    gap: 10px;
+  }
+
+  .controls button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .btn1 { background: #3b82f6; color: white; }
+  .btn2 { background: #8b5cf6; color: white; }
+
+  .page {
+    width: 820px;
+    margin: 0 auto;
+    padding: 44px 40px 36px;
+    background: #eef2ff;
+  }
+
+  .page-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .page-title h1 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #1e3a8a;
+    letter-spacing: 3px;
+  }
+
+  .page-title p {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .semester-header {
+    border-radius: 14px 14px 0 0;
+    padding: 13px 22px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+
+  .s1 { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+  .s2 { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+
+  .semester-body {
+    background: #fff;
+    border-radius: 0 0 16px 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.09);
+    margin-bottom: 24px;
+  }
+
+  .topic { border-radius: 12px; overflow: hidden; }
+
+  .topic-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .period-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: rgba(255,255,255,0.25);
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  .t1 .topic-header { background: linear-gradient(90deg,#f59e0b,#d97706); }
+  .t2 .topic-header { background: linear-gradient(90deg,#ef4444,#dc2626); }
+  .t3 .topic-header { background: linear-gradient(90deg,#10b981,#059669); }
+  .t4 .topic-header { background: linear-gradient(90deg,#3b82f6,#2563eb); }
+  .t5 .topic-header { background: linear-gradient(90deg,#a855f7,#7c3aed); }
+
+  .items { background: #f8faff; padding: 4px 12px; }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 2px;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 0.85rem;
+    color: #334155;
+  }
+  .item:last-child { border-bottom: none; }
+
+  .num {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fff;
+    background: #94a3b8;
+    border-radius: 5px;
+    padding: 2px 6px;
+    min-width: 30px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .num.hw  { background: #f59e0b; }
+  .num.res { background: #06b6d4; }
+
+  .name { flex: 1; }
+  .date { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; }
+
+  .more {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-align: center;
+    padding: 4px;
+    font-style: italic;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    padding-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="btn1" onclick="window.open('semester1.html','_blank')">🔗 開啟上學期頁面</button>
+  <button class="btn2" onclick="window.open('semester2.html','_blank')">🔗 開啟下學期頁面</button>
+</div>
+
+<!-- 上學期 -->
+<div class="page" id="page1">
+  <div class="page-title">
+    <h1>📚 六年級科技課程地圖</h1>
+    <p>114 學年度　Scratch 遊戲專題製作　儲三翔 老師</p>
+  </div>
+
+  <div class="semester-header s1">📘 上學期　Sep 2025 ～ Jan 2026</div>
+  <div class="semester-body">
+
+    <div class="topic t1">
+      <div class="topic-header">🌀 主題一：迷宮遊戲專題<span class="period-badge">Oct 2025</span></div>
+      <div class="items">
+        <div class="item"><span class="num res">導</span><span class="name">迷宮遊戲是如何製作完成的？</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">01</span><span class="name">迷宮遊戲專題＿舊專案角色匯出</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">02</span><span class="name">讓迷宮角色可以移動及調整角色大小</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">03</span><span class="name">畫迷宮地圖</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">04</span><span class="name">迷宮地圖的程式碼解說</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">05</span><span class="name">迷宮障礙物 01</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">06</span><span class="name">迷宮障礙物 02</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">07</span><span class="name">迷宮障礙物 03</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">08</span><span class="name">迷宮障礙物程式碼解說</span><span class="date">10月</span></div>
+        <div class="item"><span class="num">09</span><span class="name">迷宮作業繳交解說</span><span class="date">10月</span></div>
+        <div class="more">（可能還有更多單元）</div>
+      </div>
+    </div>
+
+    <div class="topic t2">
+      <div class="topic-header">🛸 主題二：射擊遊戲專題<span class="period-badge">Nov ～ Dec 2025</span></div>
+      <div class="items">
+        <div class="item"><span class="num res">00</span><span class="name">向量繪圖學習頻道（資源）</span><span class="date">11月</span></div>
+        <div class="item"><span class="num">01</span><span class="name">如何製作射擊外星人專案的教學</span><span class="date">11月</span></div>
+        <div class="item"><span class="num">02</span><span class="name">射擊遊戲專案＿外星人角色繪製</span><span class="date">11月</span></div>
+        <div class="item"><span class="num">03</span><span class="name">大砲和子彈的角色繪製</span><span class="date">11月</span></div>
+        <div class="item"><span class="num">04</span><span class="name">大砲和子彈的程式碼解說</span><span class="date">12月</span></div>
+        <div class="item"><span class="num">05</span><span class="name">外星人的程式碼解說</span><span class="date">12月</span></div>
+        <div class="item"><span class="num">06</span><span class="name">加入計分與扣分機制</span><span class="date">12月</span></div>
+        <div class="item"><span class="num">07</span><span class="name">建立舞台、遊戲說明片頭與角色物件（開始鍵）</span><span class="date">12月</span></div>
+      </div>
+    </div>
+
+  </div>
+  <footer>114 學年度　羅東國小　科技課程地圖　製作：2026/05/12</footer>
+</div>
+
+<!-- 下學期 -->
+<div class="page" id="page2">
+  <div class="page-title">
+    <h1>📚 六年級科技課程地圖</h1>
+    <p>114 學年度　Scratch 遊戲專題製作　儲三翔 老師</p>
+  </div>
+
+  <div class="semester-header s2">📗 下學期　Jan ～ May 2026</div>
+  <div class="semester-body">
+
+    <div class="topic t3">
+      <div class="topic-header">🤖 主題三：AI 初探體驗<span class="period-badge">Jan 2026</span></div>
+      <div class="items">
+        <div class="item"><span class="num">—</span><span class="name">和 AI 做朋友</span><span class="date">1/15</span></div>
+        <div class="item"><span class="num">—</span><span class="name">用 AI 創作你的電音舞者</span><span class="date">1/20</span></div>
+        <div class="item"><span class="num hw">✏️</span><span class="name">作業：繳交 AI 作品連結</span><span class="date">1/22</span></div>
+      </div>
+    </div>
+
+    <div class="topic t4">
+      <div class="topic-header">🐟 主題四：視訊偵測專題（補魚遊戲）<span class="period-badge">Feb ～ Mar 2026</span></div>
+      <div class="items">
+        <div class="item"><span class="num res">素材</span><span class="name">補魚遊戲專題素材下載區</span><span class="date">2/24</span></div>
+        <div class="item"><span class="num">01</span><span class="name">補魚遊戲專題示範影片</span><span class="date">2/24</span></div>
+        <div class="item"><span class="num">02</span><span class="name">讓魚動起來程式碼 01</span><span class="date">2/24</span></div>
+        <div class="item"><span class="num">03</span><span class="name">讓魚動起來程式碼 02</span><span class="date">3/5</span></div>
+        <div class="item"><span class="num">04</span><span class="name">讓魚動起來程式碼 03</span><span class="date">3/5</span></div>
+        <div class="item"><span class="num">05</span><span class="name">舞台背景增加 1 分</span><span class="date">3/9</span></div>
+        <div class="item"><span class="num">06</span><span class="name">增加擴充模組（視訊偵測）</span><span class="date">3/9</span></div>
+        <div class="item"><span class="num">07</span><span class="name">設定結束條件</span><span class="date">3/16</span></div>
+        <div class="item"><span class="num">08</span><span class="name">繳交專案</span><span class="date">3/24</span></div>
+      </div>
+    </div>
+
+    <div class="topic t5">
+      <div class="topic-header">👁️ 主題五：AI 影像辨識（ML2Scratch）<span class="period-badge">Mar ～ Apr 2026</span></div>
+      <div class="items">
+        <div class="item"><span class="num">—</span><span class="name">認識影像辨識</span><span class="date">3/13</span></div>
+        <div class="item"><span class="num">2-1</span><span class="name">使用 ML2Scratch 擴充功能</span><span class="date">3/30</span></div>
+        <div class="item"><span class="num">3-1</span><span class="name">製作剪刀、石頭、布三個標籤</span><span class="date">4/13</span></div>
+        <div class="item"><span class="num">4-1</span><span class="name">建立「電腦出拳」</span><span class="date">4/27</span></div>
+      </div>
+    </div>
+
+  </div>
+  <footer>114 學年度　羅東國小　科技課程地圖　製作：2026/05/12</footer>
+</div>
+
+</body>
+</html>
