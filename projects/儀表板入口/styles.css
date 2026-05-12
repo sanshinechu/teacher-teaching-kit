@@ -112,6 +112,10 @@ h1 {
   gap: 14px;
 }
 
+.lesson-module-grid {
+  grid-template-columns: 1fr;
+}
+
 .tool-section {
   display: grid;
   gap: 14px;
@@ -169,6 +173,7 @@ h3 {
 }
 
 .lesson-designer {
+  min-height: 170px;
   background: linear-gradient(135deg, #334155, #0d9488 52%, #e11d48);
 }
 
