@@ -180,10 +180,6 @@ h3 {
   background: linear-gradient(135deg, #0f766e, #f97316);
 }
 
-.task-designer {
-  background: linear-gradient(135deg, #4338ca, #d97706);
-}
-
 .tool-icon {
   width: 58px;
   aspect-ratio: 1;
