@@ -14,7 +14,7 @@
         <div>
           <p class="eyebrow">Sharestart Lesson Designer</p>
           <h1>學思達課堂任務設計器</h1>
-          <p class="lead">用同一份課程資料，快速整理三軌任務、一節課流程與課後 Exit Ticket。</p>
+          <p class="lead">老師輸入課程資料後，先產生 S1 / S2 / S3 三軌差異化任務，也能延伸整理課堂流程與 Exit Ticket。</p>
         </div>
       </header>
 
@@ -23,11 +23,37 @@
           <div class="form-grid">
             <label>
               <span>課程主題</span>
-              <input id="topic" name="topic" type="text" placeholder="例：Scratch 條件判斷與碰撞偵測">
+              <input id="topic" name="topic" type="text" placeholder="例：海洋污染、過去式、閱讀理解、情緒教育">
             </label>
             <label>
-              <span>年級與科目</span>
-              <input id="grade" name="grade" type="text" placeholder="例：六年級資訊課">
+              <span>核心問題</span>
+              <input id="essentialQuestion" name="essentialQuestion" type="text" placeholder="例：Why did the beach change?">
+            </label>
+            <label>
+              <span>年級</span>
+              <input id="grade" name="grade" type="text" placeholder="例：國小高年級、國中七年級、國中八年級">
+            </label>
+            <label>
+              <span>學習目標</span>
+              <textarea id="learningGoal" name="learningGoal" rows="4" placeholder="例：學生能用過去式描述環境變化。"></textarea>
+            </label>
+            <label>
+              <span>教材內容</span>
+              <textarea id="materials" name="materials" rows="4" placeholder="可貼上課文、對話、短文或任務素材。"></textarea>
+            </label>
+            <label>
+              <span>任務類型</span>
+              <select id="taskType" name="taskType">
+                <option value="閱讀理解">閱讀理解</option>
+                <option value="口說討論">口說討論</option>
+                <option value="寫作">寫作</option>
+                <option value="文法練習">文法練習</option>
+                <option value="SEL 反思">SEL 反思</option>
+              </select>
+            </label>
+            <label class="checkbox-label">
+              <input id="sentenceSupport" name="sentenceSupport" type="checkbox" value="yes">
+              <span>產生英文句型支架</span>
             </label>
             <label>
               <span>上課時間</span>
@@ -37,22 +63,10 @@
                 <option value="80">80 分鐘</option>
               </select>
             </label>
-            <label>
-              <span>學生程度描述</span>
-              <textarea id="studentProfile" name="studentProfile" rows="4" placeholder="例：多數學生會拖拉積木，少部分需要步驟提示，幾位學生可以挑戰加分任務。"></textarea>
-            </label>
-            <label>
-              <span>本節課目標</span>
-              <textarea id="learningGoal" name="learningGoal" rows="4" placeholder="例：學生能設計角色碰到障礙物後扣分，並說明判斷條件。"></textarea>
-            </label>
-            <label>
-              <span>可用素材或限制</span>
-              <textarea id="materials" name="materials" rows="4" placeholder="例：使用 Scratch、投影示範、學生兩人一組，可使用教師影片複習。"></textarea>
-            </label>
           </div>
 
           <div class="action-row">
-            <button class="primary-button" type="submit">產生三個設計</button>
+            <button class="primary-button" type="submit">產生三軌任務</button>
             <button class="secondary-button" id="resetButton" type="button">清空重來</button>
           </div>
         </form>
@@ -67,9 +81,13 @@
       <section class="output-area" aria-live="polite">
         <article class="output-panel is-active" id="tasksPanel">
           <div class="panel-heading">
-            <p class="section-label">Differentiated Tasks</p>
-            <h2>三軌差異化任務</h2>
+            <div>
+              <p class="section-label">Differentiated Tasks</p>
+              <h2>三軌差異化任務</h2>
+            </div>
+            <button class="copy-button" id="copyTasksButton" type="button">複製結果</button>
           </div>
+          <p class="copy-status" id="copyStatus" aria-live="polite"></p>
           <div class="task-grid" id="taskOutput"></div>
         </article>
 
