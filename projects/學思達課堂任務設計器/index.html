@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>學思達課堂任務設計器</title>
+    <meta name="description" content="用 Wizard 流程產生三軌任務、學思達課堂流程與 Exit Ticket。">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <a class="back-link" href="../儀表板入口/">返回儀表板</a>
+        <div>
+          <p class="eyebrow">Sharestart Lesson Wizard</p>
+          <h1>學思達課堂任務設計器</h1>
+          <p class="lead">從課程資料開始，連續產生三軌任務、五環課堂流程、Exit Ticket，最後整理成可複製的備課版與學生講義版。</p>
+        </div>
+      </header>
+
+      <nav class="step-nav" aria-label="設計流程">
+        <button class="step-tab is-active" type="button" data-step="1"><span>Step 1</span>課程基本資料</button>
+        <button class="step-tab" type="button" data-step="2"><span>Step 2</span>三軌任務</button>
+        <button class="step-tab" type="button" data-step="3"><span>Step 3</span>課堂流程</button>
+        <button class="step-tab" type="button" data-step="4"><span>Step 4</span>Exit Ticket</button>
+        <button class="step-tab" type="button" data-step="5"><span>Step 5</span>複製全部結果</button>
+      </nav>
+
+      <section class="wizard-panel is-active" data-step-panel="1" aria-labelledby="step1-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 1</p>
+            <h2 id="step1-title">老師輸入課程基本資料</h2>
+          </div>
+        </div>
+
+        <form class="lesson-form" id="lessonForm">
+          <div class="form-grid">
+            <label>
+              <span>課程主題</span>
+              <input id="topic" name="topic" type="text" placeholder="例：海洋污染、過去式、閱讀理解、情緒教育">
+            </label>
+            <label>
+              <span>年級</span>
+              <input id="grade" name="grade" type="text" placeholder="例：國小高年級、國中七年級">
+            </label>
+            <label>
+              <span>課程時間</span>
+              <input id="duration" name="duration" type="number" min="20" max="120" step="5" placeholder="例：45">
+            </label>
+            <label>
+              <span>核心問題</span>
+              <input id="essentialQuestion" name="essentialQuestion" type="text" placeholder="例：Why did the beach change?">
+            </label>
+            <label>
+              <span>學習目標</span>
+              <textarea id="learningGoal" name="learningGoal" rows="4" placeholder="例：學生能用過去式描述環境變化。"></textarea>
+            </label>
+            <label>
+              <span>教材內容</span>
+              <textarea id="materials" name="materials" rows="4" placeholder="可貼上課文、對話、短文或任務素材。"></textarea>
+            </label>
+            <label>
+              <span>班級狀態</span>
+              <select id="classStatus" name="classStatus">
+                <option value="安靜型">安靜型</option>
+                <option value="活潑型">活潑型</option>
+                <option value="程度落差大">程度落差大</option>
+                <option value="需要更多秩序提醒">需要更多秩序提醒</option>
+              </select>
+            </label>
+            <label>
+              <span>任務類型</span>
+              <select id="taskType" name="taskType">
+                <option value="閱讀理解">閱讀理解</option>
+                <option value="口說討論">口說討論</option>
+                <option value="寫作">寫作</option>
+                <option value="文法練習">文法練習</option>
+                <option value="SEL 反思">SEL 反思</option>
+              </select>
+            </label>
+            <label>
+              <span>Exit Ticket 語言</span>
+              <select id="ticketLanguage" name="ticketLanguage">
+                <option value="中文">中文</option>
+                <option value="英文">英文</option>
+                <option value="中英雙語">中英雙語</option>
+              </select>
+            </label>
+            <label class="checkbox-label">
+              <input id="sentenceSupport" name="sentenceSupport" type="checkbox" value="yes">
+              <span>產生英文句型支架</span>
+            </label>
+            <label class="checkbox-label">
+              <input id="useGroupDiscussion" name="useGroupDiscussion" type="checkbox" value="yes">
+              <span>課堂流程加入小組討論</span>
+            </label>
+            <label class="checkbox-label">
+              <input id="useExitTicket" name="useExitTicket" type="checkbox" value="yes">
+              <span>課堂流程加入 Exit Ticket</span>
+            </label>
+          </div>
+
+          <div class="action-row">
+            <button class="primary-button" type="submit">產生完整課程設計</button>
+            <button class="secondary-button" id="resetButton" type="button">清空重來</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="wizard-panel" data-step-panel="2" aria-labelledby="step2-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 2</p>
+            <h2 id="step2-title">系統產生三軌任務</h2>
+          </div>
+          <button class="copy-button" id="copyTasksButton" type="button">複製三軌任務</button>
+        </div>
+        <p class="copy-status" id="taskStatus" aria-live="polite"></p>
+        <div class="task-grid" id="taskOutput"></div>
+        <div class="action-row">
+          <button class="primary-button next-button" type="button" data-next-step="3">下一步：產生課堂流程</button>
+        </div>
+      </section>
+
+      <section class="wizard-panel" data-step-panel="3" aria-labelledby="step3-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 3</p>
+            <h2 id="step3-title">系統根據三軌任務產生課堂流程</h2>
+          </div>
+          <button class="secondary-button" id="addFlowRowButton" type="button">新增步驟</button>
+        </div>
+        <div class="table-scroll">
+          <table class="flow-table">
+            <thead>
+              <tr>
+                <th>時間</th>
+                <th>學思達階段</th>
+                <th>教師任務</th>
+                <th>學生任務</th>
+                <th>可使用工具</th>
+                <th>教師提醒語</th>
+                <th>差異化提醒</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="flowOutput"></tbody>
+          </table>
+        </div>
+        <div class="action-row">
+          <button class="primary-button next-button" type="button" data-next-step="4">下一步：產生 Exit Ticket</button>
+        </div>
+      </section>
+
+      <section class="wizard-panel" data-step-panel="4" aria-labelledby="step4-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 4</p>
+            <h2 id="step4-title">系統產生 Exit Ticket</h2>
+          </div>
+          <button class="copy-button" id="copyTicketButton" type="button">複製 Exit Ticket</button>
+        </div>
+        <p class="copy-status" id="ticketStatus" aria-live="polite"></p>
+        <section class="ticket-section" aria-labelledby="ticketPreviewTitle">
+          <h3 id="ticketPreviewTitle">畫面顯示</h3>
+          <div class="ticket-list" id="ticketOutput"></div>
+        </section>
+        <section class="student-ticket" aria-labelledby="studentTicketTitle">
+          <div class="student-ticket-header">
+            <div>
+              <p class="section-label">Student Version</p>
+              <h3 id="studentTicketTitle">學生填寫版</h3>
+            </div>
+            <span>Exit Ticket</span>
+          </div>
+          <div id="studentTicketOutput"></div>
+        </section>
+        <div class="action-row">
+          <button class="primary-button next-button" type="button" data-next-step="5">下一步：複製全部結果</button>
+        </div>
+      </section>
+
+      <section class="wizard-panel" data-step-panel="5" aria-labelledby="step5-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">Step 5</p>
+            <h2 id="step5-title">老師可以複製全部結果</h2>
+          </div>
+        </div>
+        <div class="copy-grid">
+          <section class="copy-card">
+            <div class="copy-card-header">
+              <h3>教師備課版</h3>
+              <button class="copy-button" id="copyTeacherButton" type="button">複製教師備課版</button>
+            </div>
+            <pre id="teacherOutput"></pre>
+          </section>
+          <section class="copy-card">
+            <div class="copy-card-header">
+              <h3>學生講義版</h3>
+              <button class="copy-button" id="copyStudentButton" type="button">複製學生講義版</button>
+            </div>
+            <pre id="studentOutput"></pre>
+          </section>
+        </div>
+        <p class="copy-status" id="allCopyStatus" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
