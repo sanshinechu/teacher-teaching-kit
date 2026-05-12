@@ -139,10 +139,12 @@ h3 {
 }
 
 .tool-card {
-  min-height: 190px;
+  min-height: 220px;
   display: grid;
-  align-content: space-between;
-  gap: 18px;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  align-items: start;
+  gap: 20px;
   padding: 22px;
   border-radius: 22px;
   color: #ffffff;
@@ -193,6 +195,11 @@ strong,
 small,
 em {
   display: block;
+}
+
+.tool-copy {
+  display: grid;
+  align-content: start;
 }
 
 strong {
@@ -262,8 +269,10 @@ time {
   .tool-card {
     min-height: 128px;
     grid-template-columns: auto 1fr;
+    grid-template-rows: none;
     align-content: center;
     align-items: center;
+    gap: 16px;
   }
 
   .tool-card strong {
