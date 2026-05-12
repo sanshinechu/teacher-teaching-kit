@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>學思達課堂任務設計器</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #667085;
+        --line: rgba(23, 32, 51, 0.12);
+        --accent: #4338ca;
+        --accent2: #d97706;
+        --bg: #f8f9fc;
+        --panel: #ffffff;
+        --radius: 16px;
+        --shadow: 0 4px 24px rgba(67, 56, 202, 0.1);
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      /* ── 頂部列 ── */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+      }
+
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .topbar a {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.85rem;
+        text-decoration: none;
+        padding: 6px 14px;
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 999px;
+      }
+
+      .topbar a:hover { background: rgba(255,255,255,0.15); }
+
+      .topbar h1 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      .topbar-badge {
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.75);
+        font-weight: 400;
+      }
+
+      /* ── 主體版面 ── */
+      .workspace {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        min-height: calc(100vh - 54px);
+      }
+
+      /* ── 左欄（表單） ── */
+      .editor {
+        padding: 24px;
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .section-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 10px;
+      }
+
+      .form-block {
+        background: #f8f9fc;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .form-group label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 0.93rem;
+        color: var(--ink);
+        background: #fff;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: var(--accent);
+      }
+
+      .form-group textarea {
+        resize: vertical;
+        min-height: 64px;
+        line-height: 1.6;
+      }
+
+      /* ── 問題區塊 ── */
+      .q-section {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      .q-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .q-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .q-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        font-weight: 900;
+        color: #fff;
+      }
+
+      .q-body {
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #fafbff;
+        border-top: 1px solid var(--line);
+      }
+
+      .q-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: start;
+      }
+
+      .q-item textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 0.88rem;
+        color: var(--ink);
+        background: #fff;
+        resize: vertical;
+        min-height: 52px;
+        line-height: 1.6;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .q-item textarea:focus { border-color: var(--accent); }
+
+      .btn-del {
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 8px;
+        background: #fee2e2;
+        color: #dc2626;
+        font-size: 1rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .btn-del:hover { background: #fca5a5; }
+
+      .btn-add {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.84rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.2s;
+        width: 100%;
+      }
+
+      .btn-add:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #eef2ff;
+      }
+
+      /* ── 右欄（預覽） ── */
+      .preview-pane {
+        padding: 32px;
+        background: #e8eaf2;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        align-items: center;
+      }
+
+      .preview-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 800px;
+      }
+
+      .preview-label {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .btn-print {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 20px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .btn-print:hover { opacity: 0.88; }
+
+      /* ── 任務卡預覽 ── */
+      .task-card {
+        width: 100%;
+        max-width: 800px;
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .card-header {
+        padding: 24px 28px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+        display: grid;
+        gap: 6px;
+      }
+
+      .card-header-meta {
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.75);
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .card-title {
+        font-size: 1.6rem;
+        font-weight: 900;
+        line-height: 1.2;
+      }
+
+      .card-objectives {
+        padding: 18px 28px;
+        background: #f0f3ff;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 6px;
+      }
+
+      .card-objectives-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .card-objectives-text {
+        font-size: 0.92rem;
+        color: var(--ink);
+        line-height: 1.7;
+        white-space: pre-line;
+      }
+
+      .card-body {
+        padding: 20px 28px;
+        display: grid;
+        gap: 20px;
+      }
+
+      .card-q-section { display: grid; gap: 10px; }
+
+      .card-q-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        font-weight: 800;
+      }
+
+      .card-q-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-size: 0.9rem;
+        font-weight: 900;
+        color: #fff;
+        flex-shrink: 0;
+      }
+
+      .card-q-items { display: grid; gap: 8px; }
+
+      .card-q-item {
+        display: grid;
+        grid-template-columns: 24px 1fr;
+        gap: 8px;
+        align-items: start;
+        padding: 10px 14px;
+        background: #f8f9fc;
+        border-radius: 12px;
+        border-left: 3px solid;
+        font-size: 0.9rem;
+        line-height: 1.7;
+      }
+
+      .card-q-num {
+        font-weight: 900;
+        font-size: 0.8rem;
+        color: var(--muted);
+        padding-top: 2px;
+        text-align: center;
+      }
+
+      .card-q-text { white-space: pre-line; }
+
+      .card-footer {
+        padding: 14px 28px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .empty-hint {
+        text-align: center;
+        color: #aaa;
+        font-size: 0.88rem;
+        padding: 40px 0;
+      }
+
+      /* ── 顏色 ── */
+      .color-warm    { background: #f97316; }
+      .color-blue    { background: #2563eb; }
+      .color-purple  { background: #7c3aed; }
+      .color-green   { background: #16a34a; }
+      .color-red     { background: #dc2626; }
+
+      .border-warm   { border-left-color: #f97316; }
+      .border-blue   { border-left-color: #2563eb; }
+      .border-purple { border-left-color: #7c3aed; }
+      .border-green  { border-left-color: #16a34a; }
+      .border-red    { border-left-color: #dc2626; }
+
+      /* ── 列印 ── */
+      @media print {
+        body { background: #fff; }
+        .topbar, .editor, .preview-toolbar { display: none !important; }
+        .workspace { display: block; }
+        .preview-pane {
+          padding: 0;
+          background: #fff;
+          align-items: stretch;
+        }
+        .task-card {
+          max-width: 100%;
+          box-shadow: none;
+          border-radius: 0;
+        }
+      }
+
+      /* ── RWD ── */
+      @media (max-width: 860px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .editor {
+          border-right: none;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .preview-pane {
+          padding: 20px 16px;
+        }
+
+        .topbar h1 { font-size: 1rem; }
+        .topbar-badge { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-left">
+        <a href="../儀表板入口/">← 回儀表板</a>
+        <div>
+          <h1>學思達課堂任務設計器</h1>
+          <div class="topbar-badge">設計任務卡・即時預覽・一鍵列印</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- ── 左欄：編輯器 ── -->
+      <aside class="editor">
+        <!-- 基本資訊 -->
+        <div>
+          <div class="section-title">基本資訊</div>
+          <div class="form-block">
+            <div class="form-group" style="margin-bottom:10px">
+              <label>課程主題</label>
+              <input type="text" id="topic" placeholder="例：角色的心情變化" oninput="render()" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>年級</label>
+                <select id="grade" onchange="render()">
+                  <option value="">請選擇</option>
+                  <option>一年級</option>
+                  <option>二年級</option>
+                  <option>三年級</option>
+                  <option>四年級</option>
+                  <option selected>五年級</option>
+                  <option>六年級</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>科目</label>
+                <input type="text" id="subject" placeholder="例：國語" oninput="render()" />
+              </div>
+            </div>
+            <div class="form-row" style="margin-top:10px">
+              <div class="form-group">
+                <label>日期</label>
+                <input type="date" id="date" oninput="render()" />
+              </div>
+              <div class="form-group">
+                <label>小組名稱</label>
+                <input type="text" id="group" placeholder="例：第三組" oninput="render()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 學習目標 -->
+        <div>
+          <div class="section-title">學習目標</div>
+          <div class="form-block">
+            <div class="form-group">
+              <label>學完這堂課，學生能夠…</label>
+              <textarea id="objectives" rows="3" placeholder="例：說出主角在三個不同情境下的心情，並用自己的話解釋原因。" oninput="render()"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 問題區 -->
+        <div id="q-sections"></div>
+
+        <button class="btn-add" onclick="addSection()" style="margin-top:-8px">
+          ＋ 新增問題類型
+        </button>
+      </aside>
+
+      <!-- ── 右欄：預覽 ── -->
+      <main class="preview-pane">
+        <div class="preview-toolbar">
+          <span class="preview-label">即時預覽</span>
+          <button class="btn-print" onclick="window.print()">🖨 列印任務卡</button>
+        </div>
+        <div id="preview-output"></div>
+      </main>
+    </div>
+
+    <script>
+      const TYPES = [
+        { key: 'warmup',     label: '暖身題',   emoji: '🔥', color: 'warm',   desc: '激發舊經驗，引起學習動機' },
+        { key: 'basic',      label: '基礎理解題', emoji: '📖', color: 'blue',   desc: '確認是否理解文本內容' },
+        { key: 'thinking',   label: '思考挑戰題', emoji: '💡', color: 'purple', desc: '深化思考、分析與推論' },
+        { key: 'discussion', label: '討論與發表', emoji: '🗣️', color: 'green',  desc: '小組討論後上台發表' },
+        { key: 'custom',     label: '自訂題型',  emoji: '✏️', color: 'red',    desc: '自行命名的題型' },
+      ];
+
+      let sections = [
+        { typeKey: 'warmup',     title: '',  questions: [''] },
+        { typeKey: 'basic',      title: '',  questions: [''] },
+        { typeKey: 'thinking',   title: '',  questions: [''] },
+        { typeKey: 'discussion', title: '',  questions: [''] },
+      ];
+
+      function getType(key) {
+        return TYPES.find(t => t.key === key) || TYPES[TYPES.length - 1];
+      }
+
+      function renderSections() {
+        const el = document.getElementById('q-sections');
+        el.innerHTML = '';
+
+        sections.forEach((sec, si) => {
+          const t = getType(sec.typeKey);
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+              <span>${t.emoji} ${t.label}</span>
+              <button onclick="removeSection(${si})" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:0.85rem;font-weight:700" title="移除此區塊">✕ 移除</button>
+            </div>
+            <div class="q-section">
+              <div class="q-header" style="background:${headerBg(t.color)}">
+                <div class="q-header-left">
+                  <span class="q-badge ${bgClass(t.color)}">${t.emoji}</span>
+                  ${sec.typeKey === 'custom'
+                    ? `<input type="text" value="${sec.title}" placeholder="輸入自訂題型名稱" oninput="sections[${si}].title=this.value;render()" style="border:none;background:transparent;font-family:inherit;font-size:0.9rem;font-weight:700;outline:none;width:180px">`
+                    : `<span>${t.label}</span>`}
+                </div>
+                <span style="font-size:0.75rem;color:#888">${t.desc}</span>
+              </div>
+              <div class="q-body" id="qbody-${si}">
+                ${sec.questions.map((q, qi) => `
+                  <div class="q-item">
+                    <textarea placeholder="輸入問題…" oninput="sections[${si}].questions[${qi}]=this.value;render()">${q}</textarea>
+                    <button class="btn-del" onclick="removeQuestion(${si},${qi})" title="刪除此題">✕</button>
+                  </div>
+                `).join('')}
+                <button class="btn-add" onclick="addQuestion(${si})">＋ 新增一題</button>
+              </div>
+            </div>
+          `;
+          el.appendChild(div);
+        });
+      }
+
+      function headerBg(color) {
+        const map = { warm:'#fff7ed', blue:'#eff6ff', purple:'#faf5ff', green:'#f0fdf4', red:'#fef2f2' };
+        return map[color] || '#f8f9fc';
+      }
+
+      function bgClass(color) {
+        return `color-${color}`;
+      }
+
+      function addSection() {
+        const key = TYPES[sections.length % TYPES.length].key;
+        sections.push({ typeKey: key, title: '', questions: [''] });
+        renderSections();
+        render();
+      }
+
+      function removeSection(si) {
+        if (sections.length <= 1) return;
+        sections.splice(si, 1);
+        renderSections();
+        render();
+      }
+
+      function addQuestion(si) {
+        sections[si].questions.push('');
+        renderSections();
+        render();
+      }
+
+      function removeQuestion(si, qi) {
+        if (sections[si].questions.length <= 1) return;
+        sections[si].questions.splice(qi, 1);
+        renderSections();
+        render();
+      }
+
+      function render() {
+        const topic   = document.getElementById('topic').value.trim();
+        const grade   = document.getElementById('grade').value;
+        const subject = document.getElementById('subject').value.trim();
+        const date    = document.getElementById('date').value;
+        const group   = document.getElementById('group').value.trim();
+        const obj     = document.getElementById('objectives').value.trim();
+
+        const dateStr = date ? new Date(date + 'T00:00:00').toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric' }) : '';
+        const metaParts = [grade, subject, dateStr, group && `小組：${group}`].filter(Boolean);
+
+        const cardSections = sections.map(sec => {
+          const t = getType(sec.typeKey);
+          const label = sec.typeKey === 'custom' && sec.title ? sec.title : t.label;
+          const qs = sec.questions.filter(q => q.trim());
+          if (!qs.length) return '';
+          return `
+            <div class="card-q-section">
+              <div class="card-q-title">
+                <span class="card-q-badge ${bgClass(t.color)}">${t.emoji}</span>
+                <span>${label}</span>
+              </div>
+              <div class="card-q-items">
+                ${qs.map((q, i) => `
+                  <div class="card-q-item border-${t.color}">
+                    <span class="card-q-num">Q${i+1}</span>
+                    <span class="card-q-text">${escHtml(q)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const hasContent = topic || cardSections.trim();
+
+        document.getElementById('preview-output').innerHTML = `
+          <div class="task-card">
+            <div class="card-header">
+              ${metaParts.length ? `<div class="card-header-meta">${metaParts.map(m => `<span>${escHtml(m)}</span>`).join('')}</div>` : ''}
+              <div class="card-title">${escHtml(topic) || '<span style="opacity:0.5">課程主題</span>'}</div>
+            </div>
+            ${obj ? `
+              <div class="card-objectives">
+                <div class="card-objectives-label">學習目標</div>
+                <div class="card-objectives-text">${escHtml(obj)}</div>
+              </div>
+            ` : ''}
+            <div class="card-body">
+              ${hasContent
+                ? cardSections || '<div class="empty-hint">還沒有問題，請在左側新增。</div>'
+                : '<div class="empty-hint">請在左側填入課程資訊與問題。</div>'
+              }
+            </div>
+            <div class="card-footer">
+              <span>學思達課堂任務卡</span>
+              <span>${dateStr || ''}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      // ── 初始化 ──
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      renderSections();
+      render();
+    </script>
+  </body>
+</html>
