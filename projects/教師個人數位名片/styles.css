@@ -186,6 +186,12 @@ h2 {
   font-size: 1.08rem;
 }
 
+.course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .course-strip a {
   min-height: 38px;
   display: inline-flex;
