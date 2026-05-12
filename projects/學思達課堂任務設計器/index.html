@@ -93,10 +93,77 @@
 
         <article class="output-panel" id="flowPanel">
           <div class="panel-heading">
-            <p class="section-label">Sharestart Flow</p>
-            <h2>學思達五環課堂流程</h2>
+            <div>
+              <p class="section-label">Sharestart Flow</p>
+              <h2>課堂流程產生器</h2>
+            </div>
           </div>
-          <ol class="flow-list" id="flowOutput"></ol>
+          <form class="lesson-form flow-form" id="flowForm">
+            <div class="form-grid">
+              <label>
+                <span>課程主題</span>
+                <input id="flowTopic" name="flowTopic" type="text" placeholder="例：海洋污染">
+              </label>
+              <label>
+                <span>課程總時間</span>
+                <input id="flowDuration" name="flowDuration" type="number" min="20" max="120" step="5" placeholder="例：45">
+              </label>
+              <label>
+                <span>班級狀態</span>
+                <select id="classStatus" name="classStatus">
+                  <option value="安靜型">安靜型</option>
+                  <option value="活潑型">活潑型</option>
+                  <option value="程度落差大">程度落差大</option>
+                  <option value="需要更多秩序提醒">需要更多秩序提醒</option>
+                </select>
+              </label>
+              <label>
+                <span>教學目標</span>
+                <textarea id="flowGoal" name="flowGoal" rows="4" placeholder="例：學生能用過去式描述環境變化。"></textarea>
+              </label>
+              <label>
+                <span>核心問題</span>
+                <textarea id="flowQuestion" name="flowQuestion" rows="4" placeholder="例：Why did the beach change?"></textarea>
+              </label>
+              <div class="option-stack" aria-label="流程選項">
+                <label class="checkbox-label">
+                  <input id="useThreeTracks" name="useThreeTracks" type="checkbox" value="yes">
+                  <span>使用三軌任務</span>
+                </label>
+                <label class="checkbox-label">
+                  <input id="useGroupDiscussion" name="useGroupDiscussion" type="checkbox" value="yes">
+                  <span>加入小組討論</span>
+                </label>
+                <label class="checkbox-label">
+                  <input id="useExitTicket" name="useExitTicket" type="checkbox" value="yes">
+                  <span>加入 Exit Ticket</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="primary-button" type="submit">產生課堂流程</button>
+              <button class="secondary-button" id="addFlowRowButton" type="button">新增步驟</button>
+            </div>
+          </form>
+
+          <div class="table-scroll" id="flowTableWrap">
+            <table class="flow-table">
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>學思達階段</th>
+                  <th>教師任務</th>
+                  <th>學生任務</th>
+                  <th>可使用工具</th>
+                  <th>教師提醒語</th>
+                  <th>差異化提醒</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="flowOutput"></tbody>
+            </table>
+          </div>
         </article>
 
         <article class="output-panel" id="ticketPanel">

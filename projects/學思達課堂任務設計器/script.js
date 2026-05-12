@@ -1,5 +1,16 @@
 const STORAGE_KEY = "sharestartLessonDesigner";
 
+const defaultFlowInput = {
+  flowTopic: "",
+  flowDuration: "45",
+  flowGoal: "",
+  flowQuestion: "",
+  useThreeTracks: false,
+  useGroupDiscussion: true,
+  useExitTicket: true,
+  classStatus: "安靜型"
+};
+
 const defaultData = {
   topic: "",
   essentialQuestion: "",
@@ -9,6 +20,8 @@ const defaultData = {
   materials: "",
   taskType: "閱讀理解",
   sentenceSupport: false,
+  flowInput: { ...defaultFlowInput },
+  flowRows: [],
   generated: null
 };
 
@@ -16,6 +29,8 @@ const form = document.querySelector("#lessonForm");
 const resetButton = document.querySelector("#resetButton");
 const copyTasksButton = document.querySelector("#copyTasksButton");
 const copyStatus = document.querySelector("#copyStatus");
+const flowForm = document.querySelector("#flowForm");
+const addFlowRowButton = document.querySelector("#addFlowRowButton");
 const tabButtons = document.querySelectorAll(".tab-button");
 const panels = document.querySelectorAll(".output-panel");
 const taskOutput = document.querySelector("#taskOutput");
@@ -30,7 +45,17 @@ function readState() {
   }
 
   try {
-    return { ...defaultData, ...JSON.parse(saved) };
+    const parsed = JSON.parse(saved);
+
+    return {
+      ...defaultData,
+      ...parsed,
+      flowInput: {
+        ...defaultFlowInput,
+        ...parsed.flowInput
+      },
+      flowRows: Array.isArray(parsed.flowRows) ? parsed.flowRows : []
+    };
   } catch {
     return { ...defaultData };
   }
@@ -75,6 +100,38 @@ function fillForm(state) {
     if (typeof value === "string") {
       field.value = value;
     }
+  });
+}
+
+function getFlowFormData() {
+  const formData = new FormData(flowForm);
+
+  return {
+    flowTopic: formData.get("flowTopic").trim(),
+    flowDuration: formData.get("flowDuration").trim() || defaultFlowInput.flowDuration,
+    flowGoal: formData.get("flowGoal").trim(),
+    flowQuestion: formData.get("flowQuestion").trim(),
+    useThreeTracks: formData.get("useThreeTracks") === "yes",
+    useGroupDiscussion: formData.get("useGroupDiscussion") === "yes",
+    useExitTicket: formData.get("useExitTicket") === "yes",
+    classStatus: formData.get("classStatus")
+  };
+}
+
+function fillFlowForm(flowInput) {
+  Object.entries(flowInput).forEach(([key, value]) => {
+    const field = flowForm.elements[key];
+
+    if (!field) {
+      return;
+    }
+
+    if (field.type === "checkbox") {
+      field.checked = Boolean(value);
+      return;
+    }
+
+    field.value = value;
   });
 }
 
@@ -172,40 +229,84 @@ function buildTasks(data) {
   ];
 }
 
-function buildFlow(data) {
-  const total = Number(data.duration) || 40;
-  const topic = safeText(data.topic, "本節課主題");
-  const grade = safeText(data.grade, "學生");
-  const question = safeText(data.essentialQuestion, "本節核心問題");
-  const goal = safeText(data.learningGoal, "完成本節課學習目標");
-  const materials = safeText(data.materials, "課堂工具與學習素材");
-  const times = total >= 80 ? [10, 15, 25, 20, 10] : [5, 8, 13, 9, 5];
+function splitMinutes(total) {
+  const ratios = [0.18, 0.16, 0.27, 0.22, 0.17];
+  const minutes = ratios.map((ratio) => Math.max(4, Math.round(total * ratio)));
+  const diff = total - minutes.reduce((sum, minute) => sum + minute, 0);
+  minutes[minutes.length - 1] += diff;
+
+  return minutes;
+}
+
+function getClassReminder(status) {
+  const reminders = {
+    "安靜型": "先給 30 秒安靜思考，再邀請學生用便利貼或短句分享。",
+    "活潑型": "先講清楚音量、時間與發言順序，使用倒數計時收束活動。",
+    "程度落差大": "先確認 S3 學生有可完成的起點，再讓 S1 學生挑戰延伸問題。",
+    "需要更多秩序提醒": "每個階段開始前先說明任務、時間、完成標準與停止信號。"
+  };
+
+  return reminders[status] || reminders["安靜型"];
+}
+
+function buildFlowRows(input) {
+  const total = Number(input.flowDuration) || 45;
+  const topic = safeText(input.flowTopic, "本節課主題");
+  const goal = safeText(input.flowGoal, "完成本節課教學目標");
+  const question = safeText(input.flowQuestion, "本節核心問題");
+  const statusReminder = getClassReminder(input.classStatus);
+  const [selfStudy, think, discuss, express, summarize] = splitMinutes(total);
+  const discussionMode = input.useGroupDiscussion ? "小組分享答案，互相補充與修正。" : "先進行鄰座快速核對，再由教師帶全班確認。";
+  const threeTrackNote = input.useThreeTracks
+    ? "依程度提供 S1 挑戰、S2 標準、S3 支援任務，允許學生從可完成的軌道開始。"
+    : "若學生卡住，提供關鍵字、句型或範例，不另外分軌。";
+  const ticketTool = input.useExitTicket ? "Exit Ticket、便利貼、Google 表單" : "黑板整理、口頭回饋、學習單";
 
   return [
     {
-      title: "學：建立問題與自學方向",
-      time: times[0],
-      text: `${grade} 先閱讀或聆聽教材，圈出和「${topic}」有關的線索。教師提出核心問題：${question}。`
+      time: `${selfStudy} 分鐘`,
+      phase: "自學",
+      teacherTask: `提供「${topic}」教材、提示或範例，說明核心問題：${question}`,
+      studentTask: "閱讀教材、觀看提示，完成基礎理解任務，圈出看懂與不確定的地方。",
+      tools: "教材短文、提示卡、投影片、計時器",
+      reminder: `先讓學生自己試，不急著講解。${statusReminder}`,
+      differentiation: `S3 可先做圈選與配對，S2 完成基本題，S1 先找證據。${threeTrackNote}`
     },
     {
-      title: "思：個人嘗試與策略整理",
-      time: times[1],
-      text: `學生獨立嘗試第一版任務，根據程度選擇 S1 / S2 / S3。教師提醒本節目標：${goal}。`
+      time: `${think} 分鐘`,
+      phase: "思考",
+      teacherTask: `要求學生個人作答，提醒回答要對準教學目標：${goal}`,
+      studentTask: "個人整理想法，寫下答案、理由或還不確定的問題。",
+      tools: "學習單、筆記格、關鍵字提示",
+      reminder: "給足安靜作答時間，先不要讓學生直接討論。",
+      differentiation: "S1 寫理由與證據，S2 依步驟完成答案，S3 可用填空或選項完成核心理解。"
     },
     {
-      title: "達：小組互助與作品推進",
-      time: times[2],
-      text: `同組學生互測、互問、互改，使用素材：${materials}。教師巡迴協助卡關學生。`
+      time: `${discuss} 分鐘`,
+      phase: "討論",
+      teacherTask: "巡迴聽小組討論，記下值得全班分享的答案與常見迷思。",
+      studentTask: discussionMode,
+      tools: "小白板、便利貼、分組任務卡、計時器",
+      reminder: input.useGroupDiscussion ? "指定發言順序，要求每組至少補充一個理由。" : "討論時間較短時，用快速核對避免活動失焦。",
+      differentiation: input.useThreeTracks ? "讓不同軌道學生先分享自己能完成的部分，再互相補上理由與證據。" : "請程度好的學生負責追問理由，需要協助的學生先說出關鍵字。"
     },
     {
-      title: "展：展示解法與聚焦討論",
-      time: times[3],
-      text: "挑選不同軌道學生展示作品或答案，讓學生說明做法、問題與修正方式。"
+      time: `${express} 分鐘`,
+      phase: "表達",
+      teacherTask: "邀請學生或小組發表，追問理由、證據與不同想法。",
+      studentTask: "向全班說明答案，回應教師追問，聆聽其他組的補充。",
+      tools: "投影、黑板、小白板、發表句型",
+      reminder: "追問可以短而準，例如：你從哪裡看出來？還有不同想法嗎？",
+      differentiation: "S1 可發表完整推論，S2 補充證據，S3 可用一句話或選項說明理解。"
     },
     {
-      title: "評：收斂重點與回饋",
-      time: times[4],
-      text: "教師整理本節關鍵概念，學生完成 Exit Ticket，回報自己已懂、卡住與下一步想挑戰的內容。"
+      time: `${summarize} 分鐘`,
+      phase: "統整",
+      teacherTask: "整理重點、補充概念，連結下一次課程或生活情境。",
+      studentTask: input.useExitTicket ? "完成 Exit Ticket，寫下已懂、卡住與下一步想挑戰的內容。" : "完成一句課堂總結，說出今天最重要的學習。",
+      tools: ticketTool,
+      reminder: "收尾要回扣核心問題與教學目標，不只公布答案。",
+      differentiation: input.useExitTicket ? "Exit Ticket 可設計三種答題方式：完整句、句型填空、圈選加短答。" : "允許學生用口說、畫圖或短句完成回饋。"
     }
   ];
 }
@@ -238,14 +339,12 @@ function buildTickets(data) {
 function generateDesign(data) {
   return {
     tasks: buildTasks(data),
-    flow: buildFlow(data),
     tickets: buildTickets(data)
   };
 }
 
 function renderEmpty() {
   taskOutput.innerHTML = '<p class="empty-state">請先填寫課程資料，按下「產生三軌任務」。</p>';
-  flowOutput.innerHTML = '<li class="empty-state">尚未產生課堂流程。</li>';
   ticketOutput.innerHTML = '<p class="empty-state">尚未產生 Exit Ticket。</p>';
   copyTasksButton.disabled = true;
   copyStatus.textContent = "";
@@ -281,24 +380,40 @@ function renderGenerated(generated) {
     `)
     .join("");
 
-  flowOutput.innerHTML = generated.flow
-    .map((item) => `
-      <li class="flow-item">
-        <span class="flow-time">${escapeHtml(item.time)} 分鐘</span>
-        <div>
-          <h3>${escapeHtml(item.title)}</h3>
-          <p>${escapeHtml(item.text)}</p>
-        </div>
-      </li>
-    `)
-    .join("");
-
   ticketOutput.innerHTML = generated.tickets
     .map((ticket, index) => `
       <section class="ticket-item">
         <strong>第 ${index + 1} 題｜${escapeHtml(ticket.label)}</strong>
         <p>${escapeHtml(ticket.question)}</p>
       </section>
+    `)
+    .join("");
+}
+
+function renderFlowRows(rows) {
+  if (!rows.length) {
+    flowOutput.innerHTML = `
+      <tr>
+        <td class="empty-table" colspan="8">請先填寫流程資料，按下「產生課堂流程」。</td>
+      </tr>
+    `;
+    return;
+  }
+
+  flowOutput.innerHTML = rows
+    .map((row, index) => `
+      <tr>
+        <td contenteditable="true" data-index="${index}" data-field="time">${escapeHtml(row.time)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="phase">${escapeHtml(row.phase)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="teacherTask">${escapeHtml(row.teacherTask)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="studentTask">${escapeHtml(row.studentTask)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="tools">${escapeHtml(row.tools)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="reminder">${escapeHtml(row.reminder)}</td>
+        <td contenteditable="true" data-index="${index}" data-field="differentiation">${escapeHtml(row.differentiation)}</td>
+        <td>
+          <button class="delete-row-button" type="button" data-delete-index="${index}">刪除</button>
+        </td>
+      </tr>
     `)
     .join("");
 }
@@ -360,7 +475,9 @@ if (!isModernGenerated(state.generated)) {
   state.generated = null;
 }
 fillForm(state);
+fillFlowForm(state.flowInput);
 renderGenerated(state.generated);
+renderFlowRows(state.flowRows);
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -384,6 +501,29 @@ form.addEventListener("input", () => {
   saveState(state);
 });
 
+flowForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const flowInput = getFlowFormData();
+  state = {
+    ...state,
+    flowInput,
+    flowRows: buildFlowRows(flowInput)
+  };
+
+  saveState(state);
+  renderFlowRows(state.flowRows);
+});
+
+flowForm.addEventListener("input", () => {
+  state = {
+    ...state,
+    flowInput: getFlowFormData()
+  };
+
+  saveState(state);
+});
+
 resetButton.addEventListener("click", () => {
   state = { ...defaultData };
   localStorage.removeItem(STORAGE_KEY);
@@ -391,10 +531,70 @@ resetButton.addEventListener("click", () => {
   form.elements.duration.value = defaultData.duration;
   form.elements.taskType.value = defaultData.taskType;
   form.elements.sentenceSupport.checked = defaultData.sentenceSupport;
+  fillFlowForm(defaultFlowInput);
   renderEmpty();
+  renderFlowRows([]);
 });
 
 copyTasksButton.addEventListener("click", copyTasks);
+
+addFlowRowButton.addEventListener("click", () => {
+  const nextRow = {
+    time: "5 分鐘",
+    phase: "自訂",
+    teacherTask: "請輸入教師任務",
+    studentTask: "請輸入學生任務",
+    tools: "請輸入可使用工具",
+    reminder: "請輸入教師提醒語",
+    differentiation: "請輸入差異化提醒"
+  };
+
+  state = {
+    ...state,
+    flowRows: [...state.flowRows, nextRow]
+  };
+
+  saveState(state);
+  renderFlowRows(state.flowRows);
+});
+
+flowOutput.addEventListener("input", (event) => {
+  const cell = event.target.closest("[data-index][data-field]");
+
+  if (!cell) {
+    return;
+  }
+
+  const index = Number(cell.dataset.index);
+  const field = cell.dataset.field;
+  const nextRows = state.flowRows.map((row, rowIndex) => (
+    rowIndex === index ? { ...row, [field]: cell.textContent.trim() } : row
+  ));
+
+  state = {
+    ...state,
+    flowRows: nextRows
+  };
+
+  saveState(state);
+});
+
+flowOutput.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-delete-index]");
+
+  if (!button) {
+    return;
+  }
+
+  const index = Number(button.dataset.deleteIndex);
+  state = {
+    ...state,
+    flowRows: state.flowRows.filter((_, rowIndex) => rowIndex !== index)
+  };
+
+  saveState(state);
+  renderFlowRows(state.flowRows);
+});
 
 tabButtons.forEach((button) => {
   button.addEventListener("click", () => {
