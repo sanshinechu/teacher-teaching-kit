@@ -1,0 +1,351 @@
+:root {
+  --ink: #182230;
+  --muted: #667085;
+  --line: #d9e2ec;
+  --paper: #ffffff;
+  --surface: #f7fafc;
+  --blue: #2563eb;
+  --teal: #0f766e;
+  --rose: #be123c;
+  --amber: #b45309;
+  --shadow: 0 20px 54px rgba(24, 34, 48, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  color: var(--ink);
+  font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+  background:
+    linear-gradient(120deg, rgba(37, 99, 235, 0.08), transparent 34%),
+    linear-gradient(240deg, rgba(15, 118, 110, 0.1), transparent 36%),
+    #f3f7fb;
+}
+
+.app-shell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 28px 18px 42px;
+}
+
+.app-header {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.back-link {
+  width: fit-content;
+  color: var(--teal);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  text-decoration: underline;
+}
+
+.eyebrow,
+.section-label {
+  margin: 0 0 8px;
+  color: var(--teal);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 900px;
+  margin-bottom: 14px;
+  font-size: clamp(2.35rem, 6vw, 5.2rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.lead {
+  max-width: 760px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.8;
+}
+
+.workspace,
+.output-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.lesson-form {
+  padding: 22px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+label:has(textarea) {
+  grid-column: span 1;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+  padding: 12px 13px;
+}
+
+textarea {
+  min-height: 116px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 2px;
+}
+
+.action-row,
+.module-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.action-row {
+  margin-top: 18px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.primary-button,
+.secondary-button,
+.tab-button {
+  min-height: 48px;
+  padding: 11px 18px;
+}
+
+.primary-button {
+  background: var(--blue);
+  color: #ffffff;
+}
+
+.secondary-button,
+.tab-button {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.module-tabs {
+  margin: 18px 0;
+}
+
+.tab-button.is-active {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.output-panel {
+  display: none;
+  padding: 22px;
+}
+
+.output-panel.is-active {
+  display: grid;
+  gap: 18px;
+}
+
+.panel-heading h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.65rem, 4vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.task-column,
+.ticket-item,
+.flow-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.task-column {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 18px;
+}
+
+.task-column h3 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.task-column p,
+.flow-item p,
+.ticket-item p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.task-column ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.7;
+}
+
+.level-s1 {
+  border-top: 6px solid var(--blue);
+}
+
+.level-s2 {
+  border-top: 6px solid var(--teal);
+}
+
+.level-s3 {
+  border-top: 6px solid var(--rose);
+}
+
+.flow-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-item {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+.flow-time {
+  display: grid;
+  place-items: center;
+  min-height: 58px;
+  border-radius: 8px;
+  background: #e8f1ff;
+  color: var(--blue);
+  font-weight: 900;
+  text-align: center;
+}
+
+.flow-item h3 {
+  margin-bottom: 6px;
+  font-size: 1.15rem;
+}
+
+.ticket-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ticket-item {
+  padding: 16px;
+}
+
+.ticket-item strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--amber);
+  font-size: 1.05rem;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: #ffffff;
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .form-grid,
+  .task-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell {
+    padding: 20px 12px 32px;
+  }
+
+  .lesson-form,
+  .output-panel {
+    padding: 16px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .tab-button {
+    width: 100%;
+  }
+
+  .flow-item {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-time {
+    width: fit-content;
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
