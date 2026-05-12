@@ -168,10 +168,74 @@
 
         <article class="output-panel" id="ticketPanel">
           <div class="panel-heading">
-            <p class="section-label">Learning Feedback</p>
-            <h2>Exit Ticket</h2>
+            <div>
+              <p class="section-label">Learning Feedback</p>
+              <h2>Exit Ticket 產生器</h2>
+            </div>
+            <button class="copy-button" id="copyTicketButton" type="button">複製成文字</button>
           </div>
-          <div class="ticket-list" id="ticketOutput"></div>
+          <form class="lesson-form ticket-form" id="ticketForm">
+            <div class="form-grid">
+              <label>
+                <span>今日課程主題</span>
+                <input id="ticketTopic" name="ticketTopic" type="text" placeholder="例：海洋污染">
+              </label>
+              <label>
+                <span>題目數量</span>
+                <select id="ticketCount" name="ticketCount">
+                  <option value="3">3 題</option>
+                  <option value="4">4 題</option>
+                  <option value="5">5 題</option>
+                </select>
+              </label>
+              <label>
+                <span>語言模式</span>
+                <select id="ticketLanguage" name="ticketLanguage">
+                  <option value="中文">中文</option>
+                  <option value="英文">英文</option>
+                  <option value="中英雙語">中英雙語</option>
+                </select>
+              </label>
+              <label>
+                <span>今日學習目標</span>
+                <textarea id="ticketGoal" name="ticketGoal" rows="4" placeholder="例：學生能用過去式描述環境變化。"></textarea>
+              </label>
+              <label>
+                <span>想檢查的重點</span>
+                <input id="ticketFocus" name="ticketFocus" type="text" placeholder="例：單字、文法、閱讀理解、口說表達、情緒反思">
+              </label>
+              <label>
+                <span>回饋類型</span>
+                <select id="feedbackType" name="feedbackType">
+                  <option value="學習理解">學習理解</option>
+                  <option value="困難回報">困難回報</option>
+                  <option value="自我評分">自我評分</option>
+                  <option value="情緒狀態">情緒狀態</option>
+                  <option value="下次想學什麼">下次想學什麼</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="action-row">
+              <button class="primary-button" type="submit">產生 Exit Ticket</button>
+            </div>
+          </form>
+
+          <p class="copy-status" id="ticketCopyStatus" aria-live="polite"></p>
+          <section class="ticket-section" aria-labelledby="ticketPreviewTitle">
+            <h3 id="ticketPreviewTitle">畫面顯示</h3>
+            <div class="ticket-list" id="ticketOutput"></div>
+          </section>
+          <section class="student-ticket" aria-labelledby="studentTicketTitle">
+            <div class="student-ticket-header">
+              <div>
+                <p class="section-label">Student Version</p>
+                <h3 id="studentTicketTitle">學生填寫版</h3>
+              </div>
+              <span>Exit Ticket</span>
+            </div>
+            <div id="studentTicketOutput"></div>
+          </section>
         </article>
       </section>
     </main>

@@ -11,6 +11,15 @@ const defaultFlowInput = {
   classStatus: "安靜型"
 };
 
+const defaultTicketInput = {
+  ticketTopic: "",
+  ticketGoal: "",
+  ticketFocus: "",
+  ticketCount: "3",
+  ticketLanguage: "中文",
+  feedbackType: "學習理解"
+};
+
 const defaultData = {
   topic: "",
   essentialQuestion: "",
@@ -22,6 +31,8 @@ const defaultData = {
   sentenceSupport: false,
   flowInput: { ...defaultFlowInput },
   flowRows: [],
+  ticketInput: { ...defaultTicketInput },
+  ticketQuestions: [],
   generated: null
 };
 
@@ -31,11 +42,15 @@ const copyTasksButton = document.querySelector("#copyTasksButton");
 const copyStatus = document.querySelector("#copyStatus");
 const flowForm = document.querySelector("#flowForm");
 const addFlowRowButton = document.querySelector("#addFlowRowButton");
+const ticketForm = document.querySelector("#ticketForm");
+const copyTicketButton = document.querySelector("#copyTicketButton");
+const ticketCopyStatus = document.querySelector("#ticketCopyStatus");
 const tabButtons = document.querySelectorAll(".tab-button");
 const panels = document.querySelectorAll(".output-panel");
 const taskOutput = document.querySelector("#taskOutput");
 const flowOutput = document.querySelector("#flowOutput");
 const ticketOutput = document.querySelector("#ticketOutput");
+const studentTicketOutput = document.querySelector("#studentTicketOutput");
 
 function readState() {
   const saved = localStorage.getItem(STORAGE_KEY);
@@ -54,7 +69,12 @@ function readState() {
         ...defaultFlowInput,
         ...parsed.flowInput
       },
-      flowRows: Array.isArray(parsed.flowRows) ? parsed.flowRows : []
+      flowRows: Array.isArray(parsed.flowRows) ? parsed.flowRows : [],
+      ticketInput: {
+        ...defaultTicketInput,
+        ...parsed.ticketInput
+      },
+      ticketQuestions: Array.isArray(parsed.ticketQuestions) ? parsed.ticketQuestions : []
     };
   } catch {
     return { ...defaultData };
@@ -132,6 +152,29 @@ function fillFlowForm(flowInput) {
     }
 
     field.value = value;
+  });
+}
+
+function getTicketFormData() {
+  const formData = new FormData(ticketForm);
+
+  return {
+    ticketTopic: formData.get("ticketTopic").trim(),
+    ticketGoal: formData.get("ticketGoal").trim(),
+    ticketFocus: formData.get("ticketFocus").trim(),
+    ticketCount: formData.get("ticketCount"),
+    ticketLanguage: formData.get("ticketLanguage"),
+    feedbackType: formData.get("feedbackType")
+  };
+}
+
+function fillTicketForm(ticketInput) {
+  Object.entries(ticketInput).forEach(([key, value]) => {
+    const field = ticketForm.elements[key];
+
+    if (field) {
+      field.value = value;
+    }
   });
 }
 
@@ -336,6 +379,96 @@ function buildTickets(data) {
   ];
 }
 
+function makeQuestion(language, chinese, english) {
+  if (language === "英文") {
+    return english;
+  }
+
+  if (language === "中英雙語") {
+    return `${chinese}\n${english}`;
+  }
+
+  return chinese;
+}
+
+function buildExitTicketQuestions(input) {
+  const topic = safeText(input.ticketTopic, "今天的課程");
+  const goal = safeText(input.ticketGoal, "今天的學習目標");
+  const focus = safeText(input.ticketFocus, "今天的學習重點");
+  const language = input.ticketLanguage;
+  const count = Math.min(5, Math.max(3, Number(input.ticketCount) || 3));
+  const type = input.feedbackType;
+  const bank = [
+    {
+      type: "學習理解",
+      label: "學習理解",
+      question: makeQuestion(
+        language,
+        `今天關於「${topic}」，我學會了什麼？請寫出 1 個重點。`,
+        `What did I learn about "${topic}" today? Write one key point.`
+      )
+    },
+    {
+      type: "困難回報",
+      label: "困難回報",
+      question: makeQuestion(
+        language,
+        `關於「${focus}」，我還不太懂的是什麼？`,
+        `What do I still not understand about "${focus}"?`
+      )
+    },
+    {
+      type: "學習理解",
+      label: "重點句型",
+      question: makeQuestion(
+        language,
+        `請用一句話寫出今天的重點，對應學習目標：「${goal}」。`,
+        `Write one sentence to show today's key point: "${goal}".`
+      )
+    },
+    {
+      type: "學習理解",
+      label: "小組討論",
+      question: makeQuestion(
+        language,
+        "今天小組討論時，我的貢獻是什麼？",
+        "What was my contribution during group discussion today?"
+      )
+    },
+    {
+      type: "自我評分",
+      label: "自我評分",
+      question: makeQuestion(
+        language,
+        "我給自己今天的學習表現幾分？為什麼？",
+        "What score would I give my learning performance today? Why?"
+      )
+    },
+    {
+      type: "情緒狀態",
+      label: "情緒狀態",
+      question: makeQuestion(
+        language,
+        "離開教室前，我現在的心情是什麼？這和今天的學習有什麼關係？",
+        "How do I feel before leaving class? How is it connected to today's learning?"
+      )
+    },
+    {
+      type: "下次想學什麼",
+      label: "下次想學什麼",
+      question: makeQuestion(
+        language,
+        `下次如果繼續學「${topic}」，我想再練習或了解什麼？`,
+        `If we continue learning "${topic}" next time, what do I want to practice or understand more?`
+      )
+    }
+  ];
+  const preferred = bank.filter((item) => item.type === type);
+  const ordered = [...preferred, ...bank.filter((item) => item.type !== type)];
+
+  return ordered.slice(0, count);
+}
+
 function generateDesign(data) {
   return {
     tasks: buildTasks(data),
@@ -345,7 +478,6 @@ function generateDesign(data) {
 
 function renderEmpty() {
   taskOutput.innerHTML = '<p class="empty-state">請先填寫課程資料，按下「產生三軌任務」。</p>';
-  ticketOutput.innerHTML = '<p class="empty-state">尚未產生 Exit Ticket。</p>';
   copyTasksButton.disabled = true;
   copyStatus.textContent = "";
 }
@@ -380,14 +512,6 @@ function renderGenerated(generated) {
     `)
     .join("");
 
-  ticketOutput.innerHTML = generated.tickets
-    .map((ticket, index) => `
-      <section class="ticket-item">
-        <strong>第 ${index + 1} 題｜${escapeHtml(ticket.label)}</strong>
-        <p>${escapeHtml(ticket.question)}</p>
-      </section>
-    `)
-    .join("");
 }
 
 function renderFlowRows(rows) {
@@ -418,6 +542,42 @@ function renderFlowRows(rows) {
     .join("");
 }
 
+function renderTickets(questions, input) {
+  if (!questions.length) {
+    ticketOutput.innerHTML = '<p class="empty-state">請先填寫資料，按下「產生 Exit Ticket」。</p>';
+    studentTicketOutput.innerHTML = '<p class="empty-state">尚未產生學生填寫版。</p>';
+    copyTicketButton.disabled = true;
+    ticketCopyStatus.textContent = "";
+    return;
+  }
+
+  copyTicketButton.disabled = false;
+  ticketOutput.innerHTML = questions
+    .map((ticket, index) => `
+      <section class="ticket-item">
+        <strong>第 ${index + 1} 題｜${escapeHtml(ticket.label)}</strong>
+        <p>${escapeHtml(ticket.question).replaceAll("\n", "<br>")}</p>
+      </section>
+    `)
+    .join("");
+
+  studentTicketOutput.innerHTML = `
+    <div class="student-ticket-meta">
+      <span>主題：${escapeHtml(safeText(input.ticketTopic, "今日課程"))}</span>
+      <span>姓名：__________</span>
+      <span>日期：__________</span>
+    </div>
+    <ol class="student-ticket-list">
+      ${questions.map((ticket) => `
+        <li>
+          <p>${escapeHtml(ticket.question).replaceAll("\n", "<br>")}</p>
+          <div class="answer-line"></div>
+        </li>
+      `).join("")}
+    </ol>
+  `;
+}
+
 function tasksToText(tasks) {
   if (!tasks) {
     return "";
@@ -436,6 +596,20 @@ function tasksToText(tasks) {
       `延伸任務：${task.extension}`
     ].join("\n"))
     .join("\n\n");
+}
+
+function ticketsToText(questions, input) {
+  if (!questions.length) {
+    return "";
+  }
+
+  return [
+    `Exit Ticket：${safeText(input.ticketTopic, "今日課程")}`,
+    `學習目標：${safeText(input.ticketGoal, "今日學習目標")}`,
+    `檢查重點：${safeText(input.ticketFocus, "今日學習重點")}`,
+    "",
+    ...questions.map((ticket, index) => `${index + 1}. ${ticket.question}`)
+  ].join("\n");
 }
 
 async function copyTasks() {
@@ -460,6 +634,28 @@ async function copyTasks() {
   }
 }
 
+async function copyTickets() {
+  const text = ticketsToText(state.ticketQuestions, state.ticketInput);
+
+  if (!text) {
+    ticketCopyStatus.textContent = "尚未產生內容。";
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    ticketCopyStatus.textContent = "已複製，可以貼到講義或 Google Classroom。";
+  } catch {
+    const helper = document.createElement("textarea");
+    helper.value = text;
+    document.body.append(helper);
+    helper.select();
+    document.execCommand("copy");
+    helper.remove();
+    ticketCopyStatus.textContent = "已複製，可以貼到講義或 Google Classroom。";
+  }
+}
+
 function switchPanel(panelId) {
   tabButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.panel === panelId);
@@ -476,8 +672,10 @@ if (!isModernGenerated(state.generated)) {
 }
 fillForm(state);
 fillFlowForm(state.flowInput);
+fillTicketForm(state.ticketInput);
 renderGenerated(state.generated);
 renderFlowRows(state.flowRows);
+renderTickets(state.ticketQuestions, state.ticketInput);
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -524,6 +722,29 @@ flowForm.addEventListener("input", () => {
   saveState(state);
 });
 
+ticketForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const ticketInput = getTicketFormData();
+  state = {
+    ...state,
+    ticketInput,
+    ticketQuestions: buildExitTicketQuestions(ticketInput)
+  };
+
+  saveState(state);
+  renderTickets(state.ticketQuestions, state.ticketInput);
+});
+
+ticketForm.addEventListener("input", () => {
+  state = {
+    ...state,
+    ticketInput: getTicketFormData()
+  };
+
+  saveState(state);
+});
+
 resetButton.addEventListener("click", () => {
   state = { ...defaultData };
   localStorage.removeItem(STORAGE_KEY);
@@ -532,11 +753,14 @@ resetButton.addEventListener("click", () => {
   form.elements.taskType.value = defaultData.taskType;
   form.elements.sentenceSupport.checked = defaultData.sentenceSupport;
   fillFlowForm(defaultFlowInput);
+  fillTicketForm(defaultTicketInput);
   renderEmpty();
   renderFlowRows([]);
+  renderTickets([], defaultTicketInput);
 });
 
 copyTasksButton.addEventListener("click", copyTasks);
+copyTicketButton.addEventListener("click", copyTickets);
 
 addFlowRowButton.addEventListener("click", () => {
   const nextRow = {
