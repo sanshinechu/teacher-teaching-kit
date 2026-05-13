@@ -74,3 +74,18 @@
 - 更新根目錄 `index.html`、`_docs/project-index.md` 與 `projects/儀表板入口`，加入流程畫布入口。
 - 更新 `projects/儀表板入口`：所有工具卡片連結改為開新分頁，並加上 `rel="noopener noreferrer"`。
 - 修正 `projects/儀表板入口`：固定工具卡片標題與說明區列高，讓 AI 詠唱提示詞百寶箱與運算思維流程畫布的白色分隔線對齊。
+- 建立小專案：`projects/班級作品牆`，提供 Padlet 風格的學生程式作品展示牆。
+- 班級作品牆接入 Firebase Authentication 與 Firestore：學生使用 Google 帳號登入後，可在老師提供的班級連結中提交作品。
+- Firestore 資料結構：`projectWallClasses/{classId}` 與 `projectWallClasses/{classId}/submissions/{submissionId}`，每個班級有獨立作品子集合。
+- 權限設定：教師帳號可建立班級與刪除學生作品；學生可新增作品，但不能建立/切換班級，也不能刪除作品。
+- 教師介面修正：未登入與學生登入時隱藏「建立或切換班級」區塊，避免學生看到教師管理功能。
+- 縮圖功能：支援 Scratch 官方專題縮圖 API，並新增宜蘭縣 Scratch 平台 `scratch.ilc.edu.tw` 作品縮圖支援。
+- 縮圖載入策略改為樂觀載入：先顯示圖片，失敗時才回退備用文字，修正預覽不顯示問題。
+- 安全修正：Firebase Web API key 已從原始碼移除，改由 GitHub Actions secrets / variables 在部署時產生 `firebase-config.js`。
+- GitHub Pages 已切換為 workflow 部署模式，最近部署狀態成功；線上 `firebase-config.js` 回應 `200`。
+- 最新確認 commit：`bd80c8b 修正縮圖預覽不顯示：改為樂觀載入策略`，本機 `main` 已同步 `origin/main`。
+- 重新設計 `projects/儀表板入口`：使用 `frontend-design` 方向改成可愛、溫暖、適合國小教學現場的工具入口版面。
+- 儀表板入口新增主視覺摘要：9 個教學入口、3 種課堂情境、1 頁快速開啟。
+- 儀表板入口樣式改為柔和多色卡片、貼紙感圓角、背景小花、星形、圓點與彩虹裝飾，保留 9 個工具入口與原有連結。
+- 縮小主視覺高度與摘要列，讓使用者進入頁面後更早看到教學工具卡片。
+- 使用 Chrome 檢查桌機 1280px 與手機 390px，確認沒有橫向跑版，9 個工具卡片皆正常顯示。
