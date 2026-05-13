@@ -1,12 +1,4 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyD_NLwEV4WodCpjh4N0geiDy8MOVDYcFj0",
-  authDomain: "study-b2e59.firebaseapp.com",
-  projectId: "study-b2e59",
-  storageBucket: "study-b2e59.firebasestorage.app",
-  messagingSenderId: "852991047601",
-  appId: "1:852991047601:web:76f3002656b98cbe7e6f90",
-  measurementId: "G-KTEKK0L45T"
-};
+const firebaseConfig = window.TeacherProjectWallFirebaseConfig || {};
 
 const storageKey = "teacher-project-wall-v1";
 const screenshotBase = "https://image.thum.io/get/width/900/crop/640/noanimate/";
