@@ -222,7 +222,7 @@ function renderGallery() {
     image.src = work.thumbnailUrl || getThumbnailUrl(work.url);
     image.alt = `${work.title} 的網站縮圖`;
     image.addEventListener("error", () => {
-      image.removeAttribute("src");
+      image.src = "";
       image.alt = "";
     }, { once: true });
     title.textContent = work.title;
