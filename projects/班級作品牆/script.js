@@ -74,16 +74,20 @@ function normalizeUrl(value) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-function getScratchProjectId(url) {
-  const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
-  return match ? match[1] : null;
-}
-
 function getThumbnailUrl(url) {
-  const scratchId = getScratchProjectId(url);
-  if (scratchId) {
-    return `https://cdn2.scratch.mit.edu/get_image/project/${scratchId}/480x360.png`;
+  // 宜蘭縣 Scratch 平台
+  const ilcMatch = url.match(/s3\.ilc\.edu\.tw\/projects\/(\d+)/);
+  if (ilcMatch) {
+    return `https://s3.ilc.edu.tw/internalapi/project/thumbnail/${ilcMatch[1]}/get/`;
   }
+
+  // 官方 Scratch
+  const scratchMatch = url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
+  if (scratchMatch) {
+    return `https://cdn2.scratch.mit.edu/get_image/project/${scratchMatch[1]}/480x360.png`;
+  }
+
+  // 其他網站用截圖服務
   return `${screenshotBase}${encodeURIComponent(url)}`;
 }
 
