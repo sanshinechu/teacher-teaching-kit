@@ -218,13 +218,33 @@ h1 {
 .hero-title-row {
   display: grid;
   align-items: start;
-  gap: 6px;
+  gap: 8px;
+}
+
+.hero-kicker {
+  grid-template-rows: minmax(26px, auto) minmax(1.1em, auto);
+}
+
+.hero-title-row {
+  min-height: 30px;
+}
+
+.hero-label-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-height: 26px;
+}
+
+.hero-label {
+  line-height: 1.2;
 }
 
 .hero-dashboard-tag {
   width: fit-content;
   max-width: 100%;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   padding: 4px 9px;
   border-radius: 999px;
   color: var(--slate);
@@ -238,6 +258,16 @@ h1 {
   content: "★";
   margin-right: 6px;
   color: var(--yellow);
+}
+
+.hero-summary {
+  margin: 0;
+  color: var(--slate);
+  line-height: 1.2;
+  font-size: clamp(0.84rem, 0.96vw, 0.92rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .doodle-dot {
@@ -276,14 +306,14 @@ h1 {
 }
 
 .hero h2 {
-  margin-bottom: 6px;
+  margin-bottom: 0;
   width: min(100%, 620px);
-  font-size: clamp(1.85rem, 3.7vw, 2.95rem);
+  font-size: clamp(1.76rem, 3.52vw, 2.8rem);
   line-height: 1.05;
   letter-spacing: 0;
 }
 
-.hero p {
+.hero-copy > p {
   max-width: 680px;
   margin-bottom: 0;
   color: var(--slate);
@@ -571,9 +601,29 @@ time {
   .hero-kicker {
     display: grid;
     align-items: start;
+    gap: 6px;
+    grid-template-rows: minmax(24px, auto) minmax(1.05em, auto);
+    padding-right: 0;
+    margin-bottom: 8px;
+  }
+
+  .hero-label-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
     gap: 8px;
-    padding-right: 104px;
-    margin-bottom: 10px;
+    padding-right: 82px;
+    min-height: 24px;
+  }
+
+  .hero-label {
+    flex: 0 0 auto;
+  }
+
+  .hero-summary {
+    min-width: 0;
+    max-width: none;
+    font-size: 0.6rem;
+    line-height: 1.2;
   }
 
   .hero-dashboard-tag {
@@ -589,13 +639,14 @@ time {
   .hero h2 {
     width: 100%;
     margin-top: 0;
-    font-size: clamp(1.62rem, 7.6vw, 2.08rem);
+    margin-bottom: 0;
+    font-size: clamp(1.54rem, 7.2vw, 1.98rem);
     line-height: 1.02;
   }
 
-  .hero p {
-    line-height: 1.62;
-    max-width: 19em;
+  .hero-copy > p {
+    line-height: 1.5;
+    max-width: 100%;
   }
 
   .cute-patterns {
