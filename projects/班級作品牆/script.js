@@ -488,14 +488,17 @@ function updatePreview() {
 
   previewTimer = setTimeout(() => {
     const img = elements.previewImage;
-    img.onload = () => {
-      elements.previewFrame.classList.remove("is-loading");
-      elements.previewFrame.classList.add("has-image");
-    };
+    const thumbnailUrl = getThumbnailUrl(url);
+
     img.onerror = () => {
-      elements.previewFrame.classList.remove("is-loading", "has-image");
+      elements.previewFrame.classList.remove("has-image", "is-loading");
+      img.src = "";
     };
-    img.src = getThumbnailUrl(url);
+    img.onload = null;
+    img.src = thumbnailUrl;
+
+    elements.previewFrame.classList.remove("is-loading");
+    elements.previewFrame.classList.add("has-image");
   }, 700);
 }
 
