@@ -258,7 +258,6 @@ function render() {
 async function initFirebase() {
   if (!hasFirebaseConfig()) {
     loadLocalState();
-    state.user = { uid: "local-demo", displayName: "示範使用者", email: "" };
     render();
     return;
   }
@@ -533,6 +532,5 @@ elements.submissionForm.addEventListener("submit", (event) => {
 initFirebase().catch((error) => {
   console.error(error);
   loadLocalState();
-  state.user = { uid: "local-demo", displayName: "示範使用者", email: "" };
   render();
 });
