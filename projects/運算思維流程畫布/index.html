@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>運算思維流程畫布</title>
+    <meta name="description" content="免登入的極簡流程圖白板，用來快速拆解程式邏輯與遊戲機制。">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Flowchart Whiteboard</p>
+          <h1>運算思維流程畫布</h1>
+        </div>
+        <a class="home-link" href="../../">回工具首頁</a>
+      </header>
+
+      <section class="toolbar" aria-label="流程圖工具列">
+        <div class="tool-group" aria-label="新增形狀">
+          <button type="button" class="shape-button" data-shape="start">開始</button>
+          <button type="button" class="shape-button" data-shape="process">執行</button>
+          <button type="button" class="shape-button" data-shape="decision">判斷</button>
+          <button type="button" class="shape-button" data-shape="input">輸入</button>
+          <button type="button" class="shape-button" data-shape="output">輸出</button>
+        </div>
+        <div class="tool-group" aria-label="操作">
+          <button type="button" id="connect-mode">連線模式</button>
+          <button type="button" id="delete-selected">刪除選取</button>
+          <button type="button" id="clear-board">清空畫布</button>
+          <button type="button" id="export-board">下載 PNG</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="side-panel" aria-label="使用情境">
+          <h2>課堂用法</h2>
+          <ul>
+            <li>先用「開始」定義專案入口。</li>
+            <li>用「判斷」拆出如果、否則的條件。</li>
+            <li>進入積木拼貼前，先把遊戲規則畫成流程。</li>
+          </ul>
+          <p class="hint">點兩下圖形可改文字；拖曳圖形可移動；開啟連線模式後依序點兩個圖形即可連線。</p>
+        </aside>
+
+        <section class="board-wrap" aria-label="白板區">
+          <svg id="flow-lines" aria-hidden="true"></svg>
+          <div id="board" class="board" role="application" aria-label="流程圖白板"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

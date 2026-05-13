@@ -172,6 +172,10 @@ h3 {
   background: linear-gradient(135deg, #0f766e, #2563eb);
 }
 
+.flowchart {
+  background: linear-gradient(135deg, #334155, #0f766e);
+}
+
 .timer {
   background: linear-gradient(135deg, #7c3aed, #ec4899);
 }
