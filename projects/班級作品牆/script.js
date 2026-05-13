@@ -74,7 +74,16 @@ function normalizeUrl(value) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+function getScratchProjectId(url) {
+  const match = url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
+  return match ? match[1] : null;
+}
+
 function getThumbnailUrl(url) {
+  const scratchId = getScratchProjectId(url);
+  if (scratchId) {
+    return `https://cdn2.scratch.mit.edu/get_image/project/${scratchId}/480x360.png`;
+  }
   return `${screenshotBase}${encodeURIComponent(url)}`;
 }
 
@@ -219,7 +228,7 @@ function renderGallery() {
     const deleteButton = card.querySelector(".delete-work-button");
 
     link.href = work.url;
-    image.src = work.thumbnailUrl || getThumbnailUrl(work.url);
+    image.src = getThumbnailUrl(work.url);
     image.alt = `${work.title} 的網站縮圖`;
     image.addEventListener("error", () => {
       image.src = "";
