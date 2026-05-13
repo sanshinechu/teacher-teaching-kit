@@ -20,7 +20,10 @@
     "providers": {
       "googleSignIn": {
         "oAuthBrandDisplayName": "班級作品牆",
-        "supportEmail": "shine@tmail.ilc.edu.tw"
+        "supportEmail": "shine@tmail.ilc.edu.tw",
+        "authorizedRedirectUris": [
+          "https://sanshinechu.github.io"
+        ]
       }
     }
   }
