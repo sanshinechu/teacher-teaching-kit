@@ -72,3 +72,4 @@
 - 建立小專案：`projects/運算思維流程畫布`。
 - 運算思維流程畫布初版：提供開始、執行、判斷、輸入、輸出等流程圖形狀，可拖曳、改文字、連線、清空與下載 PNG。
 - 更新根目錄 `index.html`、`_docs/project-index.md` 與 `projects/儀表板入口`，加入流程畫布入口。
+- 更新 `projects/儀表板入口`：所有工具卡片連結改為開新分頁，並加上 `rel="noopener noreferrer"`。
