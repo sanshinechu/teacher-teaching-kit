@@ -570,23 +570,25 @@ time {
   .hero-kicker {
     display: grid;
     align-items: start;
-    gap: 7px;
-    padding-right: 104px;
+    gap: 8px;
+    padding-right: 118px;
+    margin-bottom: 10px;
   }
 
   .hero-identity {
     width: fit-content;
     max-width: 100%;
-    margin-bottom: 2px;
+    margin-bottom: 0;
     padding: 3px 7px;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     white-space: nowrap;
     line-height: 1.35;
   }
 
   .hero h2 {
     width: 100%;
-    font-size: clamp(1.78rem, 8.4vw, 2.28rem);
+    margin-top: 0;
+    font-size: clamp(1.72rem, 8vw, 2.2rem);
     line-height: 1.02;
   }
 
