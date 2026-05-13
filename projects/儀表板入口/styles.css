@@ -168,6 +168,10 @@ h3 {
   background: linear-gradient(135deg, var(--pink), var(--amber));
 }
 
+.prompt {
+  background: linear-gradient(135deg, #0f766e, #2563eb);
+}
+
 .timer {
   background: linear-gradient(135deg, #7c3aed, #ec4899);
 }

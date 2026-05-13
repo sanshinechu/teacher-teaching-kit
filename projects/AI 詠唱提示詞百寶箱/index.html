@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 詠唱提示詞百寶箱</title>
+    <meta name="description" content="給學生快速複製、修改與組合生成式 AI 提示詞的教學面板。">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Prompt Library</p>
+          <h1 id="page-title">AI 詠唱提示詞百寶箱</h1>
+          <p class="hero-copy">點選分類、複製基礎提示詞，再把括號中的變數改成自己的想法。</p>
+        </div>
+        <a class="home-link" href="../../">回工具首頁</a>
+      </section>
+
+      <section class="control-panel" aria-label="提示詞篩選">
+        <div class="search-box">
+          <label for="prompt-search">搜尋提示詞</label>
+          <input id="prompt-search" type="search" placeholder="例如：影像、劇本、光線、角色">
+        </div>
+        <div class="tabs" role="tablist" aria-label="提示詞分類">
+          <button class="tab active" type="button" data-filter="all">全部</button>
+          <button class="tab" type="button" data-filter="image">影像生成</button>
+          <button class="tab" type="button" data-filter="story">劇本創作</button>
+          <button class="tab" type="button" data-filter="learning">學習任務</button>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="提示詞工作區">
+        <div class="prompt-grid" id="prompt-grid"></div>
+
+        <aside class="editor-panel" aria-labelledby="editor-title">
+          <div>
+            <p class="panel-label">Edit and Copy</p>
+            <h2 id="editor-title">我的修改版提示詞</h2>
+          </div>
+          <textarea id="prompt-editor" spellcheck="false" placeholder="先點一張提示詞卡片，或直接在這裡輸入自己的指令。"></textarea>
+          <div class="editor-actions">
+            <button class="primary-action" type="button" id="copy-editor">複製修改版</button>
+            <button class="secondary-action" type="button" id="clear-editor">清空</button>
+          </div>
+          <p class="copy-status" id="copy-status" aria-live="polite"></p>
+        </aside>
+      </section>
+    </main>
+
+    <template id="prompt-card-template">
+      <article class="prompt-card">
+        <div class="card-head">
+          <span class="category-pill"></span>
+          <button class="copy-button" type="button">複製</button>
+        </div>
+        <h2></h2>
+        <p class="prompt-purpose"></p>
+        <pre class="prompt-text"></pre>
+        <dl class="variables"></dl>
+      </article>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>
