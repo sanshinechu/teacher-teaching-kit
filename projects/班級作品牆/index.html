@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>班級作品牆</title>
+    <meta name="description" content="讓學生以 Google 帳號登入後，上傳程式作品連結並自動顯示縮圖的班級作品牆。">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="wall-app" aria-labelledby="app-title">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Student Gallery</p>
+            <h1 id="app-title">班級作品牆</h1>
+            <p class="subtitle">建立班級入口，學生登入後提交 Scratch、GitHub Pages、CodePen、Canva 或其他程式作品連結。</p>
+          </div>
+          <div class="auth-card">
+            <span id="authStatus">示範模式</span>
+            <button id="loginButton" class="ghost-button" type="button">使用 Google 登入</button>
+            <button id="logoutButton" class="ghost-button is-hidden" type="button">登出</button>
+          </div>
+        </header>
+
+        <section id="setupNotice" class="notice">
+          目前尚未填入 Firebase 設定，資料會保存在這台電腦的瀏覽器中。若要讓不同裝置共用班級與作品，請依 README 設定 Firebase Auth 與 Firestore。
+        </section>
+
+        <section class="teacher-panel" aria-labelledby="class-title">
+          <div>
+            <p class="eyebrow">Teacher</p>
+            <h2 id="class-title">建立或切換班級</h2>
+          </div>
+          <form id="classForm" class="class-form">
+            <label>
+              班級名稱
+              <input id="classNameInput" type="text" placeholder="例如：五年二班 Scratch 專題" required>
+            </label>
+            <button class="primary-button" type="submit">建立班級</button>
+          </form>
+          <div id="classList" class="class-list" aria-label="班級清單"></div>
+        </section>
+
+        <section id="activeClassPanel" class="active-class is-empty" aria-live="polite">
+          <div>
+            <p class="eyebrow">Current Class</p>
+            <h2 id="activeClassName">尚未選擇班級</h2>
+            <p id="activeClassHint">請先建立班級，或使用老師提供的班級連結進入。</p>
+          </div>
+          <button id="copyClassLinkButton" class="ghost-button" type="button" disabled>複製班級連結</button>
+        </section>
+
+        <section class="submission-layout">
+          <form id="submissionForm" class="submission-form" aria-labelledby="submit-title">
+            <div>
+              <p class="eyebrow">Submit</p>
+              <h2 id="submit-title">上傳作品連結</h2>
+            </div>
+            <label>
+              作品標題
+              <input id="titleInput" type="text" placeholder="例如：我的迷宮遊戲" required>
+            </label>
+            <label>
+              作品網址
+              <input id="urlInput" type="url" placeholder="https://..." required>
+            </label>
+            <label>
+              作品說明
+              <textarea id="noteInput" rows="4" placeholder="簡短說明作品特色、使用的程式技巧或想請同學回饋的地方。"></textarea>
+            </label>
+            <button class="primary-button" type="submit">送出作品</button>
+          </form>
+
+          <aside class="preview-panel" aria-labelledby="preview-title">
+            <p class="eyebrow">Preview</p>
+            <h2 id="preview-title">縮圖預覽</h2>
+            <div class="preview-frame">
+              <img id="previewImage" alt="" src="">
+              <span id="previewPlaceholder">輸入作品網址後會產生縮圖</span>
+            </div>
+          </aside>
+        </section>
+
+        <section class="gallery-section" aria-labelledby="gallery-title">
+          <div class="gallery-heading">
+            <div>
+              <p class="eyebrow">Gallery</p>
+              <h2 id="gallery-title">班級作品</h2>
+            </div>
+            <span id="submissionCount" class="count-pill">0 件作品</span>
+          </div>
+          <div id="galleryGrid" class="gallery-grid"></div>
+        </section>
+      </section>
+    </main>
+
+    <template id="classButtonTemplate">
+      <button class="class-chip" type="button"></button>
+    </template>
+
+    <template id="cardTemplate">
+      <article class="work-card">
+        <a class="thumb-link" target="_blank" rel="noopener noreferrer">
+          <img class="work-thumb" alt="">
+          <span class="thumb-fallback">開啟作品</span>
+        </a>
+        <div class="work-copy">
+          <h3></h3>
+          <p class="work-note"></p>
+          <p class="work-meta"></p>
+          <button class="delete-work-button is-hidden" type="button">刪除作品</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="script.js" type="module"></script>
+  </body>
+</html>
