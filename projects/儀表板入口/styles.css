@@ -553,7 +553,7 @@ time {
   .hero {
     min-height: auto;
     grid-template-columns: 1fr;
-    padding: 24px 16px 16px;
+    padding: 26px 16px 17px;
   }
 
   .hero::before {
@@ -563,15 +563,15 @@ time {
   .hero::after {
     right: 14px;
     top: 14px;
-    padding: 7px 10px;
-    font-size: 0.78rem;
+    padding: 6px 9px;
+    font-size: 0.74rem;
   }
 
   .hero-kicker {
     display: grid;
     align-items: start;
-    gap: 6px;
-    padding-right: 118px;
+    gap: 7px;
+    padding-right: 104px;
   }
 
   .hero-identity {
@@ -586,12 +586,13 @@ time {
 
   .hero h2 {
     width: 100%;
-    font-size: clamp(1.92rem, 9vw, 2.45rem);
+    font-size: clamp(1.78rem, 8.4vw, 2.28rem);
     line-height: 1.02;
   }
 
   .hero p {
-    line-height: 1.5;
+    line-height: 1.62;
+    max-width: 19em;
   }
 
   .cute-patterns {
