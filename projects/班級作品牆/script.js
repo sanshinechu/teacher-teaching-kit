@@ -457,17 +457,33 @@ async function signOutCurrentUser() {
   await state.firebase.signOut(state.firebase.auth);
 }
 
+let previewTimer = null;
+
 function updatePreview() {
   const url = normalizeUrl(elements.urlInput.value);
 
+  clearTimeout(previewTimer);
+
   if (!url) {
-    elements.previewFrame.classList.remove("has-image");
-    elements.previewImage.removeAttribute("src");
+    elements.previewFrame.classList.remove("has-image", "is-loading");
+    elements.previewImage.src = "";
     return;
   }
 
-  elements.previewFrame.classList.add("has-image");
-  elements.previewImage.src = getThumbnailUrl(url);
+  elements.previewFrame.classList.add("is-loading");
+  elements.previewFrame.classList.remove("has-image");
+
+  previewTimer = setTimeout(() => {
+    const img = elements.previewImage;
+    img.onload = () => {
+      elements.previewFrame.classList.remove("is-loading");
+      elements.previewFrame.classList.add("has-image");
+    };
+    img.onerror = () => {
+      elements.previewFrame.classList.remove("is-loading", "has-image");
+    };
+    img.src = getThumbnailUrl(url);
+  }, 700);
 }
 
 elements.loginButton.addEventListener("click", () => {

@@ -277,16 +277,37 @@ button:focus-visible {
   height: 100%;
   min-height: 260px;
   object-fit: cover;
+  display: none;
+}
+
+.preview-frame.has-image img {
+  display: block;
 }
 
 #previewPlaceholder {
   position: absolute;
   color: var(--muted);
   font-weight: 800;
+  text-align: center;
+  padding: 0 16px;
 }
 
-.preview-frame.has-image #previewPlaceholder {
+.preview-frame.has-image #previewPlaceholder,
+.preview-frame.is-loading #previewPlaceholder {
   display: none;
+}
+
+.preview-frame::after {
+  content: "";
+  display: none;
+}
+
+.preview-frame.is-loading::after {
+  content: "縮圖產生中…";
+  display: block;
+  position: absolute;
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .count-pill {
