@@ -222,8 +222,7 @@ h1 {
   flex-wrap: wrap;
 }
 
-.hero-role,
-.hero-name {
+.hero-identity {
   margin: 0 0 8px;
   padding: 4px 9px;
   border-radius: 999px;
@@ -234,14 +233,10 @@ h1 {
   box-shadow: 0 8px 18px rgba(91, 141, 239, 0.1);
 }
 
-.hero-role::before {
+.hero-identity::before {
   content: "★";
   margin-right: 6px;
   color: var(--yellow);
-}
-
-.hero-name {
-  color: #0f766e;
 }
 
 .doodle-dot {
@@ -570,6 +565,21 @@ time {
     top: 18px;
     padding: 9px 12px;
     font-size: 0.86rem;
+  }
+
+  .hero-kicker {
+    display: grid;
+    align-items: start;
+    gap: 4px;
+    padding-right: 0;
+  }
+
+  .hero-identity {
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    line-height: 1.35;
   }
 
   .cute-patterns {
