@@ -112,3 +112,4 @@
 - 更新 Firestore rules：`aiMusicMvWorks` 公開讀取、僅 `shine@tmail.ilc.edu.tw` 可寫入，並驗證作品欄位格式。
 - 已部署 Firestore rules 到 Firebase 專案 `study-b2e59`，規則編譯與 release 成功。
 - AI 音樂 MV 成果集加入縮圖功能：可手動填入 `thumbnailUrl`，若作品是 YouTube 影片則自動產生影片縮圖。
+- 為已發佈的 3 支 AI 音樂 MV 產生專屬 SVG 縮圖，並依 YouTube 影片 ID 自動套用。

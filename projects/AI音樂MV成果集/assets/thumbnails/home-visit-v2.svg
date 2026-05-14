@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">未來的小一新生家訪 V2 縮圖</title>
+  <desc id="desc">粉紅夕光與家訪路線風格的音樂 MV 縮圖。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#c8456a"/>
+      <stop offset="0.52" stop-color="#e85d75"/>
+      <stop offset="1" stop-color="#ffb36f"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#5f1730" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" rx="54" fill="url(#bg)"/>
+  <circle cx="1076" cy="138" r="160" fill="#fff3d8" opacity="0.42"/>
+  <circle cx="214" cy="578" r="230" fill="#ffffff" opacity="0.12"/>
+  <g opacity="0.2" stroke="#fff" stroke-width="4" fill="none">
+    <path d="M0 600c128-76 242-94 342-54 148 60 257 34 384-70 132-109 263-126 393-50 57 33 111 49 161 48"/>
+    <path d="M0 528c116-70 221-86 315-48 140 57 246 30 363-66 126-102 252-120 374-49 75 44 150 56 228 38"/>
+  </g>
+  <g transform="translate(112 106)" filter="url(#shadow)">
+    <rect x="0" y="0" width="470" height="350" rx="36" fill="#fff7ec"/>
+    <path d="M76 202l158-128 160 128v96H76z" fill="#e85d75"/>
+    <path d="M120 198l114-92 116 92" fill="none" stroke="#7b2442" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="196" y="214" width="82" height="84" rx="10" fill="#fff3d8"/>
+    <circle cx="376" cy="92" r="36" fill="#f1b84b"/>
+  </g>
+  <g transform="translate(710 112)" filter="url(#shadow)">
+    <circle cx="160" cy="160" r="152" fill="#fff" opacity="0.18"/>
+    <path d="M162 62v178c-25-16-67-14-90 7-35 31-18 84 35 92 57 8 92-25 92-76V142l132 44V98z" fill="#fff"/>
+  </g>
+  <g transform="translate(126 490)">
+    <rect x="0" y="-48" width="872" height="160" rx="26" fill="#441427" opacity="0.68"/>
+    <text x="34" y="14" fill="#ffffff" font-family="'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="52" font-weight="800">未來的小一新生家訪 V2</text>
+    <text x="36" y="78" fill="#ffe8bf" font-family="'Microsoft JhengHei', 'Noto Sans TC', sans-serif" font-size="34" font-weight="700">用音樂說一段溫柔的校園故事</text>
+  </g>
+</svg>
