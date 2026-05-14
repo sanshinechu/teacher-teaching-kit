@@ -450,6 +450,7 @@ dd {
 }
 
 .cover {
+  position: relative;
   min-height: 138px;
   display: grid;
   place-items: center;
@@ -461,7 +462,21 @@ dd {
   overflow: hidden;
 }
 
+.cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover img + span {
+  opacity: 0;
+}
+
 .cover span {
+  position: relative;
+  z-index: 1;
   width: 58px;
   aspect-ratio: 1;
   display: grid;

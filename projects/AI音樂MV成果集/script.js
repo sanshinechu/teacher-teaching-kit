@@ -12,6 +12,7 @@ const seedWorks = [
     classroom: "適合校慶、成果發表或班級回顧影片開場。",
     videoUrl: "",
     workUrl: "",
+    thumbnailUrl: "",
     color: "#e85d75"
   },
   {
@@ -23,6 +24,7 @@ const seedWorks = [
     classroom: "適合 Scratch 專題發表、遊戲設計課與作品展。",
     videoUrl: "",
     workUrl: "",
+    thumbnailUrl: "",
     color: "#384c9f"
   },
   {
@@ -34,6 +36,7 @@ const seedWorks = [
     classroom: "適合畢業、母親節、教師節與期末成果分享。",
     videoUrl: "",
     workUrl: "",
+    thumbnailUrl: "",
     color: "#1c9a93"
   }
 ];
@@ -54,6 +57,7 @@ const toolsInput = document.querySelector("#tools-input");
 const classroomInput = document.querySelector("#classroom-input");
 const videoUrlInput = document.querySelector("#video-url-input");
 const workUrlInput = document.querySelector("#work-url-input");
+const thumbnailUrlInput = document.querySelector("#thumbnail-url-input");
 const colorInput = document.querySelector("#color-input");
 const cancelEditButton = document.querySelector("#cancel-edit-button");
 const featuredScreen = document.querySelector("#featured-screen");
@@ -90,7 +94,16 @@ function normalizeUrl(value) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-function getEmbedUrl(url) {
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function getYoutubeVideoId(url) {
   if (!url) {
     return "";
   }
@@ -98,18 +111,44 @@ function getEmbedUrl(url) {
   try {
     const parsedUrl = new URL(url);
     if (parsedUrl.hostname.includes("youtu.be")) {
-      return `https://www.youtube.com/embed/${parsedUrl.pathname.replace("/", "")}`;
+      return parsedUrl.pathname.replace("/", "");
     }
 
     if (parsedUrl.hostname.includes("youtube.com")) {
-      const videoId = parsedUrl.searchParams.get("v");
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      return parsedUrl.searchParams.get("v") || "";
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function getEmbedUrl(url) {
+  if (!url) {
+    return "";
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const videoId = getYoutubeVideoId(url);
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
     }
 
     return url;
   } catch {
     return "";
   }
+}
+
+function getThumbnailUrl(work) {
+  if (work.thumbnailUrl) {
+    return work.thumbnailUrl;
+  }
+
+  const videoId = getYoutubeVideoId(work.videoUrl);
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
 }
 
 function renderAuth() {
@@ -125,21 +164,23 @@ function renderGallery(filter = state.activeFilter) {
   const works = filter === "all" ? state.works : state.works.filter((work) => work.category === filter);
   gallery.innerHTML = works
     .map((work) => {
-      const tags = [work.category, ...work.tools].map((tag) => `<span>${tag}</span>`).join("");
+      const tags = [work.category, ...work.tools].map((tag) => `<span>${escapeHtml(tag)}</span>`).join("");
+      const thumbnailUrl = getThumbnailUrl(work);
+      const thumbnailMarkup = thumbnailUrl ? `<img src="${escapeHtml(thumbnailUrl)}" alt="${escapeHtml(work.title)} 縮圖" loading="lazy">` : "";
       const adminActions = isTeacherUser()
-        ? `<button class="edit-button" type="button" data-id="${work.id}">編輯</button>
-          <button class="delete-button" type="button" data-id="${work.id}">刪除</button>`
+        ? `<button class="edit-button" type="button" data-id="${escapeHtml(work.id)}">編輯</button>
+          <button class="delete-button" type="button" data-id="${escapeHtml(work.id)}">刪除</button>`
         : "";
       return `
-        <article class="work-card" style="--card-color: ${work.color}">
-          <div class="cover" aria-hidden="true"><span>♪</span></div>
+        <article class="work-card" style="--card-color: ${escapeHtml(work.color)}">
+          <div class="cover">${thumbnailMarkup}<span aria-hidden="true">♪</span></div>
           <div>
-            <h3>${work.title}</h3>
-            <p>${work.description}</p>
+            <h3>${escapeHtml(work.title)}</h3>
+            <p>${escapeHtml(work.description)}</p>
             <div class="tag-row">${tags}</div>
           </div>
           <div class="card-actions">
-            <button class="select-button" type="button" data-id="${work.id}">查看作品</button>
+            <button class="select-button" type="button" data-id="${escapeHtml(work.id)}">查看作品</button>
             ${adminActions}
           </div>
         </article>
@@ -206,6 +247,7 @@ function editWork(workId) {
   classroomInput.value = work.classroom || "";
   videoUrlInput.value = work.videoUrl || "";
   workUrlInput.value = work.workUrl || "";
+  thumbnailUrlInput.value = work.thumbnailUrl || "";
   colorInput.value = work.color || "#e85d75";
   adminPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -219,6 +261,7 @@ function getFormPayload() {
     classroom: classroomInput.value.trim(),
     videoUrl: normalizeUrl(videoUrlInput.value),
     workUrl: normalizeUrl(workUrlInput.value),
+    thumbnailUrl: normalizeUrl(thumbnailUrlInput.value),
     color: colorInput.value
   };
 }

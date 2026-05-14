@@ -22,6 +22,7 @@ service cloud.firestore {
           'classroom',
           'videoUrl',
           'workUrl',
+          'thumbnailUrl',
           'color',
           'createdAt',
           'updatedAt'
@@ -43,6 +44,9 @@ service cloud.firestore {
         && request.resource.data.workUrl is string
         && request.resource.data.workUrl.size() <= 500
         && (request.resource.data.workUrl == '' || request.resource.data.workUrl.matches('https?://.*'))
+        && request.resource.data.thumbnailUrl is string
+        && request.resource.data.thumbnailUrl.size() <= 500
+        && (request.resource.data.thumbnailUrl == '' || request.resource.data.thumbnailUrl.matches('https?://.*'))
         && request.resource.data.color is string
         && request.resource.data.color.matches('#[0-9a-fA-F]{6}');
     }

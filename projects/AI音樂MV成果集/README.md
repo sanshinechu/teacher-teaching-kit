@@ -29,8 +29,9 @@ AI音樂MV成果集/
 1. 開啟 `index.html` 查看成果集頁面。
 2. 部署到 GitHub Pages 後，使用教師 Google 帳號登入。
 3. 登入帳號為 `shine@tmail.ilc.edu.tw` 時，頁面會出現管理表單，可新增、編輯或刪除 MV 作品。
-4. 若作品是 YouTube 影片，將網址填入 `videoUrl`，頁面會自動轉成嵌入播放器。
-5. 若作品放在其他平台，可將網址填入 `workUrl`，按鈕會開啟外部作品頁。
+4. 若作品是 YouTube 影片，將網址填入 `videoUrl`，頁面會自動轉成嵌入播放器，並自動產生 YouTube 縮圖。
+5. 若想使用自訂縮圖，將圖片網址填入 `thumbnailUrl`。
+6. 若作品放在其他平台，可將網址填入 `workUrl`，按鈕會開啟外部作品頁。
 
 ## Firebase 資料
 
