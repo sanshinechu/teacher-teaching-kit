@@ -13,6 +13,42 @@ service cloud.firestore {
         && request.auth.token.email == 'shine@tmail.ilc.edu.tw';
     }
 
+    function isDashboardModule(moduleId) {
+      return moduleId in [
+        'profile',
+        'picker',
+        'links',
+        'prompt',
+        'flowchart',
+        'gallery',
+        'music',
+        'timer',
+        'quotes',
+        'mood'
+      ];
+    }
+
+    function isValidDashboardCounter(moduleId) {
+      return isDashboardModule(moduleId)
+        && request.resource.data.keys().hasOnly([
+          'moduleId',
+          'title',
+          'href',
+          'count',
+          'updatedAt'
+        ])
+        && request.resource.data.moduleId == moduleId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.href is string
+        && request.resource.data.href.size() > 0
+        && request.resource.data.href.size() <= 200
+        && request.resource.data.count is int
+        && request.resource.data.count > 0
+        && request.resource.data.updatedAt == request.time;
+    }
+
     function isValidMusicMvWork() {
       return request.resource.data.keys().hasOnly([
           'title',
@@ -49,6 +85,15 @@ service cloud.firestore {
         && (request.resource.data.thumbnailUrl == '' || request.resource.data.thumbnailUrl.matches('https?://.*'))
         && request.resource.data.color is string
         && request.resource.data.color.matches('#[0-9a-fA-F]{6}');
+    }
+
+    match /dashboardModuleCounters/{moduleId} {
+      allow read: if true;
+      allow create: if isValidDashboardCounter(moduleId)
+        && request.resource.data.count == 1;
+      allow update: if isValidDashboardCounter(moduleId)
+        && request.resource.data.count == resource.data.count + 1;
+      allow delete: if false;
     }
 
     match /aiMusicMvWorks/{workId} {

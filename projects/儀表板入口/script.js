@@ -1,26 +1,50 @@
-const counterStorageKey = "teacher-dashboard-module-counters-v1";
-const counterCooldownMs = 30 * 60 * 1000;
+const firebaseConfig = window.TeacherDashboardFirebaseConfig;
+const collectionName = "dashboardModuleCounters";
+const localStorageKey = "teacher-dashboard-module-counters-v1";
 
-function loadCounterState() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(counterStorageKey) || "{}");
-    return {
-      counts: parsed.counts && typeof parsed.counts === "object" ? parsed.counts : {},
-      lastCountedAt: parsed.lastCountedAt && typeof parsed.lastCountedAt === "object" ? parsed.lastCountedAt : {}
-    };
-  } catch {
-    return { counts: {}, lastCountedAt: {} };
+const moduleIds = new Map([
+  ["profile", "profile"],
+  ["picker", "picker"],
+  ["links", "links"],
+  ["prompt", "prompt"],
+  ["flowchart", "flowchart"],
+  ["gallery", "gallery"],
+  ["music", "music"],
+  ["timer", "timer"],
+  ["quotes", "quotes"],
+  ["mood", "mood"]
+]);
+
+const state = {
+  mode: "local",
+  counters: {},
+  firebase: null,
+  unsubscribeCounters: null
+};
+
+function hasFirebaseConfig() {
+  return firebaseConfig
+    && firebaseConfig.apiKey
+    && firebaseConfig.projectId
+    && !firebaseConfig.apiKey.startsWith("${");
+}
+
+function getModuleId(card) {
+  for (const [className, moduleId] of moduleIds) {
+    if (card.classList.contains(className)) {
+      return moduleId;
+    }
   }
+
+  return "";
 }
 
-function saveCounterState(state) {
-  localStorage.setItem(counterStorageKey, JSON.stringify(state));
-}
-
-function getModuleKey(card) {
-  const title = card.querySelector("strong")?.textContent?.trim() || "module";
-  const href = card.getAttribute("href") || "";
-  return `${title}|${href}`.replace(/\s+/g, "-");
+function getModuleMeta(card) {
+  return {
+    moduleId: getModuleId(card),
+    title: card.querySelector("strong")?.textContent?.trim() || "未命名工具",
+    href: card.getAttribute("href") || ""
+  };
 }
 
 function getCounterBadge(card) {
@@ -36,15 +60,75 @@ function getCounterBadge(card) {
   return badge;
 }
 
-function updateBadge(card, state) {
-  const key = getModuleKey(card);
+function setBadgeStatus(card, text) {
   const badge = getCounterBadge(card);
-  const count = Number(state.counts[key] || 0);
-  const lastCountedAt = Number(state.lastCountedAt[key] || 0);
-  const isLocked = Date.now() - lastCountedAt < counterCooldownMs;
+  badge.querySelector("span").textContent = text;
+}
 
-  badge.querySelector("strong").textContent = String(count);
-  badge.classList.toggle("is-locked", isLocked);
+function animateBadge(card) {
+  const badge = getCounterBadge(card);
+  badge.classList.remove("is-counted");
+  window.requestAnimationFrame(() => badge.classList.add("is-counted"));
+}
+
+function renderCounters() {
+  document.querySelectorAll(".tool-card").forEach((card) => {
+    const { moduleId } = getModuleMeta(card);
+    const badge = getCounterBadge(card);
+    badge.querySelector("strong").textContent = String(state.counters[moduleId] || 0);
+    badge.classList.toggle("is-cloud", state.mode === "firebase");
+  });
+}
+
+function loadLocalCounters() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(localStorageKey) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalCounters() {
+  localStorage.setItem(localStorageKey, JSON.stringify(state.counters));
+}
+
+function countLocalModule(card) {
+  const { moduleId } = getModuleMeta(card);
+  state.counters[moduleId] = Number(state.counters[moduleId] || 0) + 1;
+  saveLocalCounters();
+  renderCounters();
+  animateBadge(card);
+}
+
+async function countCloudModule(card) {
+  const { moduleId, title, href } = getModuleMeta(card);
+  if (!moduleId || !state.firebase) {
+    countLocalModule(card);
+    return;
+  }
+
+  const { db, doc, runTransaction, serverTimestamp } = state.firebase;
+  const counterRef = doc(db, collectionName, moduleId);
+  setBadgeStatus(card, "寫入中");
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(counterRef);
+      const nextCount = snapshot.exists() ? Number(snapshot.data().count || 0) + 1 : 1;
+      transaction.set(counterRef, {
+        moduleId,
+        title,
+        href,
+        count: nextCount,
+        updatedAt: serverTimestamp()
+      });
+    });
+    animateBadge(card);
+  } catch (error) {
+    console.error(error);
+    setBadgeStatus(card, "寫入失敗");
+  }
 }
 
 function countModuleUse(card, event) {
@@ -52,32 +136,16 @@ function countModuleUse(card, event) {
     return;
   }
 
-  const state = loadCounterState();
-  const key = getModuleKey(card);
-  const now = Date.now();
-  const lastCountedAt = Number(state.lastCountedAt[key] || 0);
-
-  if (now - lastCountedAt < counterCooldownMs) {
-    updateBadge(card, state);
+  if (state.mode === "firebase") {
+    countCloudModule(card);
     return;
   }
 
-  state.counts[key] = Number(state.counts[key] || 0) + 1;
-  state.lastCountedAt[key] = now;
-  saveCounterState(state);
-  updateBadge(card, state);
-
-  const badge = getCounterBadge(card);
-  badge.classList.remove("is-counted");
-  window.requestAnimationFrame(() => badge.classList.add("is-counted"));
+  countLocalModule(card);
 }
 
-function initDashboardCounters() {
-  const cards = document.querySelectorAll(".tool-card");
-  const state = loadCounterState();
-
-  cards.forEach((card) => {
-    updateBadge(card, state);
+function bindCounterEvents() {
+  document.querySelectorAll(".tool-card").forEach((card) => {
     card.addEventListener("click", (event) => countModuleUse(card, event));
     card.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -85,6 +153,64 @@ function initDashboardCounters() {
       }
     });
   });
+}
+
+async function initFirebase() {
+  if (!hasFirebaseConfig()) {
+    state.counters = loadLocalCounters();
+    renderCounters();
+    return;
+  }
+
+  try {
+    const [{ initializeApp }, firestoreModule] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
+    ]);
+
+    const app = initializeApp(firebaseConfig);
+    const db = firestoreModule.getFirestore(app);
+    state.mode = "firebase";
+    state.firebase = {
+      db,
+      collection: firestoreModule.collection,
+      doc: firestoreModule.doc,
+      onSnapshot: firestoreModule.onSnapshot,
+      query: firestoreModule.query,
+      runTransaction: firestoreModule.runTransaction,
+      serverTimestamp: firestoreModule.serverTimestamp
+    };
+
+    subscribeCloudCounters();
+  } catch (error) {
+    console.error(error);
+    state.mode = "local";
+    state.counters = loadLocalCounters();
+    renderCounters();
+  }
+}
+
+function subscribeCloudCounters() {
+  const { db, collection, onSnapshot, query } = state.firebase;
+  const countersQuery = query(collection(db, collectionName));
+  state.unsubscribeCounters?.();
+
+  state.unsubscribeCounters = onSnapshot(countersQuery, (snapshot) => {
+    state.counters = {};
+    snapshot.docs.forEach((docSnapshot) => {
+      state.counters[docSnapshot.id] = Number(docSnapshot.data().count || 0);
+    });
+    renderCounters();
+  }, (error) => {
+    console.error(error);
+    document.querySelectorAll(".tool-card").forEach((card) => setBadgeStatus(card, "讀取失敗"));
+  });
+}
+
+function initDashboardCounters() {
+  bindCounterEvents();
+  renderCounters();
+  initFirebase();
 }
 
 initDashboardCounters();
