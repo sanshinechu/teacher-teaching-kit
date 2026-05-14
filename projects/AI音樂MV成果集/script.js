@@ -1,11 +1,6 @@
 const firebaseConfig = window.TeacherMusicMvFirebaseConfig || {};
 const teacherEmails = ["shine@tmail.ilc.edu.tw"];
 const collectionName = "aiMusicMvWorks";
-const generatedThumbnails = {
-  "0wZgVPnf3mQ": "assets/thumbnails/ai-magic-classroom.svg",
-  "XMJbST6goXg": "assets/thumbnails/home-visit-v2.svg",
-  "bGRVJmVqEeA": "assets/thumbnails/home-visit.svg"
-};
 
 const seedWorks = [
   {
@@ -153,10 +148,6 @@ function getThumbnailUrl(work) {
   }
 
   const videoId = getYoutubeVideoId(work.videoUrl);
-  if (videoId && generatedThumbnails[videoId]) {
-    return generatedThumbnails[videoId];
-  }
-
   return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
 }
 
