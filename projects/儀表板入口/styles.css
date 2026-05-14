@@ -605,7 +605,7 @@ time {
     gap: 6px;
     grid-template-rows: minmax(24px, auto) minmax(1.05em, auto);
     padding-right: 0;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
   }
 
   .hero-label-row {
