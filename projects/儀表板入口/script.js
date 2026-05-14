@@ -2,9 +2,7 @@ const firebaseConfig = window.TeacherDashboardFirebaseConfig || {};
 const usageCollection = "dashboardModuleDailyUses";
 
 const elements = {
-  authStatus: document.querySelector("#counterAuthStatus"),
-  loginButton: document.querySelector("#counterLoginButton"),
-  logoutButton: document.querySelector("#counterLogoutButton"),
+  status: document.querySelector("#counterStatus"),
   cards: [...document.querySelectorAll(".tool-card")]
 };
 
@@ -49,7 +47,7 @@ function getCounterBadge(card) {
 
   badge = document.createElement("span");
   badge.className = "usage-counter";
-  badge.innerHTML = "<strong>--</strong><span>登入統計</span>";
+  badge.innerHTML = "<strong>--</strong><span>雲端累計</span>";
   card.append(badge);
   return badge;
 }
@@ -58,33 +56,31 @@ function setBadge(card, options = {}) {
   const moduleId = card.dataset.moduleId;
   const badge = getCounterBadge(card);
   const total = state.totals[moduleId];
-  const isSignedIn = Boolean(state.user);
   const isCountedToday = state.countedToday.has(moduleId);
-  const label = options.label || (isCountedToday ? "今日已計" : isSignedIn ? "雲端累計" : "登入統計");
+  const label = options.label || (isCountedToday ? "今日已計" : state.user ? "雲端累計" : "準備中");
 
   badge.querySelector("strong").textContent = Number.isFinite(total) ? String(total) : "--";
   badge.querySelector("span").textContent = label;
   badge.classList.toggle("is-locked", isCountedToday);
-  badge.classList.toggle("is-offline", !isSignedIn);
+  badge.classList.toggle("is-offline", !state.user);
 }
 
 function renderCounters(label) {
   elements.cards.forEach((card) => setBadge(card, { label }));
 }
 
-function renderAuth() {
+function renderStatus() {
+  if (!elements.status) {
+    return;
+  }
+
   if (!hasFirebaseConfig()) {
-    elements.authStatus.textContent = "目前是本機預覽，部署後才會啟用雲端統計";
-    elements.loginButton.classList.add("is-hidden");
-    elements.logoutButton.classList.add("is-hidden");
+    elements.status.textContent = "本機預覽，部署後啟用免登入雲端統計";
     renderCounters("本機預覽");
     return;
   }
 
-  const displayName = state.user?.displayName || state.user?.email || "登入後啟用雲端統計";
-  elements.authStatus.textContent = state.user ? displayName : "登入後點擊會納入雲端統計";
-  elements.loginButton.classList.toggle("is-hidden", Boolean(state.user));
-  elements.logoutButton.classList.toggle("is-hidden", !state.user);
+  elements.status.textContent = state.user ? "免登入統計：每日每裝置每模組計一次" : "正在啟用免登入統計";
   renderCounters();
 }
 
@@ -117,7 +113,7 @@ async function recordModuleUse(card, event) {
   }
 
   if (!state.firebase || !state.user) {
-    setBadge(card, { label: "請先登入" });
+    setBadge(card, { label: hasFirebaseConfig() ? "準備中" : "本機預覽" });
     return;
   }
 
@@ -155,26 +151,9 @@ async function recordModuleUse(card, event) {
   }
 }
 
-async function signIn() {
-  if (!state.firebase) {
-    return;
-  }
-
-  const { auth, provider, signInWithPopup } = state.firebase;
-  await signInWithPopup(auth, provider);
-}
-
-async function signOutCurrentUser() {
-  if (!state.firebase) {
-    return;
-  }
-
-  await state.firebase.signOut(state.firebase.auth);
-}
-
 async function initFirebase() {
   if (!hasFirebaseConfig()) {
-    renderAuth();
+    renderStatus();
     return;
   }
 
@@ -192,10 +171,8 @@ async function initFirebase() {
   state.firebase = {
     auth,
     db,
-    provider: new authModule.GoogleAuthProvider(),
-    signInWithPopup: authModule.signInWithPopup,
-    signOut: authModule.signOut,
     onAuthStateChanged: authModule.onAuthStateChanged,
+    signInAnonymously: authModule.signInAnonymously,
     collection: firestoreModule.collection,
     doc: firestoreModule.doc,
     setDoc: firestoreModule.setDoc,
@@ -205,13 +182,18 @@ async function initFirebase() {
     serverTimestamp: firestoreModule.serverTimestamp
   };
 
+  renderStatus();
   state.firebase.onAuthStateChanged(auth, async (user) => {
     state.user = user;
     state.countedToday = new Set();
     state.totals = {};
-    renderAuth();
+    renderStatus();
     await refreshAllCounters();
   });
+
+  if (!auth.currentUser) {
+    await state.firebase.signInAnonymously(auth);
+  }
 }
 
 function initDashboardCounters() {
@@ -221,18 +203,10 @@ function initDashboardCounters() {
       recordModuleUse(card, event).catch(() => setBadge(card, { label: "計數失敗" }));
     });
   });
-
-  elements.loginButton.addEventListener("click", () => {
-    signIn().catch((error) => window.alert(error.message));
-  });
-
-  elements.logoutButton.addEventListener("click", () => {
-    signOutCurrentUser().catch((error) => window.alert(error.message));
-  });
 }
 
 initDashboardCounters();
 initFirebase().catch((error) => {
   console.error(error);
-  renderAuth();
+  renderStatus();
 });
