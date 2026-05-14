@@ -27,3 +27,17 @@
 **待處理：**
 - Firebase Console 尚需啟用 Authentication 的 `Anonymous` sign-in provider；目前低層 API 測試回傳 `ADMIN_ONLY_OPERATION`。
 - 啟用後再用線上頁面實測點擊任一模組，確認 Firestore 累計數字更新。
+
+## 2026-05-14 補充 | Firebase / Firestore 資料庫名稱
+
+**操作類型：** 專案資訊確認
+
+**確認內容：**
+- Firebase 專案名稱：`study-b2e59`
+- Firestore 資料庫：`(default)`
+- 儀表板計數集合：`dashboardModuleDailyUses`
+- AI 音樂 MV 成果集集合：`aiMusicMvWorks`
+- 班級作品牆集合：`projectWallClasses`，作品子集合為 `submissions`
+
+**備註：**
+- 這裡使用的是 Firebase Firestore 文件資料庫，不是傳統 SQL 資料庫。
