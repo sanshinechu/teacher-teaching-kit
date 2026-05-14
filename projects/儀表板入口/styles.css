@@ -223,7 +223,7 @@ h1 {
 
 .hero-kicker {
   grid-template-rows: minmax(26px, auto) minmax(1.1em, auto);
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .hero-title-row {
