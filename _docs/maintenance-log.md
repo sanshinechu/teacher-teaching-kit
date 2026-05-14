@@ -114,3 +114,13 @@
 - AI 音樂 MV 成果集加入縮圖功能：可手動填入 `thumbnailUrl`，若作品是 YouTube 影片則自動產生影片縮圖。
 - 為已發佈的 3 支 AI 音樂 MV 產生專屬 SVG 縮圖，並依 YouTube 影片 ID 自動套用。
 - AI 音樂 MV 成果集縮圖優先順序調整：若作品有 YouTube 連結，優先使用 YouTube 原始縮圖，不再用專屬 SVG 覆蓋。
+
+## 2026-05-14 收工紀錄
+
+- 今日主要完成 `projects/AI音樂MV成果集`：新增成果集頁面、Google 登入管理、Firestore 雲端資料、Web UI 新增/編輯/刪除作品功能。
+- Firestore 使用獨立集合 `aiMusicMvWorks`，與班級作品牆的 `projectWallClasses/{classId}/submissions` 分離；成果集公開讀取，僅 `shine@tmail.ilc.edu.tw` 可寫入。
+- GitHub Pages workflow 已為成果集產生 `firebase-config.js`，線上成果集頁面與設定檔均回應 `200 OK`。
+- 已部署 Firestore rules 到 Firebase 專案 `study-b2e59`，包含 `thumbnailUrl` 欄位驗證。
+- 縮圖策略收斂為：手動 `thumbnailUrl` 優先，其次使用 YouTube 原始縮圖，最後才顯示預設音符卡。
+- 最新上傳 commit：`3c14b69 改用 YouTube 原始縮圖`，本機 `main` 已同步 `origin/main`。
+- 收工狀態：repo 僅剩 `.claude/` 為未追蹤本地設定資料夾，未納入提交。
