@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>儀表板管理後台</title>
+    <style>
+      :root {
+        --ink: #e8eff9;
+        --muted: #9aa5b8;
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: rgba(255, 255, 255, 0.08);
+        --accent: #5b8def;
+        --green: #3fb950;
+        --red: #f85149;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+        font-size: 15px;
+      }
+
+      .shell {
+        width: min(860px, 100%);
+        margin: 0 auto;
+        padding: clamp(24px, 4vw, 48px) clamp(16px, 3vw, 32px);
+      }
+
+      /* ── Login screen ── */
+      .login-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        gap: 24px;
+        text-align: center;
+      }
+
+      .login-screen h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .login-screen p {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      /* ── Denied screen ── */
+      .denied-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .denied-screen h2 {
+        color: var(--red);
+        font-size: 1.3rem;
+      }
+
+      .denied-screen p {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      /* ── Admin screen ── */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .topbar h1 {
+        font-size: 1.3rem;
+        font-weight: 700;
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .user-chip {
+        padding: 4px 12px;
+        border-radius: 20px;
+        background: rgba(91, 141, 239, 0.15);
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      /* ── Status bar ── */
+      .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      #status-text {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      /* ── Table ── */
+      .table-wrap {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        padding: 12px 16px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+
+      thead th.num { text-align: right; }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 120ms;
+      }
+
+      tbody tr:last-child { border-bottom: none; }
+
+      tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+      tbody td {
+        padding: 14px 16px;
+        font-size: 0.9rem;
+        vertical-align: middle;
+      }
+
+      td.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+
+      td.total-num {
+        color: var(--accent);
+        font-size: 1rem;
+      }
+
+      td.today-num {
+        color: var(--green);
+      }
+
+      /* ── Buttons ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 120ms;
+      }
+
+      .btn:hover { opacity: 0.82; }
+      .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--ink);
+        border: 1px solid var(--border);
+      }
+
+      .btn-danger {
+        background: rgba(248, 81, 73, 0.15);
+        color: var(--red);
+        border: 1px solid rgba(248, 81, 73, 0.3);
+      }
+
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <!-- Login -->
+    <div class="shell">
+      <div id="login-screen" class="login-screen">
+        <h1>儀表板管理後台</h1>
+        <p>請以教師 Google 帳號登入</p>
+        <button id="login-btn" class="btn btn-primary">Google 登入</button>
+      </div>
+
+      <!-- Denied -->
+      <div id="denied-screen" class="denied-screen" hidden>
+        <h2>無權限</h2>
+        <p id="denied-email"></p>
+        <p>此帳號無法存取管理後台</p>
+        <button id="denied-logout" class="btn btn-secondary">登出</button>
+      </div>
+
+      <!-- Admin -->
+      <div id="admin-screen" hidden>
+        <div class="topbar">
+          <h1>模組使用統計</h1>
+          <div class="topbar-right">
+            <span class="user-chip" id="user-info"></span>
+            <button id="refresh-btn" class="btn btn-secondary">重新整理</button>
+            <button id="logout-btn" class="btn btn-danger">登出</button>
+          </div>
+        </div>
+
+        <div class="status-bar">
+          <span id="status-text">載入中…</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>模組</th>
+                <th class="num">今日</th>
+                <th class="num">累計</th>
+              </tr>
+            </thead>
+            <tbody id="stats-body">
+              <tr><td colspan="3" style="padding:24px 16px;color:var(--muted);text-align:center">載入中…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script type="module" src="admin.js"></script>
+  </body>
+</html>

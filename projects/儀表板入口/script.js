@@ -10,7 +10,6 @@ const state = {
   mode: "local",
   user: null,
   firebase: null,
-  countedToday: new Set(),
   totals: {}
 };
 
@@ -35,10 +34,6 @@ function getModuleData(card) {
   };
 }
 
-function getUsageDocId(moduleId) {
-  return `${state.user.uid}_${getTodayKey()}_${moduleId}`;
-}
-
 function getCounterBadge(card) {
   let badge = card.querySelector(".usage-counter");
   if (badge) {
@@ -56,12 +51,10 @@ function setBadge(card, options = {}) {
   const moduleId = card.dataset.moduleId;
   const badge = getCounterBadge(card);
   const total = state.totals[moduleId];
-  const isCountedToday = state.countedToday.has(moduleId);
-  const label = options.label || (isCountedToday ? "今日已計" : state.user ? "雲端累計" : "準備中");
+  const label = options.label || (state.user ? "雲端累計" : "準備中");
 
   badge.querySelector("strong").textContent = Number.isFinite(total) ? String(total) : "--";
   badge.querySelector("span").textContent = label;
-  badge.classList.toggle("is-locked", isCountedToday);
   badge.classList.toggle("is-offline", !state.user);
 }
 
@@ -80,7 +73,7 @@ function renderStatus() {
     return;
   }
 
-  elements.status.textContent = state.user ? "免登入統計：每日每裝置每模組計一次" : "正在啟用免登入統計";
+  elements.status.textContent = state.user ? "免登入統計：每次點擊即計數" : "正在啟用免登入統計";
   renderCounters();
 }
 
@@ -118,21 +111,10 @@ async function recordModuleUse(card, event) {
   }
 
   const moduleData = getModuleData(card);
-  if (state.countedToday.has(moduleData.id)) {
-    setBadge(card, { label: "今日已計" });
-    return;
-  }
-
-  const {
-    db,
-    doc,
-    setDoc,
-    serverTimestamp
-  } = state.firebase;
-  const usageRef = doc(db, usageCollection, getUsageDocId(moduleData.id));
+  const { db, collection, addDoc, serverTimestamp } = state.firebase;
 
   try {
-    await setDoc(usageRef, {
+    await addDoc(collection(db, usageCollection), {
       moduleId: moduleData.id,
       moduleTitle: moduleData.title,
       moduleHref: moduleData.href,
@@ -140,14 +122,16 @@ async function recordModuleUse(card, event) {
       usedDate: getTodayKey(),
       createdAt: serverTimestamp()
     });
-    state.countedToday.add(moduleData.id);
     state.totals[moduleData.id] = Number(state.totals[moduleData.id] || 0) + 1;
+    const badge = getCounterBadge(card);
     setBadge(card, { label: "已計入" });
-    getCounterBadge(card).classList.add("is-counted");
+    badge.classList.add("is-counted");
+    setTimeout(() => {
+      badge.classList.remove("is-counted");
+      setBadge(card);
+    }, 1500);
   } catch {
-    state.countedToday.add(moduleData.id);
-    setBadge(card, { label: "今日已計" });
-    refreshModuleTotal(card).catch(() => setBadge(card, { label: "讀取失敗" }));
+    setBadge(card, { label: "計數失敗" });
   }
 }
 
@@ -174,8 +158,7 @@ async function initFirebase() {
     onAuthStateChanged: authModule.onAuthStateChanged,
     signInAnonymously: authModule.signInAnonymously,
     collection: firestoreModule.collection,
-    doc: firestoreModule.doc,
-    setDoc: firestoreModule.setDoc,
+    addDoc: firestoreModule.addDoc,
     getCountFromServer: firestoreModule.getCountFromServer,
     query: firestoreModule.query,
     where: firestoreModule.where,
@@ -185,7 +168,6 @@ async function initFirebase() {
   renderStatus();
   state.firebase.onAuthStateChanged(auth, async (user) => {
     state.user = user;
-    state.countedToday = new Set();
     state.totals = {};
     renderStatus();
     await refreshAllCounters();
