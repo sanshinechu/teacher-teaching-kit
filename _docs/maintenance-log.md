@@ -125,3 +125,4 @@
 - 最新上傳 commit：`3c14b69 改用 YouTube 原始縮圖`，本機 `main` 已同步 `origin/main`。
 - 收工狀態：repo 僅剩 `.claude/` 為未追蹤本地設定資料夾，未納入提交。
 - 儀表板入口加入模組使用計數器：每張工具卡片會顯示本機使用次數，點擊後計數，並以 30 分鐘冷卻與 trusted click 檢查降低連點灌水。
+- 儀表板入口計數器改接 Firestore：使用 Google 登入後，每個帳號、每個模組、每天只建立一筆 `dashboardModuleDailyUses` 紀錄，卡片顯示雲端累計次數。

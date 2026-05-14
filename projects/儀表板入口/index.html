@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>儲三翔老師｜智慧教學儀表板</title>
     <meta name="description" content="儲三翔老師的智慧教學儀表板入口，快速前往教學工具與班級經營小工具。">
-    <link rel="stylesheet" href="styles.css?v=20260514-4">
+    <link rel="stylesheet" href="styles.css?v=20260514-5">
   </head>
   <body>
     <main class="dashboard-shell">
@@ -58,6 +58,17 @@
           </div>
         </section>
 
+        <section class="counter-panel" aria-label="使用統計登入狀態">
+          <div>
+            <p class="section-label">Usage Counter</p>
+            <strong id="counterAuthStatus">登入後啟用雲端統計</strong>
+          </div>
+          <div class="counter-actions">
+            <button id="counterLoginButton" class="counter-button" type="button">使用 Google 登入</button>
+            <button id="counterLogoutButton" class="counter-button is-hidden" type="button">登出</button>
+          </div>
+        </section>
+
         <section class="tool-section" aria-labelledby="teaching-tools-title">
           <div class="section-heading">
             <p class="section-label">Teaching Tools</p>
@@ -65,7 +76,7 @@
           </div>
 
           <nav class="tool-grid" aria-label="教學工具">
-            <a class="tool-card profile" href="../教師個人數位名片/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card profile" data-module-id="teacher-profile" href="../教師個人數位名片/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">名</span>
               <span class="tool-copy">
                 <strong>教師數位名片</strong>
@@ -74,7 +85,7 @@
               </span>
             </a>
 
-            <a class="tool-card picker" href="../網頁抽點器/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card picker" data-module-id="random-picker" href="../網頁抽點器/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">抽</span>
               <span class="tool-copy">
                 <strong>網頁抽點器</strong>
@@ -83,7 +94,7 @@
               </span>
             </a>
 
-            <a class="tool-card links" href="../手機常用連結/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card links" data-module-id="mobile-links" href="../手機常用連結/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">連</span>
               <span class="tool-copy">
                 <strong>連結牆</strong>
@@ -92,7 +103,7 @@
               </span>
             </a>
 
-            <a class="tool-card prompt" href="../AI 詠唱提示詞百寶箱/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card prompt" data-module-id="ai-prompt-box" href="../AI 詠唱提示詞百寶箱/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">詞</span>
               <span class="tool-copy">
                 <strong>AI 詠唱提示詞百寶箱</strong>
@@ -101,7 +112,7 @@
               </span>
             </a>
 
-            <a class="tool-card flowchart" href="../運算思維流程畫布/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card flowchart" data-module-id="flowchart-canvas" href="../運算思維流程畫布/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">流</span>
               <span class="tool-copy">
                 <strong>運算思維流程畫布</strong>
@@ -109,7 +120,7 @@
                 <em>使用時機：程式設計、遊戲機制拆解、專案規劃</em>
               </span>
             </a>
-            <a class="tool-card gallery" href="../班級作品牆/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card gallery" data-module-id="project-wall" href="../班級作品牆/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">作</span>
               <span class="tool-copy">
                 <strong>班級作品牆</strong>
@@ -118,7 +129,7 @@
               </span>
             </a>
 
-            <a class="tool-card music" href="../AI音樂MV成果集/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card music" data-module-id="ai-music-mv" href="../AI音樂MV成果集/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">音</span>
               <span class="tool-copy">
                 <strong>AI 音樂 MV 成果集</strong>
@@ -136,7 +147,7 @@
           </div>
 
           <nav class="tool-grid classroom-grid" aria-label="班級經營小工具">
-            <a class="tool-card timer" href="../班級計時器/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card timer" data-module-id="class-timer" href="../班級計時器/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">時</span>
               <span class="tool-copy">
                 <strong>班級倒數計時器</strong>
@@ -145,7 +156,7 @@
               </span>
             </a>
 
-            <a class="tool-card quotes" href="../隨機課堂鼓勵金句的網頁/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card quotes" data-module-id="quote-draw" href="../隨機課堂鼓勵金句的網頁/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">勵</span>
               <span class="tool-copy">
                 <strong>隨機課堂鼓勵金句</strong>
@@ -154,7 +165,7 @@
               </span>
             </a>
 
-            <a class="tool-card mood" href="../心情簽到小工具/" target="_blank" rel="noopener noreferrer">
+            <a class="tool-card mood" data-module-id="mood-checkin" href="../心情簽到小工具/" target="_blank" rel="noopener noreferrer">
               <span class="tool-icon" aria-hidden="true">心</span>
               <span class="tool-copy">
                 <strong>心情簽到小工具</strong>
@@ -171,6 +182,7 @@
         </footer>
       </section>
     </main>
-    <script src="script.js?v=20260514-1"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script.js?v=20260514-2" type="module"></script>
   </body>
 </html>

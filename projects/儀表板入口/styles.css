@@ -363,6 +363,43 @@ h1 {
   font-size: 0.82rem;
 }
 
+.counter-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 8px solid var(--mint);
+  border-radius: 18px;
+  color: #f8fbff;
+  background: rgba(20, 31, 45, 0.76);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+}
+
+.counter-panel strong {
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+.counter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.counter-button {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 900;
+  background: color-mix(in srgb, var(--mint) 72%, #0f172a);
+  cursor: pointer;
+}
+
 .tool-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -455,8 +492,12 @@ h3 {
 }
 
 .usage-counter.is-locked span::after {
-  content: "・冷卻";
+  content: "";
   color: color-mix(in srgb, var(--accent) 48%, #ffffff);
+}
+
+.usage-counter.is-offline {
+  opacity: 0.72;
 }
 
 @keyframes counter-pop {
@@ -635,6 +676,14 @@ time {
     display: grid;
   }
 
+  .counter-panel {
+    display: grid;
+  }
+
+  .counter-actions {
+    justify-content: start;
+  }
+
   .role {
     width: fit-content;
     margin-top: 0;
@@ -771,4 +820,8 @@ time {
     font-size: 1.12rem;
     line-height: 1.28;
   }
+}
+
+.is-hidden {
+  display: none !important;
 }
