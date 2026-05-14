@@ -419,6 +419,60 @@ h3 {
   overflow: hidden;
 }
 
+.usage-counter {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, rgba(255, 255, 255, 0.18));
+  border-radius: 14px;
+  color: #ffffff;
+  background: rgba(8, 13, 24, 0.48);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.usage-counter strong {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.02rem;
+  line-height: 1;
+}
+
+.usage-counter span {
+  color: rgba(232, 239, 250, 0.76);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.usage-counter.is-counted {
+  animation: counter-pop 420ms ease;
+}
+
+.usage-counter.is-locked span::after {
+  content: "・冷卻";
+  color: color-mix(in srgb, var(--accent) 48%, #ffffff);
+}
+
+@keyframes counter-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  42% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
 .tool-card::after {
   content: "";
   position: absolute;
@@ -687,6 +741,16 @@ time {
     align-content: center;
     align-items: center;
     gap: 16px;
+    padding-top: 48px;
+  }
+
+  .usage-counter {
+    right: 14px;
+    top: 12px;
+    grid-template-columns: auto auto;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
   }
 
   .tool-copy {
