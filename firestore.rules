@@ -13,6 +13,46 @@ service cloud.firestore {
         && request.auth.token.email == 'shine@tmail.ilc.edu.tw';
     }
 
+    function isValidMusicMvWork() {
+      return request.resource.data.keys().hasOnly([
+          'title',
+          'category',
+          'description',
+          'tools',
+          'classroom',
+          'videoUrl',
+          'workUrl',
+          'color',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.category in ['校園活動', '課程創作', '節慶主題']
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.tools is list
+        && request.resource.data.tools.size() <= 10
+        && request.resource.data.classroom is string
+        && request.resource.data.classroom.size() <= 300
+        && request.resource.data.videoUrl is string
+        && request.resource.data.videoUrl.size() <= 500
+        && (request.resource.data.videoUrl == '' || request.resource.data.videoUrl.matches('https?://.*'))
+        && request.resource.data.workUrl is string
+        && request.resource.data.workUrl.size() <= 500
+        && (request.resource.data.workUrl == '' || request.resource.data.workUrl.matches('https?://.*'))
+        && request.resource.data.color is string
+        && request.resource.data.color.matches('#[0-9a-fA-F]{6}');
+    }
+
+    match /aiMusicMvWorks/{workId} {
+      allow read: if true;
+      allow create, update: if isTeacher() && isValidMusicMvWork();
+      allow delete: if isTeacher();
+    }
+
     match /projectWallClasses/{classId} {
       allow read: if request.auth != null;
       allow create: if isTeacher()

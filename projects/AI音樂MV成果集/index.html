@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 音樂 MV 成果集</title>
+    <meta name="description" content="整理教師使用 AI 工具製作的音樂 MV 成果，展示創作主題、使用工具、課堂應用與影片連結。">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="showcase-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">AI Music Video Gallery</p>
+          <h1 id="page-title">AI 音樂 MV 成果集</h1>
+          <p class="lede">集中展示用 AI 工具完成的音樂與影像作品，保留創作靈感、工具流程與課堂延伸方式。</p>
+        </div>
+        <div class="hero-side">
+          <div class="auth-panel">
+            <span id="auth-status">尚未登入</span>
+            <button id="login-button" class="soft-button" type="button">使用 Google 登入</button>
+            <button id="logout-button" class="soft-button is-hidden" type="button">登出</button>
+          </div>
+          <div class="hero-meter" aria-label="成果集摘要">
+            <span>
+              <strong id="work-count">0</strong>
+              <small>支 MV</small>
+            </span>
+            <span>
+              <strong>AI</strong>
+              <small>音樂影像</small>
+            </span>
+            <span>
+              <strong>課堂</strong>
+              <small>可延伸</small>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section id="setup-notice" class="notice is-hidden">
+        目前尚未載入 Firebase 設定，頁面會使用內建範例作品。部署到 GitHub Pages 後，系統會透過 Actions 寫入正式設定。
+      </section>
+
+      <section id="admin-panel" class="admin-panel is-hidden" aria-labelledby="admin-title">
+        <div>
+          <p class="eyebrow">Editor</p>
+          <h2 id="admin-title">管理 MV 作品</h2>
+          <p>登入教師帳號後，可直接在這裡新增、修改或刪除成果集內容。</p>
+        </div>
+        <form id="work-form" class="work-form">
+          <input id="work-id-input" type="hidden">
+          <label>
+            作品標題
+            <input id="title-input" type="text" maxlength="80" required>
+          </label>
+          <label>
+            分類
+            <select id="category-input" required>
+              <option value="校園活動">校園活動</option>
+              <option value="課程創作">課程創作</option>
+              <option value="節慶主題">節慶主題</option>
+            </select>
+          </label>
+          <label class="wide-field">
+            作品介紹
+            <textarea id="description-input" rows="4" maxlength="500" required></textarea>
+          </label>
+          <label>
+            使用工具
+            <input id="tools-input" type="text" maxlength="160" placeholder="例如：Suno, Canva, CapCut">
+          </label>
+          <label>
+            卡片色彩
+            <input id="color-input" type="color" value="#e85d75">
+          </label>
+          <label class="wide-field">
+            課堂應用
+            <textarea id="classroom-input" rows="3" maxlength="300"></textarea>
+          </label>
+          <label>
+            YouTube 影片網址
+            <input id="video-url-input" type="url" placeholder="https://www.youtube.com/watch?v=...">
+          </label>
+          <label>
+            其他作品網址
+            <input id="work-url-input" type="url" placeholder="https://...">
+          </label>
+          <div class="form-actions wide-field">
+            <button class="save-button" type="submit">儲存作品</button>
+            <button id="cancel-edit-button" class="soft-button" type="button">清空表單</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="featured" aria-labelledby="featured-title">
+        <div class="stage">
+          <div class="screen" id="featured-screen">
+            <div class="empty-screen">
+              <span aria-hidden="true">♪</span>
+              <p>選擇一支作品後，影片或作品連結會顯示在這裡。</p>
+            </div>
+          </div>
+        </div>
+        <article class="featured-copy">
+          <p class="eyebrow">Now Playing</p>
+          <h2 id="featured-title">尚未選擇作品</h2>
+          <p id="featured-description">從下方成果卡片選擇一支 AI 音樂 MV，快速查看作品重點與製作流程。</p>
+          <dl class="meta-list">
+            <div>
+              <dt>創作工具</dt>
+              <dd id="featured-tools">待選擇</dd>
+            </div>
+            <div>
+              <dt>課堂應用</dt>
+              <dd id="featured-classroom">待選擇</dd>
+            </div>
+          </dl>
+          <a class="watch-link is-disabled" id="featured-link" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">開啟作品連結</a>
+        </article>
+      </section>
+
+      <section class="toolbar" aria-label="成果篩選">
+        <button class="filter-button is-active" type="button" data-filter="all">全部作品</button>
+        <button class="filter-button" type="button" data-filter="校園活動">校園活動</button>
+        <button class="filter-button" type="button" data-filter="課程創作">課程創作</button>
+        <button class="filter-button" type="button" data-filter="節慶主題">節慶主題</button>
+      </section>
+
+      <section class="gallery" id="gallery" aria-label="AI 音樂 MV 作品列表"></section>
+    </main>
+
+    <script src="firebase-config.js"></script>
+    <script src="script.js" type="module"></script>
+  </body>
+</html>

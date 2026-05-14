@@ -105,3 +105,9 @@
 - 手機版同列間距調整至 `16px`（歷經多次微調）。
 - CSS 版本號更新至 `v=20260514-2`，解決瀏覽器快取舊樣式問題。
 - 最新 commit：`fa0b3e4`，已推送到 GitHub `main`。
+- 建立小專案：`projects/AI音樂MV成果集`。
+- AI 音樂 MV 成果集初版：提供作品展示牆、主打作品播放器區、分類篩選、創作工具標籤與課堂應用說明。
+- 更新根目錄 `index.html`、`_docs/project-index.md` 與 `projects/儀表板入口`，加入 AI 音樂 MV 成果集入口。
+- AI 音樂 MV 成果集加入 Google 登入管理功能：教師帳號登入後可在 Web UI 新增、編輯與刪除作品，資料存入 Firestore `aiMusicMvWorks`。
+- 更新 Firestore rules：`aiMusicMvWorks` 公開讀取、僅 `shine@tmail.ilc.edu.tw` 可寫入，並驗證作品欄位格式。
+- 已部署 Firestore rules 到 Firebase 專案 `study-b2e59`，規則編譯與 release 成功。

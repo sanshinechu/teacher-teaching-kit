@@ -484,6 +484,10 @@ h3 {
   --accent: #2ba9c4;
 }
 
+.music {
+  --accent: #d95f8d;
+}
+
 .timer {
   --accent: #f08a24;
 }
