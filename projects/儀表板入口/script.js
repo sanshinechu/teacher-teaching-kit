@@ -1,37 +1,26 @@
-const firebaseConfig = window.TeacherDashboardFirebaseConfig || {};
-const usageCollection = "dashboardModuleDailyUses";
+const counterStorageKey = "teacher-dashboard-module-counters-v1";
+const counterCooldownMs = 30 * 60 * 1000;
 
-const elements = {
-  status: document.querySelector("#counterStatus"),
-  cards: [...document.querySelectorAll(".tool-card")]
-};
-
-const state = {
-  mode: "local",
-  user: null,
-  firebase: null,
-  totals: {}
-};
-
-function hasFirebaseConfig() {
-  return Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId);
+function loadCounterState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(counterStorageKey) || "{}");
+    return {
+      counts: parsed.counts && typeof parsed.counts === "object" ? parsed.counts : {},
+      lastCountedAt: parsed.lastCountedAt && typeof parsed.lastCountedAt === "object" ? parsed.lastCountedAt : {}
+    };
+  } catch {
+    return { counts: {}, lastCountedAt: {} };
+  }
 }
 
-function getTodayKey() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Taipei",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(new Date());
+function saveCounterState(state) {
+  localStorage.setItem(counterStorageKey, JSON.stringify(state));
 }
 
-function getModuleData(card) {
-  return {
-    id: card.dataset.moduleId,
-    title: card.querySelector("strong")?.textContent?.trim() || "未命名模組",
-    href: card.getAttribute("href") || ""
-  };
+function getModuleKey(card) {
+  const title = card.querySelector("strong")?.textContent?.trim() || "module";
+  const href = card.getAttribute("href") || "";
+  return `${title}|${href}`.replace(/\s+/g, "-");
 }
 
 function getCounterBadge(card) {
@@ -42,153 +31,60 @@ function getCounterBadge(card) {
 
   badge = document.createElement("span");
   badge.className = "usage-counter";
-  badge.innerHTML = "<strong>--</strong><span>雲端累計</span>";
+  badge.innerHTML = "<strong>0</strong><span>使用次數</span>";
   card.append(badge);
   return badge;
 }
 
-function setBadge(card, options = {}) {
-  const moduleId = card.dataset.moduleId;
+function updateBadge(card, state) {
+  const key = getModuleKey(card);
   const badge = getCounterBadge(card);
-  const total = state.totals[moduleId];
-  const label = options.label || (state.user ? "雲端累計" : "準備中");
+  const count = Number(state.counts[key] || 0);
+  const lastCountedAt = Number(state.lastCountedAt[key] || 0);
+  const isLocked = Date.now() - lastCountedAt < counterCooldownMs;
 
-  badge.querySelector("strong").textContent = Number.isFinite(total) ? String(total) : "--";
-  badge.querySelector("span").textContent = label;
-  badge.classList.toggle("is-offline", !state.user);
+  badge.querySelector("strong").textContent = String(count);
+  badge.classList.toggle("is-locked", isLocked);
 }
 
-function renderCounters(label) {
-  elements.cards.forEach((card) => setBadge(card, { label }));
-}
-
-function renderStatus() {
-  if (!elements.status) {
-    return;
-  }
-
-  if (!hasFirebaseConfig()) {
-    elements.status.textContent = "本機預覽，部署後啟用免登入雲端統計";
-    renderCounters("本機預覽");
-    return;
-  }
-
-  elements.status.textContent = state.user ? "免登入統計：每次點擊即計數" : "正在啟用免登入統計";
-  renderCounters();
-}
-
-async function refreshModuleTotal(card) {
-  if (!state.firebase || !state.user) {
-    setBadge(card);
-    return;
-  }
-
-  const { db, collection, getCountFromServer, query, where } = state.firebase;
-  const { id } = getModuleData(card);
-  const countQuery = query(collection(db, usageCollection), where("moduleId", "==", id));
-  const snapshot = await getCountFromServer(countQuery);
-  state.totals[id] = snapshot.data().count;
-  setBadge(card);
-}
-
-async function refreshAllCounters() {
-  if (!state.firebase || !state.user) {
-    renderCounters();
-    return;
-  }
-
-  await Promise.all(elements.cards.map((card) => refreshModuleTotal(card).catch(() => setBadge(card, { label: "讀取失敗" }))));
-}
-
-async function recordModuleUse(card, event) {
+function countModuleUse(card, event) {
   if (event && event.isTrusted === false) {
     return;
   }
 
-  if (!state.firebase || !state.user) {
-    setBadge(card, { label: hasFirebaseConfig() ? "準備中" : "本機預覽" });
+  const state = loadCounterState();
+  const key = getModuleKey(card);
+  const now = Date.now();
+  const lastCountedAt = Number(state.lastCountedAt[key] || 0);
+
+  if (now - lastCountedAt < counterCooldownMs) {
+    updateBadge(card, state);
     return;
   }
 
-  const moduleData = getModuleData(card);
-  const { db, collection, addDoc, serverTimestamp } = state.firebase;
+  state.counts[key] = Number(state.counts[key] || 0) + 1;
+  state.lastCountedAt[key] = now;
+  saveCounterState(state);
+  updateBadge(card, state);
 
-  try {
-    await addDoc(collection(db, usageCollection), {
-      moduleId: moduleData.id,
-      moduleTitle: moduleData.title,
-      moduleHref: moduleData.href,
-      uid: state.user.uid,
-      usedDate: getTodayKey(),
-      createdAt: serverTimestamp()
-    });
-    state.totals[moduleData.id] = Number(state.totals[moduleData.id] || 0) + 1;
-    const badge = getCounterBadge(card);
-    setBadge(card, { label: "已計入" });
-    badge.classList.add("is-counted");
-    setTimeout(() => {
-      badge.classList.remove("is-counted");
-      setBadge(card);
-    }, 1500);
-  } catch {
-    setBadge(card, { label: "計數失敗" });
-  }
-}
-
-async function initFirebase() {
-  if (!hasFirebaseConfig()) {
-    renderStatus();
-    return;
-  }
-
-  state.mode = "firebase";
-  const [{ initializeApp }, authModule, firestoreModule] = await Promise.all([
-    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
-    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
-    import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
-  ]);
-
-  const app = initializeApp(firebaseConfig);
-  const auth = authModule.getAuth(app);
-  const db = firestoreModule.getFirestore(app);
-
-  state.firebase = {
-    auth,
-    db,
-    onAuthStateChanged: authModule.onAuthStateChanged,
-    signInAnonymously: authModule.signInAnonymously,
-    collection: firestoreModule.collection,
-    addDoc: firestoreModule.addDoc,
-    getCountFromServer: firestoreModule.getCountFromServer,
-    query: firestoreModule.query,
-    where: firestoreModule.where,
-    serverTimestamp: firestoreModule.serverTimestamp
-  };
-
-  renderStatus();
-  state.firebase.onAuthStateChanged(auth, async (user) => {
-    state.user = user;
-    state.totals = {};
-    renderStatus();
-    await refreshAllCounters();
-  });
-
-  if (!auth.currentUser) {
-    await state.firebase.signInAnonymously(auth);
-  }
+  const badge = getCounterBadge(card);
+  badge.classList.remove("is-counted");
+  window.requestAnimationFrame(() => badge.classList.add("is-counted"));
 }
 
 function initDashboardCounters() {
-  elements.cards.forEach((card) => {
-    getCounterBadge(card);
-    card.addEventListener("click", (event) => {
-      recordModuleUse(card, event).catch(() => setBadge(card, { label: "計數失敗" }));
+  const cards = document.querySelectorAll(".tool-card");
+  const state = loadCounterState();
+
+  cards.forEach((card) => {
+    updateBadge(card, state);
+    card.addEventListener("click", (event) => countModuleUse(card, event));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        countModuleUse(card, event);
+      }
     });
   });
 }
 
 initDashboardCounters();
-initFirebase().catch((error) => {
-  console.error(error);
-  renderStatus();
-});

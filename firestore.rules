@@ -57,44 +57,6 @@ service cloud.firestore {
       allow delete: if isTeacher();
     }
 
-    function isValidDashboardUsage() {
-      return request.auth != null
-        && request.resource.data.keys().hasOnly([
-          'moduleId',
-          'moduleTitle',
-          'moduleHref',
-          'uid',
-          'usedDate',
-          'createdAt'
-        ])
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.moduleId in [
-          'teacher-profile',
-          'random-picker',
-          'mobile-links',
-          'ai-prompt-box',
-          'flowchart-canvas',
-          'project-wall',
-          'ai-music-mv',
-          'class-timer',
-          'quote-draw',
-          'mood-checkin'
-        ]
-        && request.resource.data.moduleTitle is string
-        && request.resource.data.moduleTitle.size() > 0
-        && request.resource.data.moduleTitle.size() <= 80
-        && request.resource.data.moduleHref is string
-        && request.resource.data.moduleHref.size() <= 160
-        && request.resource.data.usedDate is string
-        && request.resource.data.usedDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
-    }
-
-    match /dashboardModuleDailyUses/{usageId} {
-      allow read: if true;
-      allow create: if isValidDashboardUsage();
-      allow update, delete: if false;
-    }
-
     match /projectWallClasses/{classId} {
       allow read: if request.auth != null;
       allow create: if isTeacher()
