@@ -617,13 +617,11 @@ time {
 
   .hero-label {
     flex: 0 0 auto;
+    font-size: 0.74rem;
   }
 
   .hero-summary {
-    min-width: 0;
-    max-width: none;
-    font-size: 0.6rem;
-    line-height: 1.2;
+    display: none;
   }
 
   .hero-dashboard-tag {
