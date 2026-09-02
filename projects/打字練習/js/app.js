@@ -210,7 +210,7 @@
     });
     $('modeLabel').textContent = MODES[currentMode].label;
     $('statWpmLabel').textContent = MODES[currentMode].speedLabel;
-    document.title = '打字練習 — ' + MODES[currentMode].label;
+    document.title = '羅東國小打字練習網 — ' + MODES[currentMode].label;
   }
 
   function switchMode(mode) {
