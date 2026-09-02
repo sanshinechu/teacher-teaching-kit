@@ -136,10 +136,10 @@ body {
 .wrap {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 22px 16px 64px;
+  padding: 14px 16px 32px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 
 /* ---------- 頁首 ---------- */
@@ -223,9 +223,11 @@ body {
 /* ---------- 關卡卡片 ---------- */
 
 .levels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
-  gap: 11px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 3px 3px 6px;
+  scroll-snap-type: x proximity;
 }
 
 .level-card {
@@ -235,13 +237,16 @@ body {
   border: 2px solid var(--line);
   border-bottom-width: 5px;
   border-radius: var(--r);
-  padding: 15px 16px 13px;
+  padding: 9px 10px 7px;
   cursor: pointer;
   font-family: inherit;
   color: inherit;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+  flex: 1 0 150px;
+  min-width: 0;
+  scroll-snap-align: start;
   box-shadow: var(--shadow-sm);
   transition: transform .14s, border-color .14s;
 }
@@ -250,10 +255,10 @@ body {
 .level-card:focus-visible { outline: 3px solid var(--mint); outline-offset: 3px; }
 .level-card.is-current { border-color: var(--brand); background: var(--brand-soft); }
 
-.level-card h3 { margin: 0; font-size: 15.5px; font-weight: 900; }
-.level-card p { margin: 0; font-size: 13px; color: var(--ink-soft); line-height: 1.55; }
+.level-card h3 { margin: 0; font-size: 13.5px; font-weight: 900; line-height: 1.4; }
+.level-card p { display: none; }
 
-.level-stars { font-size: 17px; letter-spacing: 3px; color: var(--line); }
+.level-stars { font-size: 14px; letter-spacing: 2px; color: var(--line); }
 .level-stars .on { color: var(--star); }
 .level-best { font-size: 12px; font-weight: 800; color: var(--ink-faint); letter-spacing: 0; }
 
@@ -269,16 +274,18 @@ body {
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: var(--r);
-  padding: 11px 15px;
+  padding: 7px 12px;
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   box-shadow: var(--shadow-sm);
 }
 .stat dt { font-size: 12.5px; font-weight: 700; color: var(--ink-faint); }
 .stat dd {
   margin: 0;
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: var(--brand-deep);
@@ -288,16 +295,28 @@ body {
 /* ---------- 舞台 ---------- */
 
 .stage {
+  position: relative;
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 20px 20px 24px;
-  display: flex;
-  flex-direction: column;
+  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) 1fr;
+  grid-template-areas:
+    "mascot label"
+    "mascot word"
+    "mascot hint"
+    "progress progress";
   align-items: center;
-  gap: 15px;
+  gap: 7px 16px;
   box-shadow: var(--shadow);
 }
+.stage:focus { outline: none; }
+.stage .mascot-row { grid-area: mascot; }
+.stage .stage-label { grid-area: label; }
+.stage .word { grid-area: word; }
+.stage .finger-hint { grid-area: hint; justify-self: center; }
+.stage .progress-track { grid-area: progress; }
 
 /* ---------- 吉祥物 ---------- */
 
@@ -309,7 +328,7 @@ body {
   max-width: 100%;
 }
 
-.mascot { width: 84px; height: 84px; flex: none; }
+.mascot { width: 64px; height: 64px; flex: none; }
 .mascot svg { width: 100%; height: 100%; overflow: visible; }
 
 .m-side  { fill: var(--brand-deep); }
@@ -386,13 +405,13 @@ body {
 
 .ch {
   position: relative;
-  min-width: 56px;
-  height: 74px;
+  min-width: 48px;
+  height: 62px;
   padding: 0 10px;
   display: grid;
   place-items: center;
   font-family: var(--font-key);
-  font-size: 38px;
+  font-size: 32px;
   font-weight: 900;
   background: var(--surface-alt);
   border: 3px solid var(--line);
@@ -488,7 +507,7 @@ body {
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 15px 12px;
+  padding: 10px 9px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -499,8 +518,8 @@ body {
 .kb-row { display: flex; gap: 6px; justify-content: center; min-width: max-content; }
 
 .kb-key {
-  width: 48px;
-  height: 48px;
+  width: 43px;
+  height: 43px;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -521,12 +540,12 @@ body {
 .kb-sub  { font-size: 10px; font-weight: 700; color: var(--ink-faint); line-height: 1.1; }
 .kb-bopomofo { font-family: var(--font-ui); font-size: 18px; }
 
-.kb-w-tab   { width: 68px; }
-.kb-w-caps  { width: 78px; }
-.kb-w-back  { width: 78px; }
-.kb-w-enter { width: 86px; }
-.kb-w-shift { width: 98px; }
-.kb-w-space { width: 300px; }
+.kb-w-tab   { width: 61px; }
+.kb-w-caps  { width: 69px; }
+.kb-w-back  { width: 69px; }
+.kb-w-enter { width: 77px; }
+.kb-w-shift { width: 88px; }
+.kb-w-space { width: 270px; }
 
 .kb-filler {
   color: var(--ink-faint);
@@ -604,7 +623,7 @@ body {
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: var(--r);
-  padding: 11px 14px;
+  padding: 7px 12px;
 }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -687,6 +706,9 @@ body {
   font-size: 17px;
 }
 
+.is-free-practice #wpmStat { display: none; }
+.is-free-practice .modal .result-grid { grid-template-columns: 1fr; }
+
 /* 通關彩帶：純 CSS，不載 confetti 套件 */
 .confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .confetti i {
@@ -717,6 +739,21 @@ body {
   .keyboard { padding: 12px 8px; }
   .brand h1 { font-size: 22px; }
   .mascot { width: 56px; height: 56px; }
+}
+
+@media (max-width: 620px) {
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "mascot"
+      "label"
+      "word"
+      "hint"
+      "progress";
+  }
+  .mascot-row { justify-self: center; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .level-card { flex-basis: 138px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

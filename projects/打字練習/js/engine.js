@@ -17,6 +17,7 @@
   'use strict';
 
   var STORAGE_KEY = 'typing.progress.v1';
+  var IDLE_GAP_MS = 5000;
 
   /** 每一關的速度參考值（WPM，只影響第 3 顆星，不影響能不能過關） */
   var WPM_TARGET = { 1: 8, 2: 8, 3: 10, 4: 12, 5: 10, 6: 14 };
@@ -27,7 +28,10 @@
 
   function loadProgress() {
     try {
-      return JSON.parse(global.localStorage.getItem(STORAGE_KEY) || '{}');
+      var parsed = JSON.parse(global.localStorage.getItem(STORAGE_KEY) || '{}');
+      // localStorage 可能被舊版本、瀏覽器工具或損壞的同步資料寫成 null／陣列。
+      // 這些雖然是合法 JSON，卻不是本程式可使用的進度格式。
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
     } catch (e) {
       // 無痕視窗、瀏覽器擋了網站資料，都會走到這裡。不能讓它擋住整個遊戲。
       console.warn('[engine] 讀不到本機進度，這次的成績不會被記住：', e.message);
@@ -50,7 +54,9 @@
     var prev = progress[levelId];
     // 只往上覆蓋，不讓一次失常洗掉之前的好成績
     if (!prev || result.stars > prev.stars ||
-        (result.stars === prev.stars && result.accuracy > prev.accuracy)) {
+        (result.stars === prev.stars && result.accuracy > prev.accuracy) ||
+        (result.stars === prev.stars && result.accuracy === prev.accuracy &&
+         result.wpm > (Number(prev.wpm) || 0))) {
       progress[levelId] = {
         stars: result.stars,
         accuracy: result.accuracy,
@@ -72,8 +78,18 @@
   function buildQueue(level, count) {
     var drillCount = Math.ceil(count * 0.6);
     var wordCount = count - drillCount;
-    return shuffle(level.drills).slice(0, drillCount)
-      .concat(shuffle(level.words).slice(0, wordCount));
+    return takeRepeated(level.drills, drillCount)
+      .concat(takeRepeated(level.words, wordCount));
+  }
+
+  /** 題庫不夠長時以不同洗牌順序循環補足，保證題數符合設定值。 */
+  function takeRepeated(source, count) {
+    var out = [];
+    if (!source || !source.length || count <= 0) return out;
+    while (out.length < count) {
+      out = out.concat(shuffle(source).slice(0, count - out.length));
+    }
+    return out;
   }
 
   function shuffle(arr) {
@@ -104,15 +120,23 @@
     var bestCombo = 0;
     var startedAt = null;   // 第一次敲鍵才設，這是刻意的
     var finishedAt = null;
+    var pausedAt = null;
+    var pausedMs = 0;
+    var idleMs = 0;
+    var lastInputAt = null;
     var missMap = {};       // 期待的字元 → 打錯幾次
 
     function stats() {
       var accuracy = totalKeystrokes > 0
         ? Math.round((correctKeystrokes / totalKeystrokes) * 100)
         : 100;
-      var elapsedMs = startedAt ? ((finishedAt || now()) - startedAt) : 0;
+      var endAt = finishedAt || now();
+      var openPauseMs = pausedAt ? endAt - pausedAt : 0;
+      var elapsedMs = startedAt
+        ? Math.max(0, endAt - startedAt - pausedMs - openPauseMs - idleMs)
+        : 0;
       var minutes = elapsedMs / 60000;
-      var wpm = minutes > 0.008   // 少於半秒不算，避免第一擊噴出天文數字
+      var wpm = !freePractice && minutes > 0.008   // 少於半秒不算，避免第一擊噴出天文數字
         ? Math.round(((correctKeystrokes / 5) / minutes) * 10) / 10
         : 0;
       return {
@@ -186,6 +210,21 @@
         .slice(0, n);
     }
 
+    /** 換題動畫或其他明確中斷不列入速度。 */
+    function pause() {
+      if (!freePractice && startedAt !== null && finishedAt === null && pausedAt === null) {
+        pausedAt = now();
+      }
+    }
+
+    function resume() {
+      if (pausedAt !== null) {
+        pausedMs += now() - pausedAt;
+        pausedAt = null;
+        lastInputAt = now();
+      }
+    }
+
     /**
      * 收一次輸入。傳進來的是「這一擊代表的字元」：
      * 英打是 e.key（分大小寫），中打是鍵位換算出來的注音符號。
@@ -195,7 +234,15 @@
       var exp = expected();
       if (exp == null) return { ignored: true };
 
-      if (startedAt === null) startedAt = now();
+      var inputAt = now();
+      if (!freePractice) {
+        if (startedAt === null) startedAt = inputAt;
+        if (lastInputAt !== null && inputAt - lastInputAt > IDLE_GAP_MS) {
+          // 孩子舉手、老師講解或暫時離開：整段空檔都不算進 WPM。
+          idleMs += inputAt - lastInputAt;
+        }
+        lastInputAt = inputAt;
+      }
 
       totalKeystrokes++;
       var ok = (ch === exp);
@@ -229,6 +276,8 @@
       stats: stats,
       itemState: itemState,
       expected: expected,
+      pause: pause,
+      resume: resume,
       level: level,
       mode: mode,
       freePractice: freePractice,
@@ -241,6 +290,7 @@
     loadProgress: loadProgress,
     saveProgress: saveProgress,
     WPM_TARGET: WPM_TARGET,
+    IDLE_GAP_MS: IDLE_GAP_MS,
     STORAGE_KEY: STORAGE_KEY
   };
 })(window);

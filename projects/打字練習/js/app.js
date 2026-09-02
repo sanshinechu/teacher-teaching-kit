@@ -31,6 +31,7 @@
   var levelIndex = 0;
   var freePractice = false;
   var advancing = false;   // 換題動畫進行中，擋掉這段時間的輸入
+  var focusBeforeModal = null;
 
   var SPARKS = ['✨', '⭐', '💫', '🌟'];
   var CONFETTI_COLORS = ['#FF8A5B', '#3FC5BB', '#FFC53D', '#8E88E0', '#4BC57F', '#DE83BD'];
@@ -97,7 +98,7 @@
           '<span class="' + (stars >= 3 ? 'on' : '') + '">★</span>' +
           (rec ? ' <span class="level-best">最佳 ' + rec.accuracy + '%</span>' : '') +
         '</span>';
-      card.addEventListener('click', function () { startLevel(idx); });
+      card.addEventListener('click', function () { startLevel(idx, true); });
       box.appendChild(card);
     });
   }
@@ -149,7 +150,7 @@
 
   function updateStats(s) {
     $('statAcc').innerHTML = s.accuracy + '<small>%</small>';
-    $('statWpm').textContent = s.wpm;
+    $('statWpm').textContent = freePractice ? '—' : s.wpm;
     $('statCombo').textContent = s.combo;
     $('statProgress').innerHTML = s.done + '<small>/' + s.total + '</small>';
     $('progressFill').style.width = Math.round((s.done / s.total) * 100) + '%';
@@ -157,7 +158,7 @@
 
   // ---- 開始一關 ----------------------------------------------------------
 
-  function startLevel(idx) {
+  function startLevel(idx, focusStage) {
     levelIndex = idx;
     advancing = false;
     var level = LEVELS[idx];
@@ -174,9 +175,16 @@
       onItemComplete: function () {
         // 讓孩子看見整題變綠，再換下一題
         advancing = true;
+        var completingSession = session;
+        if (completingSession) completingSession.pause();
         global.setTimeout(function () {
+          // 動畫途中若切換關卡，舊計時器不能推進新關卡。
+          if (session !== completingSession) return;
           advancing = false;
-          if (session) session.nextItem();
+          if (completingSession) {
+            completingSession.resume();
+            completingSession.nextItem();
+          }
         }, 260);
       },
       // 最後一題打完是直接進 onFinish 的，不經過 onItemChange，
@@ -188,10 +196,12 @@
     });
 
     $('stageLabel').textContent = level.desc;
+    document.body.classList.toggle('is-free-practice', freePractice);
     updateStats(session.stats());
     renderLevels();
-    closeModal();
+    closeModal(false);
     if (mascot) mascot.say('idle');
+    if (focusStage) $('practiceStage').focus({ preventScroll: true });
   }
 
   // ---- 結果 --------------------------------------------------------------
@@ -211,6 +221,8 @@
 
     $('modalAcc').textContent = result.accuracy + '%';
     $('modalWpm').textContent = result.wpm;
+    $('modalStars').style.display = result.freePractice ? 'none' : '';
+    $('modalWpmStat').style.display = result.freePractice ? 'none' : '';
 
     if (result.missTop && result.missTop.length) {
       $('modalMisses').innerHTML = '最常打錯的鍵：' + result.missTop.map(function (m) {
@@ -225,18 +237,60 @@
     }
 
     $('modalNext').style.display = levelIndex + 1 < LEVELS.length ? '' : 'none';
+    focusBeforeModal = document.activeElement;
     $('modalBackdrop').classList.add('show');
+    $('modalBackdrop').setAttribute('aria-hidden', 'false');
     if (result.stars >= 2) dropConfetti();
     mascot.say('clear', 0);
     renderLevels();
+    global.setTimeout(function () {
+      var firstButton = $('modalNext').style.display === 'none' ? $('modalRetry') : $('modalNext');
+      firstButton.focus();
+    }, 0);
   }
 
-  function closeModal() { $('modalBackdrop').classList.remove('show'); }
+  function closeModal(restoreFocus) {
+    var wasOpen = $('modalBackdrop').classList.contains('show');
+    $('modalBackdrop').classList.remove('show');
+    $('modalBackdrop').setAttribute('aria-hidden', 'true');
+    if (wasOpen && restoreFocus !== false && focusBeforeModal && focusBeforeModal.focus) {
+      focusBeforeModal.focus({ preventScroll: true });
+    }
+  }
+
+  function handleModalKeydown(e) {
+    if (!$('modalBackdrop').classList.contains('show')) return false;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeModal(true);
+      return true;
+    }
+    if (e.key !== 'Tab') return true;
+
+    var buttons = [$('modalRetry'), $('modalNext')].filter(function (button) {
+      return button.style.display !== 'none';
+    });
+    var first = buttons[0];
+    var last = buttons[buttons.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+    return true;
+  }
 
   // ---- 鍵盤輸入 ----------------------------------------------------------
 
   function handleKeydown(e) {
+    if (handleModalKeydown(e)) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    // 使用 Tab 導覽到按鈕時，按鍵應保留原本的控制用途，不拿去判分。
+    if (e.target && e.target.closest &&
+        e.target.closest('button, a, input, select, textarea')) return;
 
     // 輸入法沒切成英文。這是電腦教室最常見的「怎麼按都沒反應」。
     if (e.isComposing || e.key === 'Process' || e.key === 'Unidentified') {
@@ -299,11 +353,11 @@
     keyboard = new Keyboard($('keyboard'), 'en');
     mascot = new global.Mascot($('mascot'), $('mascotBubble'));
     renderLegend();
-    startLevel(0);
+    startLevel(0, false);
 
     global.addEventListener('keydown', handleKeydown);
 
-    $('btnRestart').addEventListener('click', function () { startLevel(levelIndex); });
+    $('btnRestart').addEventListener('click', function () { startLevel(levelIndex, true); });
 
     $('btnFree').addEventListener('click', function () {
       freePractice = !freePractice;
@@ -312,16 +366,16 @@
       if (freePractice) {
         showNotice('自由練習模式：題目變成三倍長，<b>不計時、不計星星</b>，慢慢打沒關係。');
       }
-      startLevel(levelIndex);
+      startLevel(levelIndex, true);
     });
 
-    $('modalRetry').addEventListener('click', function () { startLevel(levelIndex); });
+    $('modalRetry').addEventListener('click', function () { startLevel(levelIndex, true); });
     $('modalNext').addEventListener('click', function () {
-      if (levelIndex + 1 < LEVELS.length) startLevel(levelIndex + 1);
-      else closeModal();
+      if (levelIndex + 1 < LEVELS.length) startLevel(levelIndex + 1, true);
+      else closeModal(true);
     });
     $('modalBackdrop').addEventListener('click', function (e) {
-      if (e.target === this) closeModal();
+      if (e.target === this) closeModal(true);
     });
 
     // 資料層自我檢查沒過就直說，不要讓孩子練到錯的指法

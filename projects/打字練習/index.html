@@ -31,12 +31,12 @@
 
   <dl class="stats">
     <div class="stat"><dt>正確率</dt><dd id="statAcc">100<small>%</small></dd></div>
-    <div class="stat"><dt>每分鐘字數</dt><dd id="statWpm">0</dd></div>
+    <div class="stat" id="wpmStat"><dt>每分鐘字數</dt><dd id="statWpm">0</dd></div>
     <div class="stat"><dt>連續答對</dt><dd id="statCombo">0</dd></div>
     <div class="stat"><dt>進度</dt><dd id="statProgress">0<small>/10</small></dd></div>
   </dl>
 
-  <div class="stage">
+  <div class="stage" id="practiceStage" tabindex="-1">
 
     <div class="mascot-row">
       <div class="mascot" id="mascot" data-mood="idle">
@@ -107,14 +107,14 @@
 
 </div>
 
-<div class="modal-backdrop" id="modalBackdrop">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+<div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+  <div class="modal" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
     <div class="confetti" id="confetti" aria-hidden="true"></div>
     <div class="stars" id="modalStars"></div>
     <h2 id="modalTitle">這一關完成了！</h2>
     <div class="result-grid">
       <div><b id="modalAcc">—</b><span>正確率</span></div>
-      <div><b id="modalWpm">—</b><span>每分鐘字數</span></div>
+      <div id="modalWpmStat"><b id="modalWpm">—</b><span>每分鐘字數</span></div>
     </div>
     <div class="misses" id="modalMisses"></div>
     <div class="btn-row" style="justify-content:center">
