@@ -147,10 +147,30 @@
     });
   };
 
-  /** 按下去閃一下，讓孩子確認「我按到的是這顆」 */
+  /**
+   * 按鍵回音：不管對錯、也不管這一擊會不會被判分，先讓孩子看見「我按到的是這顆」。
+   *
+   * 判分是有前提的（班級座號面板關著、輸入法切對、這一關收得了這個鍵），
+   * 前提不成立時整個按鍵會被丟掉，鍵盤就一點反應都沒有——而那往往正是
+   * 孩子第一次坐下來的那一刻。死掉的鍵盤會被讀成「程式壞了」。
+   */
+  Keyboard.prototype.echo = function (code) {
+    var node = this.keyNodes[code];
+    if (!node) return;
+    node.classList.add('is-echo');
+    global.clearTimeout(node.echoTimer);
+    node.echoTimer = global.setTimeout(function () {
+      node.classList.remove('is-echo');
+    }, 160);
+  };
+
+  /** 按下去閃一下，讓孩子確認「我按到的是這顆」，順便告訴他對不對 */
   Keyboard.prototype.flash = function (code, correct) {
     var node = this.keyNodes[code];
     if (!node) return;
+    // 判分結果比回音明確，蓋掉同一顆鍵上還沒散的回音，免得兩種底色打架
+    node.classList.remove('is-echo');
+    global.clearTimeout(node.echoTimer);
     var cls = correct ? 'is-hit' : 'is-miss';
     node.classList.add(cls);
     global.setTimeout(function () { node.classList.remove(cls); }, 160);

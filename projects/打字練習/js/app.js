@@ -662,6 +662,15 @@
     if (handleModalKeydown(e)) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
+    // 先給回音，再談判分。
+    //
+    // 底下每一道 return 都是有道理的（面板開著讓給輸入框、輸入法沒切、
+    // 這一關收不了這個鍵……），但它們共同的副作用是**整個按鍵被丟掉，
+    // 螢幕鍵盤一點反應都沒有**。孩子第一次坐下來、還沒填完座號就隨手試按的
+    // 那一刻，看到的就是一塊死掉的鍵盤——他的結論會是「程式壞了」。
+    // 所以回音放在所有 return 之前：它不影響判分，只回答「我按到的是哪一顆」。
+    if (keyboard) keyboard.echo(e.code);
+
     // 提示條擋到東西時，Esc 直接關掉（過關視窗優先，所以排在它後面）
     if (e.key === 'Escape' && $('notice').classList.contains('show')) {
       e.preventDefault();

@@ -844,6 +844,23 @@ body {
   color: #fff;
 }
 
+/* 按鍵回音：只說「你按到的是這一顆」，不管對錯。
+ *
+ * 🕳️ 為什麼需要它：判分是有前提的（面板關著、輸入法切對、這一關收得了這個鍵），
+ * 前提不成立時整個按鍵會被丟掉，螢幕鍵盤**一點反應都沒有**。孩子第一次坐下來
+ * 填完座號前隨手試按、或忘了切輸入法時，看到的就是一塊死掉的鍵盤——
+ * 那一刻他的結論是「這個程式壞了」，不是「我還沒開始」。
+ *
+ * 刻意做得比 is-hit / is-miss 淡：它不是評價，只是回音。
+ * 排在 is-hit / is-miss 前面，讓判分結果蓋過它（同分時後者勝）。 */
+.kb-key.is-echo {
+  background: var(--surface-alt);
+  border-color: var(--ink-faint);
+  border-top-color: var(--ink-faint);
+  transform: translateY(2px);
+  border-bottom-width: 3px;
+}
+
 .kb-key.is-hit {
   background: var(--hit);
   border-color: var(--hit);
