@@ -211,31 +211,46 @@
 
   /**
    * 把這個學生的成績從雲端抓回來。
-   * 用途是「換一台電腦坐，星星還在」——規則只開放 get 不開放 list，
-   * 所以這裡是一關一關拿，不是撈整個 collection。
+   * 用途是「換一台電腦坐，星星還在」——也是雲端存在的主要理由。
+   *
+   * 用 :batchGet 一次要六關，不要一關發一個 GET。
+   * 🕳️ 一關一個 GET 的話，沒打過的關卡各回一個 404，開一次頁面就在
+   * console 留下五六筆紅色錯誤——功能是好的，但看起來像壞掉，
+   * 而且六個來回也比一趟慢。batchGet 對不存在的文件回 `missing`，
+   * 那是正常回應不是錯誤。
+   *
+   * 附帶好處：文件 ID 在 JSON body 裡，不必像 GET 那樣煩惱中文班級的 URL 編碼。
    */
   function fetchMine(student, levelIds) {
     if (!available()) return global.Promise.resolve(null);
     if (!student || !student.klass || !student.seat) return global.Promise.resolve(null);
 
-    var out = {};
-    // 六關「並行」拿，不要一個接一個。
-    // 🕳️ 序列版實測要等 2～3 秒才拉得完，孩子那時早就開始打了，
-    // 星星會在他打到一半才突然冒出來。並行只要一趟的時間。
-    return global.Promise.all(levelIds.map(function (levelId) {
-      var id = docId(student, levelId);
-      return global.fetch(
-        'https://firestore.googleapis.com/v1/' + docPath(encodeURIComponent(id)) +
-        '?key=' + encodeURIComponent(apiKey)
-      ).then(function (res) {
-        if (res.status === 404) return null;        // 這一關還沒打過，正常
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      }).then(function (doc) {
-        if (doc && doc.fields) out[levelId] = fromFields(doc.fields);
-      }).catch(function () { /* 單一關拿不到就跳過，不要整批失敗 */ });
-    })).then(function () {
+    var names = levelIds.map(function (levelId) {
+      return docPath(docId(student, levelId));
+    });
+
+    return global.fetch(
+      'https://firestore.googleapis.com/v1/projects/' + projectId +
+      '/databases/(default)/documents:batchGet?key=' + encodeURIComponent(apiKey),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documents: names })
+      }
+    ).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (items) {
+      var out = {};
+      (items || []).forEach(function (item) {
+        if (!item || !item.found || !item.found.fields) return;   // missing＝還沒打過
+        var rec = fromFields(item.found.fields);
+        if (rec && rec.levelId) out[rec.levelId] = rec;
+      });
       return out;
+    }).catch(function (e) {
+      console.warn('[cloud] 拿不回雲端進度（這次就用本機的）：', e.message);
+      return null;
     });
   }
 
