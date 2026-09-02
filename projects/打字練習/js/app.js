@@ -24,20 +24,52 @@
     fetchMine: function () { return global.Promise.resolve(null); },
     flushPending: function () { return global.Promise.resolve(0); },
     pendingCount: function () { return 0; } };
+  // 每個模式是「指法六關 + 進階四關」接起來的一條路。
+  // 進階關的判分方式可能跟前六關完全不同（中打進階要走真輸入法），
+  // 差別寫在關卡自己的 kind 欄位上，不是寫在模式上——同一個模式底下兩種都有。
   var MODES = {
     en: {
       label: '英打指法',
-      levels: global.LevelsEN.levels,
+      advLabel: '英打進階',
+      levels: global.LevelsEN.levels.concat(global.LevelsENAdv.levels),
       speedLabel: '每分鐘字數',
       speedUnit: '字／分'
     },
     zh: {
       label: '注音鍵位',
-      levels: global.LevelsZhuyin.levels,
+      advLabel: '中文進階',
+      levels: global.LevelsZhuyin.levels.concat(global.LevelsZHAdv.levels),
       speedLabel: '每分鐘鍵數',
       speedUnit: '鍵／分'
     }
   };
+
+  var ZhuyinOf = (global.LevelsZHAdv && global.LevelsZHAdv.zhuyinOf) || {};
+  var PunctNote = (global.LevelsZHAdv && global.LevelsZHAdv.punctNote) || {};
+
+  /** 這一關是不是走真輸入法（中文進階）。判分、提示、輸入路徑三處都靠它分流。 */
+  function isIMELevel(level) {
+    return !!(level && level.kind === 'ime');
+  }
+
+  function currentLevel() {
+    return LEVELS[levelIndex];
+  }
+
+  /** 徽章文字看的是「這一關」，不是「這個模式」——同一個模式底下兩種都有。 */
+  function stageLabelOf(level) {
+    var m = MODES[currentMode];
+    return level && level.stage === 'adv' ? m.advLabel : m.label;
+  }
+
+  /**
+   * 速度單位也是一關一關看的。
+   * 注音鍵位量「鍵」，中文進階量「字」——一個中文字要按 3～4 鍵，
+   * 兩個混在一起看會以為孩子突然變慢三倍。
+   */
+  function speedLabelOf(level) {
+    return isIMELevel(level) ? '每分鐘字數' : MODES[currentMode].speedLabel;
+  }
 
   var FINGER_COLOR = {
     L5: 'var(--f-L5)', L4: 'var(--f-L4)', L3: 'var(--f-L3)', L2: 'var(--f-L2)',
@@ -186,8 +218,11 @@
       var stars = rec ? rec.stars : 0;
       var card = document.createElement('button');
       card.type = 'button';
-      card.className = 'level-card' + (idx === levelIndex ? ' is-current' : '');
+      card.className = 'level-card' +
+        (idx === levelIndex ? ' is-current' : '') +
+        (lv.stage === 'adv' ? ' is-adv' : '');
       card.innerHTML =
+        (lv.stage === 'adv' ? '<span class="level-tag">進階</span>' : '') +
         '<h3>' + lv.name + '</h3>' +
         '<p>' + lv.desc + '</p>' +
         '<span class="level-stars">' +
@@ -199,6 +234,13 @@
       card.addEventListener('click', function () { startLevel(idx, true); });
       box.appendChild(card);
     });
+
+    // 關卡列是橫向捲動的（十關排不進一行）。進階關落在看不見的右邊，
+    // 切過去卻沒捲動的話，孩子會以為畫面沒反應。
+    var currentCard = box.children[levelIndex];
+    if (currentCard && currentCard.scrollIntoView) {
+      currentCard.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
   }
 
   function renderModeButtons() {
@@ -208,9 +250,11 @@
       button.classList.toggle('is-active', currentMode === mode);
       button.setAttribute('aria-pressed', String(currentMode === mode));
     });
-    $('modeLabel').textContent = MODES[currentMode].label;
-    $('statWpmLabel').textContent = MODES[currentMode].speedLabel;
-    document.title = '羅東國小打字練習網 — ' + MODES[currentMode].label;
+    var level = currentLevel();
+    $('modeLabel').textContent = stageLabelOf(level);
+    $('statWpmLabel').textContent = speedLabelOf(level);
+    if ($('modalWpmLabel')) $('modalWpmLabel').textContent = speedLabelOf(level);
+    document.title = '羅東國小打字練習網 — ' + stageLabelOf(level);
   }
 
   function switchMode(mode) {
@@ -239,21 +283,82 @@
   // ---- 題目 --------------------------------------------------------------
 
   function renderWord(state) {
+    var level = currentLevel();
+    // 文章關一題有六七十個字元，一個字一顆鍵帽會直接把畫面撐爆，
+    // 所以改成整段文字排版，只保留「打完變綠、目前這個字highlight」。
+    var asText = !!(level && level.display === 'text');
     var box = $('word');
+    box.className = 'word' + (asText ? ' is-text' : '');
     box.innerHTML = '';
     for (var i = 0; i < state.text.length; i++) {
       var ch = state.text[i];
       var node = document.createElement('span');
       node.className = 'ch' +
-        (ch === ' ' ? ' is-space' : '') +
+        (ch === ' ' ? (asText ? ' is-gap' : ' is-space') : '') +
         (i < state.charIndex ? ' is-done' : '') +
         (i === state.charIndex ? ' is-current' : '');
       node.id = 'ch-' + i;
-      node.textContent = ch === ' ' ? '空白' : ch;
+      node.textContent = ch === ' ' ? (asText ? ' ' : '空白') : ch;
       box.appendChild(node);
     }
-    updateFingerHint(state.expected);
-    keyboard.highlightChar(state.expected);
+    updateHint(state.expected);
+  }
+
+  /** 提示要看這一關是哪一種：指法關講手指，中文進階關講注音怎麼拼。 */
+  function updateHint(ch) {
+    if (isIMELevel(currentLevel())) {
+      updateZhuyinHint(ch);
+    } else {
+      updateFingerHint(ch);
+      keyboard.highlightChar(ch);
+    }
+  }
+
+  var TONE_MARKS = 'ˊˇˋ˙';
+
+  /**
+   * 中文進階關的提示：這個字的注音怎麼拼。
+   *
+   * 這裡**不講按哪一顆鍵打標點**——全形標點對到哪顆鍵是輸入法決定的，
+   * 微軟注音、新酷音、自然輸入法各有各的排法，寫死了只要有一台不一樣，
+   * 孩子就會照著提示按然後打不出來，比沒提示更糟。理由詳見 levels-zh-adv.js。
+   */
+  function updateZhuyinHint(ch) {
+    var text = $('fingerText');
+    if (ch == null) {
+      text.textContent = '';
+      keyboard.clearHighlight();
+      return;
+    }
+    $('fingerDot').style.background = 'var(--brand)';
+
+    // 文章關不逐字提示。一段話六七十個字，每打一個字提示就換一次，
+    // 眼睛得在句子和提示之間來回跳，反而看不下去；而且多數字沒有注音表可查，
+    // 只會一直跳「用注音輸入法打出「我」」這種等於沒說的話。
+    if (currentLevel() && currentLevel().display === 'text') {
+      text.textContent = '照著上面那段話打，標點也要打出來';
+      keyboard.clearHighlight();
+      return;
+    }
+
+    if (PunctNote[ch]) {
+      text.textContent = '「' + ch + '」' + PunctNote[ch];
+      keyboard.clearHighlight();
+      return;
+    }
+    var zhuyin = ZhuyinOf[ch];
+    if (!zhuyin) {
+      text.textContent = '用注音輸入法打出「' + ch + '」';
+      keyboard.clearHighlight();
+      return;
+    }
+    var hasTone = false;
+    for (var i = 0; i < zhuyin.length; i++) {
+      if (TONE_MARKS.indexOf(zhuyin[i]) !== -1) hasTone = true;
+    }
+    text.textContent = '「' + ch + '」拼作 ' + zhuyin +
+      (hasTone ? '' : '（一聲，拼完直接選字）');
+    keyboard.highlightMany(zhuyin.split(''));
   }
 
   function updateFingerHint(ch) {
@@ -330,12 +435,21 @@
 
     $('stageLabel').textContent = level.desc;
     document.body.classList.toggle('is-free-practice', freePractice);
+    // 上一關留下的提醒條在這一關多半已經不成立了，尤其「要切成注音」那種
+    // 是 sticky 的，不清掉會一路跟著跨關卡，變成看起來很嚴重的假警告。
+    hideNotice();
+    setupInputMode(level);
     updateStats(session.stats());
+    renderModeButtons();
     renderLevels();
     if ($('studentLabel')) renderStudent();
     closeModal(false);
     if (mascot) mascot.say('idle');
-    if (focusStage) $('practiceStage').focus({ preventScroll: true });
+    if (focusStage) {
+      // 中文進階關的鍵盤輸入要落在輸入框裡，焦點放錯的話孩子打了完全沒反應
+      var target = isIMELevel(level) ? $('imeInput') : $('practiceStage');
+      if (target) target.focus({ preventScroll: true });
+    }
   }
 
   // ---- 結果 --------------------------------------------------------------
@@ -423,6 +537,115 @@
     return true;
   }
 
+  // ---- 判分後的畫面回饋（兩條輸入路徑共用）--------------------------------
+
+  function markCorrect() {
+    var st = session.itemState();
+    var doneNode = $('ch-' + (st.charIndex - 1));
+    if (doneNode) {
+      doneNode.classList.remove('is-current');
+      doneNode.classList.add('is-done');
+      sparkle(doneNode);
+    }
+    var nextNode = $('ch-' + st.charIndex);
+    if (nextNode) nextNode.classList.add('is-current');
+    updateHint(session.expected());
+  }
+
+  function markWrong() {
+    var cur = $('ch-' + session.itemState().charIndex);
+    if (cur) {
+      cur.classList.add('is-wrong');
+      global.setTimeout(function () { cur.classList.remove('is-wrong'); }, 260);
+    }
+    mascot.say('oops');
+  }
+
+  function cheerFor(res) {
+    var combo = session.stats().combo;
+    if (combo > 0 && combo % 5 === 0) mascot.say('combo');
+    else if (res.itemDone) mascot.say('good');
+    else mascot.mood('happy', 700);
+  }
+
+  // ---- 真輸入法輸入（中文進階第 7～10 關）---------------------------------
+  //
+  // 前六關收的是「按了哪一顆實體鍵」，這四關收的是「組完字之後出來的那個字」。
+  // 中間拼了幾顆鍵、選了第幾個候選字，瀏覽器一概不告訴我們——
+  // 我們只會在 compositionend 之後拿到一個中文字。所以：
+  //
+  //   * 一個「字」算一次判分，速度單位是字／分（不是鍵／分）
+  //   * 螢幕鍵盤改成把整組注音一起打光，不假裝知道他拼到第幾顆
+  //   * 「打錯不用退格」那條規則在這裡不適用——注音輸入法本來就要靠退格
+  //     修改組字中的拼音，所以輸入框讓他自由編輯，我們只收送出來的結果
+
+  function setupInputMode(level) {
+    var ime = isIMELevel(level);
+    document.body.classList.toggle('is-ime-level', ime);
+    var box = $('imeBox');
+    if (box) box.hidden = !ime;
+    var input = $('imeInput');
+    if (input) {
+      input.value = '';
+      input.disabled = !ime;
+    }
+  }
+
+  /**
+   * 把輸入框裡已經組好的字送進引擎。
+   *
+   * 🕳️ **不要在確認 advancing 之前就清空輸入框。** 換題動畫那 260 毫秒裡，
+   * 孩子已經選完的字若被清掉就真的不見了（keydown 那條路徑丟掉的是「還沒按下去」
+   * 的鍵，感覺完全不同）。所以動畫期間值留在框裡，等一下再送。
+   */
+  function feedIME() {
+    var input = $('imeInput');
+    if (!input || !input.value) return;
+    if (!session) { input.value = ''; return; }
+    if (advancing) { global.setTimeout(feedIME, 60); return; }
+
+    var value = input.value;
+    input.value = '';
+    for (var i = 0; i < value.length; i++) {
+      if (!session || advancing) {
+        // 這一批剩下的字碰上換題，補回輸入框等動畫結束
+        input.value = value.slice(i) + input.value;
+        global.setTimeout(feedIME, 60);
+        return;
+      }
+      judgeIMEChar(value[i]);
+    }
+  }
+
+  function judgeIMEChar(ch) {
+    var expected = session.expected();
+    var res = session.input(ch);
+    if (res.ignored) return;
+
+    if (res.correct) {
+      hideNotice();
+      markCorrect();
+      cheerFor(res);
+      return;
+    }
+
+    markWrong();
+
+    // 輸入法根本沒切過去。這一關的「怎麼按都不對」長這樣：
+    // 打出來的是 abc 而不是中文字，而且孩子多半不會發現差在哪。
+    if (/^[a-zA-Z0-9]$/.test(ch)) {
+      showNotice('<b>要先把輸入法切成注音喔！</b>按 <b>Shift</b> 或 ' +
+                 '<b>Ctrl + 空白鍵</b> 切換，畫面右下角顯示「中」就對了。' +
+                 '這一關要用注音拼出中文字，不是打英文字母。', true);
+      return;
+    }
+    // 半形標點也是同一種：看起來很像，但這一關要的是全形。
+    if (PunctNote[expected] && ch.charCodeAt(0) < 128) {
+      showNotice('這個標點要用<b>全形</b>的（比較寬的那種）。' +
+                 '先把輸入法切成注音，再按同一顆鍵試試看。');
+    }
+  }
+
   // ---- 鍵盤輸入 ----------------------------------------------------------
 
   function handleKeydown(e) {
@@ -474,16 +697,7 @@
     keyboard.flash(e.code, res.correct);
 
     if (res.correct) {
-      var doneNode = $('ch-' + (session.itemState().charIndex - 1));
-      if (doneNode) {
-        doneNode.classList.remove('is-current');
-        doneNode.classList.add('is-done');
-        sparkle(doneNode);
-      }
-      var nextNode = $('ch-' + session.itemState().charIndex);
-      if (nextNode) nextNode.classList.add('is-current');
-      updateFingerHint(session.expected());
-      keyboard.highlightChar(session.expected());
+      markCorrect();
 
       // 連續答對才換台詞，每打對一個字就洗一次版面反而吵
       // 第 6 關教的是「用 Shift 打大寫」。開著 Caps Lock 一樣打得出大寫、
@@ -494,17 +708,9 @@
                    '這一關要練的是<b>壓住 Shift</b>，把 Caps Lock 關掉再試試看～');
       }
 
-      var combo = session.stats().combo;
-      if (combo > 0 && combo % 5 === 0) mascot.say('combo');
-      else if (res.itemDone) mascot.say('good');
-      else mascot.mood('happy', 700);
+      cheerFor(res);
     } else {
-      var cur = $('ch-' + session.itemState().charIndex);
-      if (cur) {
-        cur.classList.add('is-wrong');
-        global.setTimeout(function () { cur.classList.remove('is-wrong'); }, 260);
-      }
-      mascot.say('oops');
+      markWrong();
 
       // 他按的那顆實體鍵是對的、只是少壓了 Shift。
       // 用 e.code 比對而不是比字串，這樣大寫（KeyA→A）和符號（Digit5→%）都涵蓋得到。
@@ -569,6 +775,27 @@
 
     global.addEventListener('keydown', handleKeydown);
 
+    // 真輸入法那條路徑：組字期間（isComposing）什麼都不做，
+    // 等 compositionend 之後才有一個真正的中文字可以判。
+    // 兩個事件都掛是因為各家瀏覽器送出的順序不一致，feedIME 送完會清空，
+    // 重複呼叫只是撈到空字串，不會重複判分。
+    var imeInput = $('imeInput');
+    if (imeInput) {
+      imeInput.addEventListener('input', function (e) {
+        if (e.isComposing) return;
+        feedIME();
+      });
+      imeInput.addEventListener('compositionend', function () {
+        global.setTimeout(feedIME, 0);
+      });
+    }
+    // 點練習區任何地方都把焦點送回輸入框——孩子很容易點一下畫面就打不動了
+    $('practiceStage').addEventListener('click', function (e) {
+      if (!isIMELevel(currentLevel())) return;
+      if (e.target && e.target.closest && e.target.closest('button, a, input')) return;
+      if (imeInput) imeInput.focus({ preventScroll: true });
+    });
+
     $('btnRestart').addEventListener('click', function () { startLevel(levelIndex, true); });
 
     $('modeEN').addEventListener('click', function () { switchMode('en'); });
@@ -617,7 +844,9 @@
     // 資料層自我檢查沒過就直說，不要讓孩子練到錯的指法
     var dataIssues = (KeyMap.integrityIssues || [])
       .concat(global.LevelsEN.issues || [])
-      .concat(global.LevelsZhuyin.issues || []);
+      .concat(global.LevelsZhuyin.issues || [])
+      .concat((global.LevelsENAdv && global.LevelsENAdv.issues) || [])
+      .concat((global.LevelsZHAdv && global.LevelsZHAdv.issues) || []);
     if (dataIssues.length) {
       showNotice('<b>題庫資料有問題，請通知老師：</b>' + dataIssues[0], true);
     }

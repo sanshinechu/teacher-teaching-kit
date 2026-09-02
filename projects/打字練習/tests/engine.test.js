@@ -25,7 +25,8 @@ function loadApp(initialStorage = {}) {
   };
   const context = vm.createContext({ window, console, Date: FakeDate, Math, JSON, Object, Number, String, RegExp });
 
-  ['js/keymap.js', 'js/levels-en.js', 'js/levels-zhuyin.js', 'js/engine.js'].forEach((file) => {
+  ['js/keymap.js', 'js/levels-en.js', 'js/levels-zhuyin.js',
+   'js/levels-en-adv.js', 'js/levels-zh-adv.js', 'js/engine.js'].forEach((file) => {
     vm.runInContext(fs.readFileSync(path.join(PROJECT_DIR, file), 'utf8'), context, { filename: file });
   });
 
@@ -290,4 +291,91 @@ test('班級看不出年級時用預設標準，不會壞掉', () => {
   E.saveStudent({ klass: '資源班', seat: '1' });
   assert.equal(E.gradeOf('資源班'), null);
   assert.equal(E.gradeFactor(), 1);
+});
+
+// ---- 進階八關（第 7～10 關）--------------------------------------------
+
+test('進階八關題庫通過資料檢查', () => {
+  const { window } = loadApp();
+  assert.deepEqual(Array.from(window.LevelsENAdv.issues), []);
+  assert.deepEqual(Array.from(window.LevelsZHAdv.issues), []);
+});
+
+test('中文拼字關每個字都查得到注音', () => {
+  // 這一關的存在意義就是練拼音，缺提示等於把孩子丟在原地——
+  // 而且是安靜失效：畫面只會顯示「用注音輸入法打出「X」」，看起來很正常。
+  const { window } = loadApp();
+  const level = window.LevelsZHAdv.levels.find((lv) => lv.id === 'zh-7');
+  const missing = [];
+  for (const item of level.items) {
+    for (const ch of item) {
+      if (!window.LevelsZHAdv.zhuyinOf[ch]) missing.push(ch);
+    }
+  }
+  assert.deepEqual(missing, []);
+});
+
+test('中文題庫不會混進半形字元', () => {
+  // `,` 跟 `，` 在編輯器裡幾乎看不出差別，但學生用注音輸入法永遠打不出半形的那個，
+  // 會整格卡死。這條在資料層擋掉，不要等上課才發現。
+  const { window } = loadApp();
+  const halfWidth = [];
+  for (const level of window.LevelsZHAdv.levels) {
+    for (const item of level.items) {
+      for (const ch of item) {
+        if (ch.charCodeAt(0) < 128) halfWidth.push(`${level.id}:${item}:${ch}`);
+      }
+    }
+  }
+  assert.deepEqual(halfWidth, []);
+});
+
+test('進階關的題數精確，題庫比題數短也補得滿', () => {
+  const { window } = loadApp();
+  const levels = window.LevelsENAdv.levels.concat(window.LevelsZHAdv.levels);
+  for (const level of levels) {
+    const session = window.TypingEngine.createSession({ level });
+    assert.equal(session.stats().total, level.goalCount, level.id);
+    const free = window.TypingEngine.createSession({ level, freePractice: true });
+    assert.equal(free.stats().total, level.goalCount * 3, level.id + '（自由練習）');
+  }
+});
+
+test('進階關用自己的速度標準，不吃指法關那張表', () => {
+  // 注音鍵位量「鍵／分」、中文進階量「字／分」，一個中文字要按 3～4 鍵。
+  // 沿用同一張表的話，孩子在進階關會被一個高三四倍的門檻擋住卻找不出原因。
+  const app = loadApp();
+  const E = app.window.TypingEngine;
+  const advanced = E.createSession({
+    level: { id: 'zh-7', goalCount: 1, items: ['山'], kind: 'ime', speedTarget: 8 },
+    mode: 'zh'
+  });
+  assert.equal(advanced.wpmTarget, 8);
+
+  // 沒帶 speedTarget 的指法關維持查表，不受影響
+  const basic = E.createSession({ level: app.window.LevelsZhuyin.levels[0], mode: 'zh' });
+  assert.equal(basic.wpmTarget, E.ZHUYIN_KPM_TARGET[1]);
+});
+
+test('中文進階關一個「字」算一次，速度是字／分不是鍵／分', () => {
+  const app = loadApp();
+  const E = app.window.TypingEngine;
+
+  function run(level, mode, text) {
+    const session = E.createSession({ level, mode });
+    let t = 1000;
+    for (const ch of text) {
+      app.setClock(t);
+      session.input(ch);
+      t += 1000;   // 間隔小於閒置門檻，不會被扣掉
+    }
+    return session.stats().wpm;
+  }
+
+  const en = run({ id: 'en-10', goalCount: 1, items: ['abcde'] }, 'en', 'abcde');
+  const zh = run({ id: 'zh-10', goalCount: 1, items: ['山水火木土'], kind: 'ime' }, 'zh', '山水火木土');
+
+  // 英打的口徑是「擊鍵數 ÷ 5」，中文是一個字算一個，同樣五個字元差正好五倍。
+  assert.ok(en > 0, '英打關應該量得到速度');
+  assert.equal(zh, en * 5);
 });

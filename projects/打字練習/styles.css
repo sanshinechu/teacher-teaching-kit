@@ -367,6 +367,29 @@ body {
 .level-card:active { transform: translateY(0); border-bottom-width: 3px; }
 .level-card:focus-visible { outline: 3px solid var(--mint); outline-offset: 3px; }
 .level-card.is-current { border-color: var(--brand); background: var(--brand-soft); }
+/* 進階四關用薄荷綠框跟指法六關分開。
+   ⚠️ .is-adv 跟 .is-current 同分 (0,2,0) 且排在後面，不補一條 (0,3,0)
+   的話「正在進行的進階關」會失去橘框，看不出自己在第幾關。 */
+.level-card.is-adv { border-color: var(--mint); }
+.level-card.is-adv.is-current { border-color: var(--brand); background: var(--brand-soft); }
+
+/* 🕳️ 絕對定位不是為了好看，是為了**不佔高度**。
+   關卡列是 flex row，所有卡片會拉齊到最高的那張——「進階」標籤只要在
+   一般流裡，十張卡就全部跟著變高 22px，1280×720 的教室機首屏剛好被擠破
+   （2026-09-03 實測 720 → 742）。h3 補右內距避開它，標題再長也不會被蓋到。 */
+.level-tag {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1.55;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--mint-soft);
+  color: var(--mint);
+}
+.level-card.is-adv h3 { padding-right: 38px; }
 
 .level-card h3 { margin: 0; font-size: 13.5px; font-weight: 900; line-height: 1.4; }
 .level-card p { display: none; }
@@ -418,6 +441,7 @@ body {
   grid-template-areas:
     "mascot label"
     "mascot word"
+    "mascot ime"
     "mascot hint"
     "progress progress";
   align-items: center;
@@ -428,8 +452,42 @@ body {
 .stage .mascot-row { grid-area: mascot; }
 .stage .stage-label { grid-area: label; }
 .stage .word { grid-area: word; }
+.stage .ime-box { grid-area: ime; justify-self: center; }
 .stage .finger-hint { grid-area: hint; justify-self: center; }
 .stage .progress-track { grid-area: progress; }
+
+/* ---------- 真輸入法輸入框（中文進階關）---------- */
+
+.ime-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+/* 🕳️ 這一行不能省，跟老師端 .t-bar 是同一個坑：display:flex 的特異性壓過
+   [hidden] 的預設 display:none，少了它前六關也會看到這個輸入框。 */
+.ime-box[hidden] { display: none; }
+
+.ime-label { font-size: 14px; font-weight: 800; color: var(--ink-soft); }
+
+.ime-box input {
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  width: min(300px, 46vw);
+  padding: 7px 14px;
+  border-radius: var(--r-key);
+  border: 3px solid var(--brand);
+  border-bottom-width: 5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ime-box input:focus {
+  outline: none;
+  box-shadow: 0 0 0 5px var(--brand-soft);
+}
+.ime-tip { font-size: 12.5px; font-weight: 700; color: var(--ink-faint); }
 
 /* ---------- 吉祥物 ---------- */
 
@@ -553,6 +611,56 @@ body {
   border-color: var(--miss);
   background: var(--miss-soft);
   color: var(--miss);
+}
+
+/* ---------- 文章關的題目：整段文字，不是一顆一顆鍵帽 ----------
+ *
+ * 一篇短文六七十個字元，照鍵帽排會排出十幾行、直接把鍵盤擠出畫面。
+ * 這裡只保留「打完變綠、現在這個字亮起來」，其餘鍵帽的殼全部拿掉。
+ *
+ * ⚠️ 每一條狀態都要在 .word.is-text 底下**再寫一次**。
+ * `.word.is-text .ch` 是 (0,2,0)，跟基底的 `.ch.is-done` 同分，而它排在後面，
+ * 只寫前者的話會把 is-done 的綠色蓋掉——打對了顏色不變，看起來就像沒反應。
+ * 這是這個檔案第三次踩同一個坑（前兩次是手指配色與吉祥物眼睛高光），
+ * 所以狀態類別一律用 (0,3,0) 的 `.word.is-text .ch.is-xxx` 寫死。
+ */
+.word.is-text {
+  gap: 0;
+  justify-content: flex-start;
+  line-height: 1.95;
+  max-width: 60ch;
+  margin: 0 auto;
+}
+.word.is-text .ch {
+  min-width: 0;
+  height: auto;
+  padding: 1px 1px;
+  font-size: 21px;
+  font-weight: 800;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid var(--line-soft);
+  border-radius: 5px;
+  transform: none;
+  box-shadow: none;
+}
+.word.is-text .ch.is-gap { min-width: .55em; }
+.word.is-text .ch.is-done {
+  background: transparent;
+  color: var(--hit);
+  border-bottom-color: var(--hit);
+}
+.word.is-text .ch.is-current {
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  border-bottom-color: var(--brand);
+  transform: none;
+  box-shadow: none;
+}
+.word.is-text .ch.is-wrong {
+  background: var(--miss-soft);
+  color: var(--miss);
+  border-bottom-color: var(--miss);
 }
 
 @keyframes pop {

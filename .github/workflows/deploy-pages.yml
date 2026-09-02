@@ -92,6 +92,36 @@ jobs:
           };
           EOF
 
+      # GitHub Pages 對靜態檔送 Cache-Control: max-age=600，所以更新後最多十分鐘
+      # 會有機器拿到舊的 JS／CSS。最難查的不是「看到舊版」，是**新 HTML 配舊 JS**：
+      # 頁面長得像新的，但某個新函式在舊檔裡不存在，整支程式在半路拋例外死掉，
+      # 畫面停在一個看起來正常、其實已經壞掉的狀態（2026-09-03 於本機實測到這個症狀）。
+      #
+      # 作法是把 HTML 裡 ?v=xxx 的版本號換成這次的 commit SHA：檔案內容變了、
+      # 網址就跟著變，瀏覽器沒得快取。原始碼裡留 ?v=dev 當佔位符，本機開發直接沿用。
+      - name: 靜態資源版本號改成 commit SHA（避免新 HTML 配舊 JS）
+        run: |
+          set -euo pipefail
+          V="${GITHUB_SHA::7}"
+          total=0
+          while IFS= read -r f; do
+            # grep 沒配到會回 1，配上 set -euo pipefail 會讓整個部署在
+            # 「某個 HTML 沒有版本號」時直接掛掉——那些頁面本來就不需要，
+            # 所以這裡明確吞掉非零離開碼，不要讓它變成部署失敗。
+            n=$(grep -o '?v=[^"]*' "$f" | wc -l || true)
+            if [ "$n" -gt 0 ]; then
+              sed -i -E "s/\?v=[^\"]*/?v=$V/g" "$f"
+              echo "$f：$n 個資源加上版本號 $V"
+              total=$((total + n))
+            fi
+          done < <(find projects -name '*.html')
+          # 一個都沒換到＝佔位符被誰改掉了。這種事不會報錯，只會在上課那天
+          # 以「有幾台看到舊版」的形式出現，所以寧可讓部署直接失敗。
+          if [ "$total" -eq 0 ]; then
+            echo "::error::HTML 裡找不到任何 ?v= 佔位符，快取破解沒有生效"
+            exit 1
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

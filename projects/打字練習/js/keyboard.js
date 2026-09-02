@@ -127,6 +127,26 @@
     return { key: k, needShift: false, shiftCode: null };
   };
 
+  /**
+   * 把一整串注音同時打光（中打進階關用）。
+   *
+   * 指法關是「只亮下一顆」，因為一次就是一顆鍵。但中文進階關要打的是「字」，
+   * 一個字得按 ㄋ、ㄧ、ˇ 三顆才組得出來，而且順序由孩子自己拼——
+   * 我們收到的只有組完字的結果，中間按了什麼根本看不到。
+   * 所以整組亮起來讓他照著拼，不假裝知道他打到第幾顆。
+   */
+  Keyboard.prototype.highlightMany = function (chars) {
+    this.clearHighlight();
+    if (!chars || !chars.length) return;
+    var self = this;
+    chars.forEach(function (ch) {
+      var k = KeyMap.byBopomofo(ch) || KeyMap.byChar(ch);
+      if (!k) return;
+      var node = self.keyNodes[k.code];
+      if (node) node.classList.add('is-target');
+    });
+  };
+
   /** 按下去閃一下，讓孩子確認「我按到的是這顆」 */
   Keyboard.prototype.flash = function (code, correct) {
     var node = this.keyNodes[code];

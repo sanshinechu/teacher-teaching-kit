@@ -183,8 +183,14 @@
    * 讓孩子先熟悉手指位置，再看到這些鍵可以拼出什麼。
    *
    * drill 段不是純隨機抽的，理由見 pickCovering。
+   *
+   * 進階關（第 7～10 關）不分 drills／words，直接給一份 items：
+   * 那幾關沒有「這一關新教哪幾顆鍵」可言，覆蓋法無用武之地，單純抽題就好。
    */
   function buildQueue(level, count) {
+    if (level.items && level.items.length) {
+      return takeRepeated(level.items, count);
+    }
     var drillCount = Math.ceil(count * 0.6);
     var wordCount = count - drillCount;
     return pickCovering(level.drills, drillCount, level.focusChars)
@@ -278,9 +284,13 @@
     var levelNo = parseInt(String(level.id).split('-')[1], 10) || 1;
 
     // 速度標準要看年段：三年級手小、還在認鍵，六年級多半打過兩年了。
-    var baseTarget = mode === 'zh'
-      ? (ZHUYIN_KPM_TARGET[levelNo] || 24)
-      : (WPM_TARGET[levelNo] || 10);
+    //
+    // 進階關（第 7～10 關）自己帶 speedTarget，因為它們量的東西根本不同：
+    // 注音鍵位量「鍵／分」、中文進階量「字／分」，一個中文字要按 3～4 鍵，
+    // 沿用同一張表會算出離譜的標準。指法六關維持查表。
+    var baseTarget = level.speedTarget != null
+      ? level.speedTarget
+      : (mode === 'zh' ? (ZHUYIN_KPM_TARGET[levelNo] || 24) : (WPM_TARGET[levelNo] || 10));
     var wpmTarget = Math.round(baseTarget * gradeFactor() * 10) / 10;
 
     var queue = buildQueue(level, freePractice ? level.goalCount * 3 : level.goalCount);
