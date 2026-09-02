@@ -94,10 +94,20 @@
 
   var GRADE_NAME = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六' };
 
+  // 班級先填好，孩子只要打座號——一個班的班級號碼都一樣，
+  // 讓三十個人各打一次是白費的。座號才是每個人不同的那一格。
+  // 換班級上課時老師改一次就好（改了會被記住，下次自動帶出來）。
+  var DEFAULT_CLASS = '301';
+
   function setIdPanel(open) {
     $('idPanel').hidden = !open;
     $('btnStudent').setAttribute('aria-expanded', String(open));
-    if (open) $('inputClass').focus();
+    // 班級已經有值（預設或上次記住的）就直接跳到座號，
+    // 焦點停在一格已經填好的欄位上，孩子會愣一下不知道要打哪裡
+    if (open) {
+      var target = $('inputClass').value ? $('inputSeat') : $('inputClass');
+      target.focus();
+    }
   }
 
   /**
@@ -135,7 +145,7 @@
       ? '👤 ' + s.klass + ' 班 ' + s.seat + ' 號'
       : '👤 點我填班級座號';
     $('btnStudent').classList.toggle('is-unset', !known);
-    $('inputClass').value = s.klass;
+    $('inputClass').value = s.klass || DEFAULT_CLASS;
     $('inputSeat').value = s.seat;
 
     var grade = Engine.gradeOf(s.klass);

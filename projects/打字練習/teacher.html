@@ -38,6 +38,8 @@
   .t-danger { border-color: var(--miss); color: var(--miss); }
   .t-danger:hover { background: var(--miss-soft); border-color: var(--miss); }
   .t-legend { font-size: 13px; color: var(--ink-faint); font-weight: 700; }
+  /* .btn 是給 <button> 寫的，用在 <a> 上要自己補這幾個 */
+  a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -52,6 +54,7 @@
       <span class="badge">老師端</span>
     </div>
     <div class="btn-row">
+      <a class="btn" href="./">← 回練習頁</a>
       <button class="btn btn-primary" id="btnLogin" type="button">用 Google 帳號登入</button>
       <button class="btn" id="btnLogout" type="button" hidden>登出</button>
     </div>

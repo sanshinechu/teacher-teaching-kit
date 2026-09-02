@@ -38,7 +38,7 @@
        年段也從班級號碼推出來，用來調整第三顆星的速度標準。 -->
   <form class="id-panel" id="idPanel" hidden>
     <label for="inputClass">班級</label>
-    <input id="inputClass" type="text" inputmode="numeric" maxlength="8" placeholder="601" autocomplete="off">
+    <input id="inputClass" type="text" inputmode="numeric" maxlength="8" placeholder="301" autocomplete="off">
     <label for="inputSeat">座號</label>
     <input id="inputSeat" type="text" inputmode="numeric" maxlength="4" placeholder="15" autocomplete="off">
     <button class="btn btn-primary" type="submit">記住我</button>
@@ -121,7 +121,12 @@
 
   <div class="keyboard" id="keyboard"></div>
 
-  <div class="legend" id="legend"></div>
+  <div class="foot-row">
+    <div class="legend" id="legend"></div>
+    <!-- 老師端入口。放這裡而不是另起一行，是因為 1265×710 的筆電
+         首屏高度剛好用完，多一行就會把手指圖例擠出去。 -->
+    <a class="teacher-link" href="teacher.html">👩‍🏫 老師端</a>
+  </div>
 
 </div>
 
