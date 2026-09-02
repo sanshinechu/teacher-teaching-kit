@@ -15,19 +15,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * 老師帳號白名單。
+     * 老師帳號。這是**唯一**讀得到全班成績的帳號。
      *
-     * 兩個都收是刻意的：兩個都是同一位老師的教育網帳號，
-     * 但規則是逐字比對的——只寫一個的話，用另一個登入會被擋在門外，
-     * 而畫面只會顯示 permission-denied，看不出是帳號選錯了。
-     * 要拿掉哪一個隨時可以，改完記得重新部署（不會自動跟著網站部署）。
+     * 使用者的 Firebase 專案全部掛在 shine@ 底下管理（不是平常用的 lotes@），
+     * 2026-09-02 確認過只留這一個。
+     *
+     * ⚠️ 逐字比對，沒有模糊空間。用別的帳號登入會拿到 permission-denied，
+     * 而那個訊息不會告訴你「是帳號選錯了」——看到它先確認登入的是哪個帳號。
+     * 改這裡之後要重新部署，規則不會跟著網站自動上線。
      */
     function isTeacher() {
       return request.auth != null
-        && request.auth.token.email in [
-             'shine@tmail.ilc.edu.tw',
-             'lotes@tmail.ilc.edu.tw'
-           ]
+        && request.auth.token.email == 'shine@tmail.ilc.edu.tw'
         && request.auth.token.email_verified == true;
     }
 
