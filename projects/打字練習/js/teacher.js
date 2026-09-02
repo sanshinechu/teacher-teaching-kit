@@ -154,6 +154,21 @@ function render() {
     done + ' / ' + full + ' 關（滑鼠移到星星上可以看正確率和速度）';
 }
 
+/**
+ * 時間格式化成 `2026/09/02 22:01:24`。
+ *
+ * 🕳️ 不要用 toLocaleString('zh-TW')：它產生的是「2026/9/2 下午10:01:24」，
+ * 那個「下午」Excel 認不得，匯出去的檔案沒辦法按時間排序。
+ * 自己補零成 24 小時制才是各地區都吃得下的寫法。
+ */
+function fmtTime(ts) {
+  if (!ts || !ts.toDate) return '';
+  const d = ts.toDate();
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) +
+         ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
 function exportCsv() {
   const mine = classRows().slice().sort((a, b) =>
     seatOrder(a.seat, b.seat) || a.levelId.localeCompare(b.levelId));
@@ -166,7 +181,7 @@ function exportCsv() {
     r.stars,
     r.accuracy,
     r.wpm,
-    r.updatedAt && r.updatedAt.toDate ? r.updatedAt.toDate().toLocaleString('zh-TW') : ''
+    fmtTime(r.updatedAt)
   ]));
 
   const csv = lines.map((row) => row.map((cell) => {
