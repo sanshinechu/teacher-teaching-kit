@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>打字練習 — 英打指法</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="sky" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>打字練習</h1>
+      <span class="badge" id="modeLabel">英打指法</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btnFree" type="button" aria-pressed="false">🐢 自由練習：關</button>
+      <button class="btn" id="btnRestart" type="button">🔄 重來一次</button>
+    </div>
+  </div>
+
+  <div class="notice" id="notice" role="status" aria-live="polite">
+    <span id="noticeText"></span>
+  </div>
+
+  <div class="levels" id="levels"></div>
+
+  <dl class="stats">
+    <div class="stat"><dt>正確率</dt><dd id="statAcc">100<small>%</small></dd></div>
+    <div class="stat"><dt>每分鐘字數</dt><dd id="statWpm">0</dd></div>
+    <div class="stat"><dt>連續答對</dt><dd id="statCombo">0</dd></div>
+    <div class="stat"><dt>進度</dt><dd id="statProgress">0<small>/10</small></dd></div>
+  </dl>
+
+  <div class="stage">
+
+    <div class="mascot-row">
+      <div class="mascot" id="mascot" data-mood="idle">
+        <svg viewBox="0 0 100 100" role="img" aria-label="吉祥物小鍵">
+          <!-- 身體就是一顆鍵帽：下面深色那層是鍵帽的側面，露出來才有厚度。
+               圓角刻意不放太大——太圓就變成一顆頭，看不出是按鍵了。 -->
+          <rect class="m-side" x="13" y="30" width="74" height="56" rx="15"/>
+          <rect class="m-top"  x="13" y="16" width="74" height="58" rx="14"/>
+          <!-- 小手 -->
+          <circle class="m-hand" cx="8"  cy="68" r="6"/>
+          <circle class="m-hand" cx="92" cy="68" r="6"/>
+          <!-- 腮紅 -->
+          <ellipse class="m-blush" cx="30" cy="57" rx="6" ry="3.6"/>
+          <ellipse class="m-blush" cx="70" cy="57" rx="6" ry="3.6"/>
+
+          <!-- 眼睛：平常 -->
+          <g class="m-eyes m-eyes-idle">
+            <circle cx="39" cy="44" r="6"/>
+            <circle cx="61" cy="44" r="6"/>
+            <circle class="m-glint" cx="41" cy="42" r="2"/>
+            <circle class="m-glint" cx="63" cy="42" r="2"/>
+          </g>
+          <!-- 眼睛：開心（彎彎的） -->
+          <g class="m-eyes m-eyes-happy">
+            <path d="M33 46 Q39 38 45 46"/>
+            <path d="M55 46 Q61 38 67 46"/>
+          </g>
+          <!-- 眼睛：嚇一跳（睜大） -->
+          <g class="m-eyes m-eyes-oops">
+            <circle cx="39" cy="44" r="8"/>
+            <circle cx="61" cy="44" r="8"/>
+            <circle class="m-glint" cx="42" cy="41" r="2.6"/>
+            <circle class="m-glint" cx="64" cy="41" r="2.6"/>
+          </g>
+          <!-- 眼睛：超開心（星星眼） -->
+          <g class="m-eyes m-eyes-cheer">
+            <path d="M39 36 L41.6 42 L48 44 L41.6 46 L39 52 L36.4 46 L30 44 L36.4 42 Z"/>
+            <path d="M61 36 L63.6 42 L70 44 L63.6 46 L61 52 L58.4 46 L52 44 L58.4 42 Z"/>
+          </g>
+
+          <!-- 嘴巴 -->
+          <path class="m-mouth m-mouth-idle"  d="M44 58 Q50 63 56 58"/>
+          <path class="m-mouth m-mouth-happy" d="M42 57 Q50 68 58 57 Z"/>
+          <ellipse class="m-mouth m-mouth-oops" cx="50" cy="60" rx="4" ry="5"/>
+          <path class="m-mouth m-mouth-cheer" d="M40 56 Q50 71 60 56 Z"/>
+        </svg>
+      </div>
+      <p class="bubble" id="mascotBubble">準備好了嗎？</p>
+    </div>
+
+    <p class="stage-label" id="stageLabel">請按下畫面上發亮的那顆鍵</p>
+
+    <div class="word" id="word"></div>
+
+    <div class="finger-hint" id="fingerHint">
+      <span class="finger-dot" id="fingerDot"></span>
+      <span id="fingerText">準備好了嗎？</span>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <div class="keyboard" id="keyboard"></div>
+
+  <div class="legend" id="legend"></div>
+
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="confetti" id="confetti" aria-hidden="true"></div>
+    <div class="stars" id="modalStars"></div>
+    <h2 id="modalTitle">這一關完成了！</h2>
+    <div class="result-grid">
+      <div><b id="modalAcc">—</b><span>正確率</span></div>
+      <div><b id="modalWpm">—</b><span>每分鐘字數</span></div>
+    </div>
+    <div class="misses" id="modalMisses"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" id="modalRetry" type="button">再打一次</button>
+      <button class="btn btn-primary" id="modalNext" type="button">下一關 →</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/keymap.js"></script>
+<script src="js/levels-en.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/mascot.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
