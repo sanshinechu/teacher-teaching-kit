@@ -24,7 +24,20 @@
     fetchMine: function () { return global.Promise.resolve(null); },
     flushPending: function () { return global.Promise.resolve(0); },
     pendingCount: function () { return 0; } };
-  var LEVELS = global.LevelsEN.levels;
+  var MODES = {
+    en: {
+      label: '英打指法',
+      levels: global.LevelsEN.levels,
+      speedLabel: '每分鐘字數',
+      speedUnit: '字／分'
+    },
+    zh: {
+      label: '注音鍵位',
+      levels: global.LevelsZhuyin.levels,
+      speedLabel: '每分鐘鍵數',
+      speedUnit: '鍵／分'
+    }
+  };
 
   var FINGER_COLOR = {
     L5: 'var(--f-L5)', L4: 'var(--f-L4)', L3: 'var(--f-L3)', L2: 'var(--f-L2)',
@@ -37,6 +50,8 @@
   var keyboard = null;
   var mascot = null;
   var session = null;
+  var currentMode = 'en';
+  var LEVELS = MODES[currentMode].levels;
   var levelIndex = 0;
   var freePractice = false;
   var advancing = false;   // 換題動畫進行中，擋掉這段時間的輸入
@@ -153,7 +168,8 @@
       $('idHint').textContent = '這台電腦別人也會用，填了星星才記得住是你的。';
     } else if (grade) {
       $('idHint').textContent = GRADE_NAME[grade] + '年級的速度標準' +
-        (session ? '：這一關第三顆星要打到 ' + session.wpmTarget + ' 字／分' : '');
+        (session ? '：這一關第三顆星要打到 ' + session.wpmTarget + ' ' +
+          MODES[currentMode].speedUnit : '');
     } else {
       $('idHint').textContent = '班級看不出年級，速度標準用一般的。';
     }
@@ -183,6 +199,31 @@
       card.addEventListener('click', function () { startLevel(idx, true); });
       box.appendChild(card);
     });
+  }
+
+  function renderModeButtons() {
+    ['en', 'zh'].forEach(function (mode) {
+      var button = $('mode' + mode.toUpperCase());
+      if (!button) return;
+      button.classList.toggle('is-active', currentMode === mode);
+      button.setAttribute('aria-pressed', String(currentMode === mode));
+    });
+    $('modeLabel').textContent = MODES[currentMode].label;
+    $('statWpmLabel').textContent = MODES[currentMode].speedLabel;
+    document.title = '打字練習 — ' + MODES[currentMode].label;
+  }
+
+  function switchMode(mode) {
+    if (!MODES[mode] || currentMode === mode) return;
+    currentMode = mode;
+    LEVELS = MODES[currentMode].levels;
+    levelIndex = 0;
+    advancing = false;
+    keyboard.setMode(currentMode);
+    renderModeButtons();
+    startLevel(0, true);
+    var who = Engine.loadStudent();
+    if (who.klass && who.seat) pullFromCloud(who);
   }
 
   // ---- 手指圖例 ----------------------------------------------------------
@@ -217,15 +258,17 @@
 
   function updateFingerHint(ch) {
     if (ch == null) return;
-    var k = KeyMap.byChar(ch);
+    var k = currentMode === 'zh' ? KeyMap.byBopomofo(ch) : KeyMap.byChar(ch);
     if (!k) {
       $('fingerText').textContent = '';
       return;
     }
-    var needShift = KeyMap.needsShift(ch);
+    var needShift = currentMode === 'en' && KeyMap.needsShift(ch);
     var shiftHand = k.finger.charAt(0) === 'L' ? '右手' : '左手';
     $('fingerDot').style.background = FINGER_COLOR[k.finger] || 'var(--f-TH)';
-    $('fingerText').textContent = needShift
+    $('fingerText').textContent = currentMode === 'zh'
+      ? k.fingerName + (ch === 'ˉ' ? ' 按空白鍵（一聲）' : ' 按 ' + ch + '（' + k.upper + '）')
+      : needShift
       ? k.fingerName + ' 按 ' + k.lower + '，同時用' + shiftHand + '小指壓住 Shift'
       : k.fingerName + (ch === ' ' ? ' 按空白鍵' : ' 按 ' + k.upper);
   }
@@ -247,7 +290,7 @@
 
     session = Engine.createSession({
       level: level,
-      mode: 'en',
+      mode: currentMode,
       freePractice: freePractice,
       onItemChange: function (state, s) {
         renderWord(state);
@@ -418,7 +461,14 @@
     hideNotice();
 
     var expected = session.expected();
-    var res = session.input(e.key);
+    var pressed = KeyMap.byCode(e.code);
+    var typed = currentMode === 'zh' ? (pressed && pressed.bopomofo) : e.key;
+    if (currentMode === 'zh' && !typed) {
+      showNotice('這一關先練注音鍵位，請按畫面上有注音的那一顆鍵。');
+      return;
+    }
+
+    var res = session.input(typed);
     if (res.ignored) return;
 
     keyboard.flash(e.code, res.correct);
@@ -458,9 +508,8 @@
 
       // 他按的那顆實體鍵是對的、只是少壓了 Shift。
       // 用 e.code 比對而不是比字串，這樣大寫（KeyA→A）和符號（Digit5→%）都涵蓋得到。
-      var pressed = KeyMap.byCode(e.code);
       var needShift = typeof expected === 'string' && KeyMap.needsShift(expected);
-      if (needShift && !e.shiftKey && pressed && pressed.upper === expected) {
+      if (currentMode === 'en' && needShift && !e.shiftKey && pressed && pressed.upper === expected) {
         var shiftHand = pressed.finger.charAt(0) === 'L' ? '右手' : '左手';
         showNotice('<b>就差一個 Shift！</b>先用<b>' + shiftHand + '小指</b>壓住 ' +
                    '<b>Shift</b> 不要放，另一隻手再按 <b>' + pressed.lower + '</b>，' +
@@ -496,9 +545,10 @@
   // ---- 啟動 --------------------------------------------------------------
 
   function init() {
-    keyboard = new Keyboard($('keyboard'), 'en');
+    keyboard = new Keyboard($('keyboard'), currentMode);
     mascot = new global.Mascot($('mascot'), $('mascotBubble'));
     renderLegend();
+    renderModeButtons();
     startLevel(0, false);
     renderStudent();
 
@@ -520,6 +570,9 @@
     global.addEventListener('keydown', handleKeydown);
 
     $('btnRestart').addEventListener('click', function () { startLevel(levelIndex, true); });
+
+    $('modeEN').addEventListener('click', function () { switchMode('en'); });
+    $('modeZH').addEventListener('click', function () { switchMode('zh'); });
 
     $('btnFree').addEventListener('click', function () {
       freePractice = !freePractice;
@@ -562,7 +615,9 @@
     });
 
     // 資料層自我檢查沒過就直說，不要讓孩子練到錯的指法
-    var dataIssues = (KeyMap.integrityIssues || []).concat(global.LevelsEN.issues || []);
+    var dataIssues = (KeyMap.integrityIssues || [])
+      .concat(global.LevelsEN.issues || [])
+      .concat(global.LevelsZhuyin.issues || []);
     if (dataIssues.length) {
       showNotice('<b>題庫資料有問題，請通知老師：</b>' + dataIssues[0], true);
     }

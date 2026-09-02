@@ -31,6 +31,13 @@
   var WPM_TARGET = { 1: 8, 2: 8, 3: 10, 4: 12, 5: 10, 6: 14 };
 
   /**
+   * 注音鍵位用「每分鐘鍵數」而不是英打 WPM。
+   * 這一批只練 ㄅㄆㄇ 實體鍵位，不是在量完整中文輸入速度；若拿英打慣例
+   * 「擊鍵數 ÷ 5」來算，學生明明按對很多鍵，畫面卻會顯示很低的 WPM。
+   */
+  var ZHUYIN_KPM_TARGET = { 1: 22, 2: 22, 3: 24, 4: 24, 5: 28, 6: 30 };
+
+  /**
    * 年段係數。同一套速度標準給三年級和六年級是不公平的：
    * 三年級手小、還在認鍵，六年級多半打過兩年了。
    * 年級直接從班級號碼的第一碼推（601 → 六年級），推不出來就用 1.0。
@@ -271,7 +278,10 @@
     var levelNo = parseInt(String(level.id).split('-')[1], 10) || 1;
 
     // 速度標準要看年段：三年級手小、還在認鍵，六年級多半打過兩年了。
-    var wpmTarget = Math.round((WPM_TARGET[levelNo] || 10) * gradeFactor() * 10) / 10;
+    var baseTarget = mode === 'zh'
+      ? (ZHUYIN_KPM_TARGET[levelNo] || 24)
+      : (WPM_TARGET[levelNo] || 10);
+    var wpmTarget = Math.round(baseTarget * gradeFactor() * 10) / 10;
 
     var queue = buildQueue(level, freePractice ? level.goalCount * 3 : level.goalCount);
     var queueIndex = 0;
@@ -300,8 +310,9 @@
         ? Math.max(0, endAt - startedAt - pausedMs - openPauseMs - idleMs)
         : 0;
       var minutes = elapsedMs / 60000;
+      var speed = mode === 'zh' ? correctKeystrokes : (correctKeystrokes / 5);
       var wpm = !freePractice && minutes > 0.008   // 少於半秒不算，避免第一擊噴出天文數字
-        ? Math.round(((correctKeystrokes / 5) / minutes) * 10) / 10
+        ? Math.round((speed / minutes) * 10) / 10
         : 0;
       return {
         accuracy: accuracy,
@@ -476,6 +487,7 @@
     pickCovering: pickCovering,
     mergeRemote: mergeRemote,
     WPM_TARGET: WPM_TARGET,
+    ZHUYIN_KPM_TARGET: ZHUYIN_KPM_TARGET,
     GRADE_FACTOR: GRADE_FACTOR,
     IDLE_GAP_MS: IDLE_GAP_MS,
     STORAGE_KEY: STORAGE_KEY,

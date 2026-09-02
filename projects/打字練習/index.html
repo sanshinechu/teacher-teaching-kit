@@ -22,6 +22,10 @@
     <div class="brand">
       <h1>打字練習</h1>
       <span class="badge" id="modeLabel">英打指法</span>
+      <div class="mode-switch" aria-label="練習模式">
+        <button class="mode-option is-active" id="modeEN" type="button" aria-pressed="true">英打</button>
+        <button class="mode-option" id="modeZH" type="button" aria-pressed="false">注音</button>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn btn-id" id="btnStudent" type="button" aria-expanded="false" aria-controls="idPanel">
@@ -49,7 +53,7 @@
 
   <dl class="stats">
     <div class="stat"><dt>正確率</dt><dd id="statAcc">100<small>%</small></dd></div>
-    <div class="stat" id="wpmStat"><dt>每分鐘字數</dt><dd id="statWpm">0</dd></div>
+    <div class="stat" id="wpmStat"><dt id="statWpmLabel">每分鐘字數</dt><dd id="statWpm">0</dd></div>
     <div class="stat"><dt>連續答對</dt><dd id="statCombo">0</dd></div>
     <div class="stat"><dt>進度</dt><dd id="statProgress">0<small>/10</small></dd></div>
   </dl>
@@ -154,6 +158,7 @@
 
 <script src="js/keymap.js"></script>
 <script src="js/levels-en.js"></script>
+<script src="js/levels-zhuyin.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/mascot.js"></script>

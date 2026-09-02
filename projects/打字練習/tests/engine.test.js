@@ -25,7 +25,7 @@ function loadApp(initialStorage = {}) {
   };
   const context = vm.createContext({ window, console, Date: FakeDate, Math, JSON, Object, Number, String, RegExp });
 
-  ['js/keymap.js', 'js/levels-en.js', 'js/engine.js'].forEach((file) => {
+  ['js/keymap.js', 'js/levels-en.js', 'js/levels-zhuyin.js', 'js/engine.js'].forEach((file) => {
     vm.runInContext(fs.readFileSync(path.join(PROJECT_DIR, file), 'utf8'), context, { filename: file });
   });
 
@@ -40,6 +40,7 @@ test('六關題庫與鍵位表通過資料檢查', () => {
   const { window } = loadApp();
   assert.deepEqual(Array.from(window.KeyMap.integrityIssues), []);
   assert.deepEqual(Array.from(window.LevelsEN.issues), []);
+  assert.deepEqual(Array.from(window.LevelsZhuyin.issues), []);
 });
 
 test('自由練習每一關都精確產生三倍題數', () => {
@@ -178,7 +179,8 @@ test('錯誤統計要記得「按成了什麼」，不只是「哪個鍵錯了�
 
 test('教新鍵的關卡，該關每一顆新鍵都保證會出現', () => {
   const { window } = loadApp();
-  for (const level of window.LevelsEN.levels) {
+  const levels = Array.from(window.LevelsEN.levels).concat(Array.from(window.LevelsZhuyin.levels));
+  for (const level of levels) {
     const focus = level.focusChars || [];
     if (!focus.length) continue;          // 第 4、6 關是複習關，不強制
     for (let round = 0; round < 40; round++) {
@@ -200,13 +202,38 @@ test('教新鍵的關卡，該關每一顆新鍵都保證會出現', () => {
 
 test('保證覆蓋不會讓題數暴增', () => {
   const { window } = loadApp();
-  for (const level of window.LevelsEN.levels) {
+  const levels = Array.from(window.LevelsEN.levels).concat(Array.from(window.LevelsZhuyin.levels));
+  for (const level of levels) {
     for (let round = 0; round < 20; round++) {
       const session = window.TypingEngine.createSession({ level });
       assert.ok(session.stats().total >= level.goalCount, level.id);
       assert.ok(session.stats().total <= level.goalCount + 4,
         `${level.id} 題數 ${session.stats().total} 比設定的 ${level.goalCount} 多太多`);
     }
+  }
+});
+
+test('注音模式用每分鐘鍵數，不用英打擊鍵數除以五', () => {
+  const app = loadApp();
+  const level = { id: 'zh-1', goalCount: 1, drills: ['ㄇㄠ'], words: ['ㄇㄠ'] };
+  const session = app.window.TypingEngine.createSession({ level, mode: 'zh' });
+  session.input('ㄇ');
+  app.setClock(2000);
+  session.input('ㄠ');
+  assert.equal(session.stats().wpm, 120);
+});
+
+test('注音第 1 到 4 關的新教鍵位都被列為覆蓋目標', () => {
+  const { window } = loadApp();
+  const expected = {
+    'zh-1': 'ㄇㄋㄎㄑㄕㄘㄨㄜㄠㄤ',
+    'zh-2': 'ㄈㄌㄏㄒㄖㄙㄩㄝㄡㄥ',
+    'zh-3': 'ㄆㄊㄍㄐㄔㄗㄧㄛㄟㄣ',
+    'zh-4': 'ㄅㄉㄓㄚㄞㄢㄦ'
+  };
+  for (const level of window.LevelsZhuyin.levels) {
+    if (!expected[level.id]) continue;
+    assert.equal(Array.from(level.focusChars).join(''), expected[level.id], level.id);
   }
 });
 

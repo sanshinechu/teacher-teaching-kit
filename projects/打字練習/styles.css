@@ -186,6 +186,33 @@ body {
   border: 2px solid var(--mint);
 }
 
+.mode-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.mode-option {
+  min-width: 54px;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.mode-option.is-active {
+  background: var(--brand);
+  color: #fff;
+}
+.mode-option:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px; }
+
 .btn {
   font-family: inherit;
   font-size: 14px;
