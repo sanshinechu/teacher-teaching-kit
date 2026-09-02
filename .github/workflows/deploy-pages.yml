@@ -38,6 +38,13 @@ jobs:
           FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
           FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
           FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID }}
+          # 打字練習成績走「另一個」Firebase 專案（lotes-typing-practice），
+          # 規則檔獨立，改它碰不到上面那三個共用 study-b2e59 的專案。
+          TYPING_FIREBASE_API_KEY: ${{ secrets.TYPING_FIREBASE_API_KEY }}
+          TYPING_FIREBASE_AUTH_DOMAIN: ${{ vars.TYPING_FIREBASE_AUTH_DOMAIN }}
+          TYPING_FIREBASE_PROJECT_ID: ${{ vars.TYPING_FIREBASE_PROJECT_ID }}
+          TYPING_FIREBASE_APP_ID: ${{ vars.TYPING_FIREBASE_APP_ID }}
+          TYPING_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.TYPING_FIREBASE_MESSAGING_SENDER_ID }}
         run: |
           cat > "projects/班級作品牆/firebase-config.js" <<EOF
           window.TeacherProjectWallFirebaseConfig = {
@@ -72,6 +79,16 @@ jobs:
             messagingSenderId: "${FIREBASE_MESSAGING_SENDER_ID}",
             appId: "${FIREBASE_APP_ID}",
             measurementId: "${FIREBASE_MEASUREMENT_ID}"
+          };
+          EOF
+
+          cat > "projects/打字練習/firebase-config.js" <<EOF
+          window.TypingPracticeFirebaseConfig = {
+            apiKey: "${TYPING_FIREBASE_API_KEY}",
+            authDomain: "${TYPING_FIREBASE_AUTH_DOMAIN}",
+            projectId: "${TYPING_FIREBASE_PROJECT_ID}",
+            appId: "${TYPING_FIREBASE_APP_ID}",
+            messagingSenderId: "${TYPING_FIREBASE_MESSAGING_SENDER_ID}"
           };
           EOF
 

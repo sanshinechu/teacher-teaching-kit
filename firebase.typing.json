@@ -1,0 +1,5 @@
+{
+  "firestore": {
+    "rules": "projects/打字練習/firestore.rules"
+  }
+}

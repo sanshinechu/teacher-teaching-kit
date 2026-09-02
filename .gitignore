@@ -4,6 +4,7 @@ desktop.ini
 projects/班級作品牆/firebase-config.js
 projects/AI音樂MV成果集/firebase-config.js
 projects/儀表板入口/firebase-config.js
+projects/打字練習/firebase-config.js
 
 # 工具快取與產出物（2026-08-21 外置 .git 前補；體積大且與版控無關）
 .claude/

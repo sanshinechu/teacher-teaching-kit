@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>打字練習 — 老師端</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* 老師端只在辦公室用，不需要糖果鍵帽那一套，維持乾淨好讀就好 */
+  .wrap { max-width: 1200px; }
+  .t-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  /* 🕳️ 這一行不能省。`display: flex` 的特異性壓過 [hidden] 的預設 display:none，
+     少了它，還沒登入的人就看得到「清空這個班」那顆按鈕。
+     跟 README 裡記的兩次特異性陷阱是同一類問題，只是這次苦主是 hidden。 */
+  .t-bar[hidden] { display: none; }
+  .t-bar select {
+    font-family: inherit; font-size: 15px; font-weight: 800;
+    padding: 8px 12px; border-radius: var(--r-key);
+    border: 2px solid var(--line); border-bottom-width: 4px;
+    background: var(--surface); color: var(--ink);
+  }
+  .t-card {
+    background: var(--surface); border: 2px solid var(--line);
+    border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .t-table-wrap { overflow-x: auto; }
+  table.t-table { border-collapse: collapse; width: 100%; min-width: 620px; }
+  .t-table th, .t-table td {
+    padding: 8px 10px; text-align: center;
+    border-bottom: 2px solid var(--line-soft); font-size: 14px;
+  }
+  .t-table th { font-weight: 800; color: var(--ink-soft); white-space: nowrap; }
+  .t-table td:first-child, .t-table th:first-child { text-align: left; font-weight: 800; }
+  .t-stars { font-size: 15px; letter-spacing: 1px; color: var(--star); white-space: nowrap; }
+  .t-none { color: var(--ink-faint); }
+  .t-sum { font-weight: 900; color: var(--brand-deep); }
+  .t-msg { font-size: 15px; font-weight: 700; color: var(--ink-soft); margin: 0 0 10px; }
+  .t-danger { border-color: var(--miss); color: var(--miss); }
+  .t-danger:hover { background: var(--miss-soft); border-color: var(--miss); }
+  .t-legend { font-size: 13px; color: var(--ink-faint); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="sky" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>打字練習</h1>
+      <span class="badge">老師端</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnLogin" type="button">用 Google 帳號登入</button>
+      <button class="btn" id="btnLogout" type="button" hidden>登出</button>
+    </div>
+  </div>
+
+  <div class="t-card">
+    <p class="t-msg" id="msg">請先登入。只有老師的帳號讀得到全班成績。</p>
+
+    <div class="t-bar" id="controls" hidden>
+      <label for="selClass" style="font-weight:800">班級</label>
+      <select id="selClass"></select>
+      <button class="btn" id="btnReload" type="button">🔄 重新整理</button>
+      <button class="btn" id="btnCsv" type="button">⬇️ 匯出 CSV</button>
+      <button class="btn t-danger" id="btnClear" type="button">清空這個班</button>
+      <span class="t-legend" id="summary"></span>
+    </div>
+  </div>
+
+  <div class="t-card t-table-wrap" id="tableCard" hidden>
+    <table class="t-table" id="table"></table>
+  </div>
+
+</div>
+
+<script src="firebase-config.js"></script>
+<script type="module" src="js/teacher.js"></script>
+</body>
+</html>

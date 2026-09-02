@@ -1,0 +1,91 @@
+rules_version = '2';
+
+/**
+ * 打字練習成績 — 安全規則（專屬於 lotes-typing-practice 這個 Firebase 專案）
+ *
+ * 為什麼不跟 study-b2e59 共用：那份是班級作品牆／AI 音樂 MV／儀表板三個專案
+ * 共用的，一份檔案部署就整份覆蓋。成績另開一個專案，改這裡永遠碰不到那三個。
+ *
+ * 學生端「不登入」，所以寫入是開放的——安全完全靠下面的 schema 驗證擋死：
+ * 欄位少一個多一個都不行、型別不對不行、範圍超出不行、
+ * 文件 ID 跟內容對不起來也不行。
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * 老師帳號白名單。
+     *
+     * 兩個都收是刻意的：兩個都是同一位老師的教育網帳號，
+     * 但規則是逐字比對的——只寫一個的話，用另一個登入會被擋在門外，
+     * 而畫面只會顯示 permission-denied，看不出是帳號選錯了。
+     * 要拿掉哪一個隨時可以，改完記得重新部署（不會自動跟著網站部署）。
+     */
+    function isTeacher() {
+      return request.auth != null
+        && request.auth.token.email in [
+             'shine@tmail.ilc.edu.tw',
+             'lotes@tmail.ilc.edu.tw'
+           ]
+        && request.auth.token.email_verified == true;
+    }
+
+    /**
+     * 文件 ID 必須等於「班級-座號-關卡」。
+     *
+     * 這一條是整份規則最重要的一道：沒有它的話，任何人都可以把自己的成績
+     * 寫進任意一個文件 ID，等於可以覆蓋別班別人的紀錄。綁死之後，
+     * 要寫進 601-15-en-1 這個位置，內容就必須自稱是 601 班 15 號的第 1 關。
+     */
+    function idMatchesContent(scoreId) {
+      let d = request.resource.data;
+      return scoreId == d.klass + '-' + d.seat + '-' + d.levelId;
+    }
+
+    function isValidScore(scoreId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['klass', 'seat', 'levelId', 'stars', 'accuracy', 'wpm', 'updatedAt'])
+        && d.keys().hasAll(['klass', 'seat', 'levelId', 'stars', 'accuracy', 'wpm', 'updatedAt'])
+        && d.klass is string && d.klass.size() > 0 && d.klass.size() <= 8
+        && d.seat is string && d.seat.size() > 0 && d.seat.size() <= 4
+        && d.levelId in ['en-1', 'en-2', 'en-3', 'en-4', 'en-5', 'en-6']
+        && idMatchesContent(scoreId)
+        && d.stars is int && d.stars >= 1 && d.stars <= 3
+        && d.accuracy is int && d.accuracy >= 0 && d.accuracy <= 100
+        && d.wpm is number && d.wpm >= 0 && d.wpm <= 300
+        // 時間戳一律用伺服器時間，前端送什麼都不算
+        && d.updatedAt == request.time;
+    }
+
+    /**
+     * 只能往上覆蓋，不能把自己的好成績洗掉。
+     * 比較順序跟 engine.js 的 recordResult 一致：星等 → 正確率 → 速度。
+     * 前後端各擋一次，前端漏了這裡還會擋住。
+     */
+    function isBetterThan(old) {
+      let d = request.resource.data;
+      return d.stars > old.stars
+        || (d.stars == old.stars && d.accuracy > old.accuracy)
+        || (d.stars == old.stars && d.accuracy == old.accuracy && d.wpm > old.wpm);
+    }
+
+    match /typingScores/{scoreId} {
+      // get 開放：學生換一台電腦，填了班級座號就能把自己的星星拉回來。
+      // list 只給老師：知道文件 ID 才讀得到單筆，但沒有人能把全班撈走。
+      allow get: if true;
+      allow list: if isTeacher();
+
+      allow create: if isValidScore(scoreId);
+      allow update: if isValidScore(scoreId) && isBetterThan(resource.data);
+
+      // 學生刪不掉任何東西。清空班級是老師端的功能。
+      allow delete: if isTeacher();
+    }
+
+    // 上面沒列到的路徑一律拒絕。
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

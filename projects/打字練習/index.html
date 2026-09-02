@@ -10,6 +10,12 @@
 
 <div class="sky" aria-hidden="true"></div>
 
+<!-- 提示條浮在畫面上方，不佔版面高度。
+     原本它在版面流裡，一跳出來就把鍵盤和手指圖例往下擠出首屏。 -->
+<div class="notice" id="notice" role="status" aria-live="polite">
+  <span id="noticeText"></span>
+</div>
+
 <div class="wrap">
 
   <div class="topbar">
@@ -18,14 +24,26 @@
       <span class="badge" id="modeLabel">英打指法</span>
     </div>
     <div class="btn-row">
+      <button class="btn btn-id" id="btnStudent" type="button" aria-expanded="false" aria-controls="idPanel">
+        <span id="studentLabel">👤 點我填班級座號</span>
+        <span class="sync-badge" id="syncBadge" hidden></span>
+      </button>
       <button class="btn" id="btnFree" type="button" aria-pressed="false">🐢 自由練習：關</button>
       <button class="btn" id="btnRestart" type="button">🔄 重來一次</button>
     </div>
   </div>
 
-  <div class="notice" id="notice" role="status" aria-live="polite">
-    <span id="noticeText"></span>
-  </div>
+  <!-- 電腦教室的機器是共用的，孩子每週不一定坐同一台。
+       進度綁「班級-座號」而不是綁這台電腦，下一節課的孩子才不會看到別人的星星。
+       年段也從班級號碼推出來，用來調整第三顆星的速度標準。 -->
+  <form class="id-panel" id="idPanel" hidden>
+    <label for="inputClass">班級</label>
+    <input id="inputClass" type="text" inputmode="numeric" maxlength="8" placeholder="601" autocomplete="off">
+    <label for="inputSeat">座號</label>
+    <input id="inputSeat" type="text" inputmode="numeric" maxlength="4" placeholder="15" autocomplete="off">
+    <button class="btn btn-primary" type="submit">記住我</button>
+    <span class="id-hint" id="idHint"></span>
+  </form>
 
   <div class="levels" id="levels"></div>
 
@@ -124,11 +142,17 @@
   </div>
 </div>
 
+<!-- 雲端設定。GitHub Actions 部署時才會生成這個檔，本機開／隨身碟開時它不存在，
+     那是刻意的：沒有它 cloud.js 就整個靜默停用，孩子照樣練、成績照樣存在本機。
+     所以 file:// 底下 console 會有一則 404，那不是壞掉。 -->
+<script src="firebase-config.js"></script>
+
 <script src="js/keymap.js"></script>
 <script src="js/levels-en.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/mascot.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

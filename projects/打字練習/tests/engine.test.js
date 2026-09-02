@@ -23,7 +23,7 @@ function loadApp(initialStorage = {}) {
       setItem(key, value) { storage[key] = String(value); }
     }
   };
-  const context = vm.createContext({ window, console, Date: FakeDate, Math, JSON, Object, Number });
+  const context = vm.createContext({ window, console, Date: FakeDate, Math, JSON, Object, Number, String, RegExp });
 
   ['js/keymap.js', 'js/levels-en.js', 'js/engine.js'].forEach((file) => {
     vm.runInContext(fs.readFileSync(path.join(PROJECT_DIR, file), 'utf8'), context, { filename: file });
@@ -91,7 +91,7 @@ test('WPM 排除明確暫停區段', () => {
 });
 
 test('合法但錯誤的進度格式會安全回復成空物件', () => {
-  const { window } = loadApp({ 'typing.progress.v1': 'null' });
+  const { window } = loadApp({ 'typing.progress.v1:guest': 'null' });
   assert.deepEqual({ ...window.TypingEngine.loadProgress() }, {});
 });
 
@@ -99,7 +99,7 @@ test('星等與正確率相同時保留較快 WPM', () => {
   const previous = JSON.stringify({
     'en-1': { stars: 3, accuracy: 100, wpm: 9, at: '2026-01-01T00:00:00.000Z' }
   });
-  const app = loadApp({ 'typing.progress.v1': previous });
+  const app = loadApp({ 'typing.progress.v1:guest': previous });
   const level = { id: 'en-1', goalCount: 1, drills: ['abc'], words: ['abc'] };
   const session = app.window.TypingEngine.createSession({ level });
   session.input('a');
@@ -107,7 +107,160 @@ test('星等與正確率相同時保留較快 WPM', () => {
   session.input('b');
   app.setClock(3000);
   session.input('c');
-  const saved = JSON.parse(app.storage['typing.progress.v1']);
+  const saved = JSON.parse(app.storage['typing.progress.v1:guest']);
   assert.equal(saved['en-1'].accuracy, 100);
   assert.equal(saved['en-1'].wpm, 18);
+});
+
+// ---- 判分本身 --------------------------------------------------------------
+// 🕳️ 原本七個測試全在測計時與儲存，判分一條都沒測——而判分才是這支程式的本體。
+
+test('打錯不前進、也不倒退，游標停在原地等他打對', () => {
+  const app = loadApp();
+  const level = { id: 'en-1', goalCount: 1, drills: ['ab'], words: ['ab'] };
+  const session = app.window.TypingEngine.createSession({ level });
+
+  const wrong = session.input('z');
+  assert.equal(wrong.correct, false);
+  assert.equal(session.itemState().charIndex, 0, '打錯不該前進');
+  assert.equal(session.expected(), 'a', '游標要停在原地');
+
+  session.input('a');
+  assert.equal(session.itemState().charIndex, 1);
+});
+
+test('正確率算的是擊鍵，打錯一次就會反映出來', () => {
+  const app = loadApp();
+  const level = { id: 'en-1', goalCount: 1, drills: ['ab'], words: ['ab'] };
+  const session = app.window.TypingEngine.createSession({ level });
+  session.input('z');   // 錯
+  session.input('a');   // 對
+  session.input('b');   // 對
+  assert.equal(session.stats().totalKeystrokes, 3);
+  assert.equal(session.stats().correctKeystrokes, 2);
+  assert.equal(session.stats().accuracy, 67);
+});
+
+test('連續答對會累積，打錯歸零但最佳紀錄留著', () => {
+  const app = loadApp();
+  const level = { id: 'en-1', goalCount: 1, drills: ['abc'], words: ['abc'] };
+  const session = app.window.TypingEngine.createSession({ level });
+  session.input('a');
+  session.input('b');
+  assert.equal(session.stats().combo, 2);
+  session.input('z');
+  assert.equal(session.stats().combo, 0);
+  assert.equal(session.stats().bestCombo, 2);
+});
+
+test('錯誤統計要記得「按成了什麼」，不只是「哪個鍵錯了」', () => {
+  const app = loadApp();
+  const level = { id: 'en-1', goalCount: 1, drills: ['ab'], words: ['ab'] };
+  let finished = null;
+  const session = app.window.TypingEngine.createSession({
+    level,
+    onFinish: (result) => { finished = result; }
+  });
+  session.input('s');   // a 按成 s
+  session.input('s');   // 又一次
+  session.input('f');   // a 按成 f
+  session.input('a');
+  session.input('b');
+
+  const miss = finished.missTop[0];
+  assert.equal(miss.char, 'a');
+  assert.equal(miss.count, 3);
+  assert.equal(miss.typed[0].char, 's', '最常被按成的應該排第一');
+  assert.equal(miss.typed[0].count, 2);
+});
+
+// ---- 出題覆蓋 --------------------------------------------------------------
+
+test('教新鍵的關卡，該關每一顆新鍵都保證會出現', () => {
+  const { window } = loadApp();
+  for (const level of window.LevelsEN.levels) {
+    const focus = level.focusChars || [];
+    if (!focus.length) continue;          // 第 4、6 關是複習關，不強制
+    for (let round = 0; round < 40; round++) {
+      const session = window.TypingEngine.createSession({ level });
+      const seen = new Set();
+      for (let i = 0; i < 3000; i++) {
+        const ch = session.expected();
+        if (ch == null) break;
+        seen.add(ch);
+        session.input(ch);
+      }
+      // Array.from：focus 是 vm context 裡建的陣列，跟這邊不是同一個 realm，
+      // 直接 deepEqual 會因為 prototype 不同而失敗（同檔上方的資料檢查測試也這樣寫）。
+      const missing = Array.from(focus).filter((ch) => !seen.has(ch));
+      assert.equal(missing.length, 0, `${level.id} 第 ${round + 1} 次漏掉了 ${missing}`);
+    }
+  }
+});
+
+test('保證覆蓋不會讓題數暴增', () => {
+  const { window } = loadApp();
+  for (const level of window.LevelsEN.levels) {
+    for (let round = 0; round < 20; round++) {
+      const session = window.TypingEngine.createSession({ level });
+      assert.ok(session.stats().total >= level.goalCount, level.id);
+      assert.ok(session.stats().total <= level.goalCount + 4,
+        `${level.id} 題數 ${session.stats().total} 比設定的 ${level.goalCount} 多太多`);
+    }
+  }
+});
+
+// ---- 共用電腦：進度要綁人，不是綁這台機器 ----------------------------------
+
+test('換一個班級座號就是換一份進度', () => {
+  const app = loadApp();
+  const E = app.window.TypingEngine;
+  const level = { id: 'en-1', goalCount: 1, drills: ['ab'], words: ['ab'] };
+
+  E.saveStudent({ klass: '601', seat: '15' });
+  const s1 = E.createSession({ level });
+  s1.input('a'); s1.input('b');
+  assert.ok(app.storage['typing.progress.v1:601-15'], '應該存在這個學生名下');
+
+  E.saveStudent({ klass: '601', seat: '16' });
+  assert.equal(Object.keys({ ...E.loadProgress() }).length, 0, '換一個座號應該看不到別人的進度');
+
+  E.saveStudent({ klass: '601', seat: '15' });
+  assert.ok(E.loadProgress()['en-1'], '換回來要看得到自己的');
+});
+
+test('沒填班級座號照樣能練，記在訪客名下', () => {
+  const app = loadApp();
+  const E = app.window.TypingEngine;
+  assert.equal(E.studentId(), 'guest');
+  const level = { id: 'en-1', goalCount: 1, drills: ['ab'], words: ['ab'] };
+  const s = E.createSession({ level });
+  s.input('a'); s.input('b');
+  assert.ok(app.storage['typing.progress.v1:guest']);
+});
+
+// ---- 年段：同一套速度標準給三年級和六年級並不公平 --------------------------
+
+test('速度標準跟著班級推出來的年級走', () => {
+  const app = loadApp();
+  const E = app.window.TypingEngine;
+  const level = { id: 'en-1', goalCount: 1, drills: ['ab'], words: ['ab'] };
+
+  E.saveStudent({ klass: '301', seat: '1' });
+  const low = E.createSession({ level }).wpmTarget;
+
+  E.saveStudent({ klass: '601', seat: '1' });
+  const high = E.createSession({ level }).wpmTarget;
+
+  assert.equal(E.gradeOf('301'), 3);
+  assert.equal(E.gradeOf('601'), 6);
+  assert.ok(low < high, `三年級的門檻 ${low} 應該低於六年級的 ${high}`);
+});
+
+test('班級看不出年級時用預設標準，不會壞掉', () => {
+  const app = loadApp();
+  const E = app.window.TypingEngine;
+  E.saveStudent({ klass: '資源班', seat: '1' });
+  assert.equal(E.gradeOf('資源班'), null);
+  assert.equal(E.gradeFactor(), 1);
 });

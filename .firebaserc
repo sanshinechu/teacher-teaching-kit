@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "study-b2e59"
+    "default": "study-b2e59",
+    "typing": "lotes-typing-practice"
   },
   "targets": {},
   "etags": {}

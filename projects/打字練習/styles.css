@@ -14,6 +14,12 @@
  */
 
 :root {
+  /* 鍵帽邊長與題目字級由這兩個變數驅動，斷點只改變數不改每一條規則。
+     教室的投影機／大螢幕吃得下更大的鍵帽，而鍵帽上那條手指色帶
+     是教學功能——後排的孩子要看得見顏色，這件事比留白好看重要。 */
+  --kb:          43px;
+  --ch:          32px;
+
   --bg:          #E7F2FD;
   --bg-2:        #FDF3E9;
   --surface:     #FFFFFF;
@@ -133,10 +139,14 @@ body {
     linear-gradient(170deg, var(--bg) 0%, var(--bg-2) 100%);
 }
 
+/* 🕳️ 原本固定 1000px。實測 1920×1080 的教室電腦左右各空 460px，
+   鍵帽卻還是 43px——後排的孩子看不清鍵帽上的手指色帶。
+   改成跟著螢幕長，上限 1440 是為了不讓鍵盤寬到要轉頭看。 */
 .wrap {
-  max-width: 1000px;
+  width: 100%;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 14px 16px 32px;
+  padding: 14px 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -200,19 +210,91 @@ body {
 
 /* ---------- 提醒條 ---------- */
 
+/* 🕳️ 這個提示條原本在版面流裡，一跳出來就把下面全部往下推——
+   在 1265×710 的筆電上，手指顏色圖例會被擠出首屏，而那張圖例
+   正是「哪個顏色歸哪根手指」的說明書。改成浮在畫面上方，不佔高度。 */
 .notice {
   display: none;
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: min(640px, calc(100vw - 24px));
   align-items: flex-start;
   gap: 10px;
   background: var(--warn-bg);
   border: 2px solid var(--warn-line);
   color: var(--warn-ink);
   border-radius: var(--r);
-  padding: 13px 17px;
+  padding: 12px 17px;
   font-size: 15px;
   font-weight: 600;
+  box-shadow: var(--shadow);
 }
 .notice.show { display: flex; animation: drop-in .3s ease; }
+
+/* ---------- 我是誰（班級座號） ---------- */
+
+.btn-id.is-unset {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  animation: nudge 2.4s ease-in-out infinite;
+}
+
+.id-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  background: var(--surface);
+  border: 2px solid var(--brand);
+  border-radius: var(--r);
+  padding: 11px 15px;
+  box-shadow: var(--shadow-sm);
+  animation: drop-in .28s ease;
+}
+.id-panel[hidden] { display: none; }
+
+.id-panel label { font-size: 14px; font-weight: 800; color: var(--ink-soft); }
+
+.id-panel input {
+  font-family: var(--font-key);
+  font-size: 17px;
+  font-weight: 800;
+  width: 88px;
+  padding: 7px 11px;
+  border-radius: var(--r-key);
+  border: 2px solid var(--line);
+  border-bottom-width: 4px;
+  background: var(--surface-alt);
+  color: var(--ink);
+}
+.id-panel input:focus-visible { outline: 3px solid var(--mint); outline-offset: 2px; }
+
+/* 雲端同步狀態：一個小圖示就好。
+   傳不上去不是錯誤——成績本來就先進 localStorage，雲端只是加值，
+   所以這裡刻意不用紅色、不用驚嘆號，免得孩子以為自己弄壞了什麼。 */
+.sync-badge {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: .85;
+}
+.sync-badge[hidden] { display: none; }
+
+.id-hint {
+  flex: 1 1 220px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+@keyframes nudge {
+  0%, 88%, 100% { transform: translateY(0); }
+  93% { transform: translateY(-3px); }
+}
 .notice b { font-weight: 900; }
 
 @keyframes drop-in {
@@ -405,13 +487,13 @@ body {
 
 .ch {
   position: relative;
-  min-width: 48px;
-  height: 62px;
+  min-width: calc(var(--ch) * 1.5);
+  height: calc(var(--ch) * 1.94);
   padding: 0 10px;
   display: grid;
   place-items: center;
   font-family: var(--font-key);
-  font-size: 32px;
+  font-size: var(--ch);
   font-weight: 900;
   background: var(--surface-alt);
   border: 3px solid var(--line);
@@ -518,8 +600,8 @@ body {
 .kb-row { display: flex; gap: 6px; justify-content: center; min-width: max-content; }
 
 .kb-key {
-  width: 43px;
-  height: 43px;
+  width: var(--kb);
+  height: var(--kb);
   flex: none;
   display: flex;
   flex-direction: column;
@@ -536,16 +618,16 @@ body {
   transition: transform .1s, background .1s, border-color .1s, box-shadow .1s;
 }
 
-.kb-main { font-size: 16px; font-weight: 900; line-height: 1.1; }
-.kb-sub  { font-size: 10px; font-weight: 700; color: var(--ink-faint); line-height: 1.1; }
-.kb-bopomofo { font-family: var(--font-ui); font-size: 18px; }
+.kb-main { font-size: calc(var(--kb) * .37); font-weight: 900; line-height: 1.1; }
+.kb-sub  { font-size: calc(var(--kb) * .23); font-weight: 700; color: var(--ink-faint); line-height: 1.1; }
+.kb-bopomofo { font-family: var(--font-ui); font-size: calc(var(--kb) * .42); }
 
-.kb-w-tab   { width: 61px; }
-.kb-w-caps  { width: 69px; }
-.kb-w-back  { width: 69px; }
-.kb-w-enter { width: 77px; }
-.kb-w-shift { width: 88px; }
-.kb-w-space { width: 270px; }
+.kb-w-tab   { width: calc(var(--kb) * 1.42); }
+.kb-w-caps  { width: calc(var(--kb) * 1.60); }
+.kb-w-back  { width: calc(var(--kb) * 1.60); }
+.kb-w-enter { width: calc(var(--kb) * 1.79); }
+.kb-w-shift { width: calc(var(--kb) * 2.05); }
+.kb-w-space { width: calc(var(--kb) * 6.28); }
 
 .kb-filler {
   color: var(--ink-faint);
@@ -554,7 +636,7 @@ body {
   border-width: 2px;
   border-color: var(--line);
 }
-.kb-filler .kb-main { font-size: 11px; font-weight: 700; }
+.kb-filler .kb-main { font-size: calc(var(--kb) * .26); font-weight: 700; }
 
 /* 手指配色：鍵帽頂端那條色帶就是「這顆鍵歸哪根手指」。
    這裡只給顏色，寬度定義在 .kb-key。
@@ -726,19 +808,44 @@ body {
 
 /* ---------- 響應式 ---------- */
 
+/* 鍵帽與題目字級統一由 --kb / --ch 驅動，斷點只改這兩個值。
+   ⚠️ 三組斷點的順序不能調換：min-width 先放大，max-height 最後壓回來。
+   1600×768 這種「寬但矮」的教室螢幕會同時命中兩組，後面那組要贏。 */
+
 /* 斷點設在 900 而不是 720：整排鍵盤在 800px 寬就已經塞不下了，
    留在 720 的話 720–900 這段會冒出橫向捲軸，而學校的小筆電正好落在這個區間。 */
 @media (max-width: 900px) {
-  .kb-key { width: 37px; height: 42px; border-bottom-width: 4px; }
-  .kb-main { font-size: 13px; }
-  .kb-bopomofo { font-size: 15px; }
-  .kb-w-tab { width: 52px; } .kb-w-caps { width: 60px; }
-  .kb-w-back { width: 60px; } .kb-w-enter { width: 64px; }
-  .kb-w-shift { width: 72px; } .kb-w-space { width: 214px; }
-  .ch { min-width: 44px; height: 60px; font-size: 30px; }
+  :root { --kb: 37px; --ch: 30px; }
+  .kb-key { border-bottom-width: 4px; }
   .keyboard { padding: 12px 8px; }
   .brand h1 { font-size: 22px; }
   .mascot { width: 56px; height: 56px; }
+}
+
+/* 教室的大螢幕與投影機：把空著的地方拿來放大鍵帽，
+   後排的孩子要看得見鍵帽上那條手指色帶。 */
+@media (min-width: 1400px) {
+  :root { --kb: 52px; --ch: 38px; }
+}
+@media (min-width: 1750px) {
+  :root { --kb: 60px; --ch: 44px; }
+}
+
+/* 🕳️ 矮螢幕：1265×710 的筆電實測頁面總高 779px，手指顏色圖例
+   （top 708）整條掉在首屏外面——而那正是「哪個顏色歸哪根手指」的說明書。
+   這一段把留白收緊，讓圖例回到看得見的地方。 */
+/* and (min-width: 901px) 是必要的：手機是「又窄又矮」，會同時命中 900 那組，
+   少了寬度條件的話這裡的 --kb 40px 會蓋掉 37px，整排鍵盤在手機上爆寬。 */
+@media (max-height: 820px) and (min-width: 901px) {
+  :root { --kb: 40px; --ch: 27px; }
+  .wrap { padding: 8px 16px 10px; gap: 7px; }
+  .stat dd { font-size: 18px; }
+  .brand h1 { font-size: 22px; }
+  .mascot { width: 52px; height: 52px; }
+  .stage { padding: 12px 14px; }
+  .keyboard { padding: 8px 8px; gap: 5px; }
+  .kb-row { gap: 5px; }
+  .legend { padding: 6px 12px; }
 }
 
 @media (max-width: 620px) {

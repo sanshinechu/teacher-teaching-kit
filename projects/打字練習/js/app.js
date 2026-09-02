@@ -1,13 +1,17 @@
 /**
  * app.js — 把資料、引擎、鍵盤接起來，處理實際的鍵盤輸入
  *
- * 這裡有兩個「電腦教室現場」才會遇到的守門，兩個都是安靜失敗型的問題：
+ * 這裡有四個「電腦教室現場」才會遇到的守門，全部都是安靜失敗型的問題
+ * ——不會報錯、畫面也沒反應，孩子只會覺得電腦壞了或自己笨：
  *
  *   輸入法沒切成英文  → keydown 收到的鍵名是 Process / Unidentified，
- *                      整個被丟掉，畫面完全沒反應。孩子會以為電腦壞了。
+ *                      整個被丟掉，畫面完全沒反應。
  *   Caps Lock 亮著    → 打出來的大小寫全反，孩子照著提示按卻一直被判錯。
- *
- * 兩個都不會報錯，所以一定要主動偵測、主動講出來。
+ *   忘了按 Shift      → 第 6 關要打大寫，按成小寫就一直錯、游標卡在原地。
+ *                      2026-09-02 補：在那之前這個情境「完全沒有任何提示」，
+ *                      跟 Caps Lock 在孩子眼裡是一模一樣的「我明明按對了」。
+ *   習慣性按退格      → 引擎設計是打錯不前進也不退，Backspace 本來被整個丟掉，
+ *                      按了毫無反應。與其沉默，不如告訴他不必退格。
  */
 (function (global) {
   'use strict';
@@ -15,6 +19,11 @@
   var KeyMap = global.KeyMap;
   var Keyboard = global.Keyboard;
   var Engine = global.TypingEngine;
+  var Cloud = global.TypingCloud || { available: function () { return false; },
+    save: function () { return global.Promise.resolve('disabled'); },
+    fetchMine: function () { return global.Promise.resolve(null); },
+    flushPending: function () { return global.Promise.resolve(0); },
+    pendingCount: function () { return 0; } };
   var LEVELS = global.LevelsEN.levels;
 
   var FINGER_COLOR = {
@@ -75,6 +84,69 @@
   }
   function hideNotice() {
     $('notice').classList.remove('show');
+  }
+
+  // ---- 我是誰（班級座號） --------------------------------------------------
+  //
+  // 電腦教室的機器是共用的，孩子每週不一定坐同一台。進度若只存一個 key，
+  // 下一節課的孩子一坐下就看到上一個人的星星、自己的不見了。
+  // 所以進度綁「班級-座號」，不是綁這台電腦。沒填照樣能練，只是記在訪客名下。
+
+  var GRADE_NAME = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六' };
+
+  function setIdPanel(open) {
+    $('idPanel').hidden = !open;
+    $('btnStudent').setAttribute('aria-expanded', String(open));
+    if (open) $('inputClass').focus();
+  }
+
+  /**
+   * 雲端狀態就一個小圖示，不搶版面也不用文字解釋。
+   * 傳不上去不是錯誤——成績本來就先進 localStorage，雲端只是加值。
+   */
+  function renderSync(state) {
+    var badge = $('syncBadge');
+    if (!badge) return;
+    if (!Cloud.available()) { badge.hidden = true; return; }
+    var pending = Cloud.pendingCount();
+    badge.hidden = false;
+
+    if (state === 'saving') {
+      badge.textContent = '⏳';
+      badge.title = '正在存到雲端…';
+    } else if (pending > 0) {
+      badge.textContent = '☁️' + pending;
+      badge.title = '有 ' + pending + ' 筆還沒傳上去，下次連得上會自動補送';
+    } else if (state === 'rejected') {
+      // 多半是「這次成績沒有比雲端那筆好」，那是正常的，不要嚇孩子
+      badge.textContent = '☁️';
+      badge.title = '雲端上的成績比這次好，所以沒有更新';
+    } else {
+      badge.textContent = '☁️';
+      badge.title = '成績已經存到雲端了';
+    }
+  }
+
+  function renderStudent() {
+    var s = Engine.loadStudent();
+    var known = !!(s.klass && s.seat);
+
+    $('studentLabel').textContent = known
+      ? '👤 ' + s.klass + ' 班 ' + s.seat + ' 號'
+      : '👤 點我填班級座號';
+    $('btnStudent').classList.toggle('is-unset', !known);
+    $('inputClass').value = s.klass;
+    $('inputSeat').value = s.seat;
+
+    var grade = Engine.gradeOf(s.klass);
+    if (!known) {
+      $('idHint').textContent = '這台電腦別人也會用，填了星星才記得住是你的。';
+    } else if (grade) {
+      $('idHint').textContent = GRADE_NAME[grade] + '年級的速度標準' +
+        (session ? '：這一關第三顆星要打到 ' + session.wpmTarget + ' 字／分' : '');
+    } else {
+      $('idHint').textContent = '班級看不出年級，速度標準用一般的。';
+    }
   }
 
   // ---- 關卡選單 ----------------------------------------------------------
@@ -192,6 +264,14 @@
       onFinish: function (result, s) {
         if (s) updateStats(s);
         showResult(result);
+
+        // 只有破紀錄才送上雲端。每打完一關就傳一次的話，
+        // 一節課 30 個孩子會把免費額度花在沒有意義的重複寫入上。
+        if (result.saved && result.saved.improved && !result.freePractice) {
+          renderSync('saving');
+          Cloud.save(Engine.loadStudent(), level.id, result.saved.record)
+            .then(function (state) { renderSync(state); renderLevels(); });
+        }
       }
     });
 
@@ -199,6 +279,7 @@
     document.body.classList.toggle('is-free-practice', freePractice);
     updateStats(session.stats());
     renderLevels();
+    if ($('studentLabel')) renderStudent();
     closeModal(false);
     if (mascot) mascot.say('idle');
     if (focusStage) $('practiceStage').focus({ preventScroll: true });
@@ -224,12 +305,19 @@
     $('modalStars').style.display = result.freePractice ? 'none' : '';
     $('modalWpmStat').style.display = result.freePractice ? 'none' : '';
 
+    // 只講「d 常打錯」對老師沒用。要看見他把 d 按成 f（手指右移一格）
+    // 還是按成 k（左右手搞混）——那是兩種完全不同的毛病。
     if (result.missTop && result.missTop.length) {
       $('modalMisses').innerHTML = '最常打錯的鍵：' + result.missTop.map(function (m) {
         var k = KeyMap.byChar(m.char);
         var label = m.char === ' ' ? '空白鍵' : m.char;
-        return '<code>' + label + '</code>' + (k ? '（' + k.fingerName + '）' : '') + ' ' + m.count + ' 次';
-      }).join('、');
+        var typed = (m.typed || []).map(function (t) {
+          return '<code>' + (t.char === ' ' ? '空白' : t.char) + '</code>';
+        });
+        return '<code>' + label + '</code>' + (k ? '（' + k.fingerName + '）' : '') +
+               ' ' + m.count + ' 次' +
+               (typed.length ? '，按成了 ' + typed.join('、') : '');
+      }).join('；');
       $('modalMisses').style.display = '';
     } else {
       $('modalMisses').innerHTML = '這一關一個字都沒打錯，指法很穩！';
@@ -300,7 +388,19 @@
       return;
     }
 
+    // 正在填班級座號，鍵盤讓給輸入框
+    if (!$('idPanel').hidden) return;
+
     if (e.key === 'Shift') return;                       // 單按 Shift 不算一次擊鍵
+
+    // 打錯了會習慣性按退格，但引擎是「打錯不前進也不退」，退格什麼都不會發生。
+    // 沉默的話孩子只會一直按、然後舉手。
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      showNotice('打錯了<b>不用按退格</b>喔！直接按對的那一顆就好，游標會在原地等你。');
+      return;
+    }
+
     if (e.key.length > 1 && e.key !== ' ') return;       // F1、Tab、方向鍵…略過
     if (!session || advancing) { e.preventDefault(); return; }
 
@@ -326,6 +426,14 @@
       keyboard.highlightChar(session.expected());
 
       // 連續答對才換台詞，每打對一個字就洗一次版面反而吵
+      // 第 6 關教的是「用 Shift 打大寫」。開著 Caps Lock 一樣打得出大寫、
+      // 一樣判對，但練到的是錯的手法，而且沒人會發現。判對不變，只是講一聲。
+      if (typeof expected === 'string' && KeyMap.needsShift(expected) && !e.shiftKey &&
+          e.getModifierState && e.getModifierState('CapsLock')) {
+        showNotice('打對了，不過你是用 <b>Caps Lock</b> 打的。' +
+                   '這一關要練的是<b>壓住 Shift</b>，把 Caps Lock 關掉再試試看～');
+      }
+
       var combo = session.stats().combo;
       if (combo > 0 && combo % 5 === 0) mascot.say('combo');
       else if (res.itemDone) mascot.say('good');
@@ -337,14 +445,42 @@
         global.setTimeout(function () { cur.classList.remove('is-wrong'); }, 260);
       }
       mascot.say('oops');
-      // Caps Lock 亮著的話，孩子會照提示按卻一直錯，而且看不出原因
-      if (e.getModifierState && e.getModifierState('CapsLock') &&
+
+      // 他按的那顆實體鍵是對的、只是少壓了 Shift。
+      // 用 e.code 比對而不是比字串，這樣大寫（KeyA→A）和符號（Digit5→%）都涵蓋得到。
+      var pressed = KeyMap.byCode(e.code);
+      var needShift = typeof expected === 'string' && KeyMap.needsShift(expected);
+      if (needShift && !e.shiftKey && pressed && pressed.upper === expected) {
+        var shiftHand = pressed.finger.charAt(0) === 'L' ? '右手' : '左手';
+        showNotice('<b>就差一個 Shift！</b>先用<b>' + shiftHand + '小指</b>壓住 ' +
+                   '<b>Shift</b> 不要放，另一隻手再按 <b>' + pressed.lower + '</b>，' +
+                   '就會打出「' + expected + '」了。');
+      } else if (e.getModifierState && e.getModifierState('CapsLock') &&
           typeof expected === 'string' && /[a-zA-Z]/.test(expected) &&
           e.key.toLowerCase() === expected.toLowerCase()) {
+        // Caps Lock 亮著的話，孩子會照提示按卻一直錯，而且看不出原因
         showNotice('<b>Caps Lock 好像開著！</b>按一下鍵盤左邊的 <b>Caps Lock</b> 把它關掉，' +
                    '大小寫就會正常了。');
       }
     }
+  }
+
+  /**
+   * 把這個學生在雲端的成績拉回來併進本機。
+   * 這是「換一台電腦坐，星星還在」的那一步——也是雲端存在的主要理由。
+   */
+  function pullFromCloud(student) {
+    if (!Cloud.available()) return;
+    var levelIds = LEVELS.map(function (lv) { return lv.id; });
+    renderSync('saving');
+    Cloud.fetchMine(student, levelIds).then(function (remote) {
+      var r = Engine.mergeRemote(remote, student);
+      renderSync();
+      if (r.merged > 0) {
+        renderLevels();
+        showNotice('把你之前在別台電腦的成績抓回來了（<b>' + r.merged + ' 關</b>）。');
+      }
+    });
   }
 
   // ---- 啟動 --------------------------------------------------------------
@@ -354,6 +490,22 @@
     mascot = new global.Mascot($('mascot'), $('mascotBubble'));
     renderLegend();
     startLevel(0, false);
+    renderStudent();
+
+    // 還沒填就先把面板打開——這是每節課第一件要做的事，
+    // 藏在按鈕後面的話沒有人會主動去點。
+    var who = Engine.loadStudent();
+    if (!who.klass || !who.seat) {
+      setIdPanel(true);
+    } else {
+      pullFromCloud(who);
+    }
+
+    // 上次離線時積欠的成績，開頁面就默默補送
+    renderSync();
+    Cloud.flushPending().then(function (sent) {
+      if (sent > 0) renderSync();
+    });
 
     global.addEventListener('keydown', handleKeydown);
 
@@ -361,12 +513,33 @@
 
     $('btnFree').addEventListener('click', function () {
       freePractice = !freePractice;
-      this.textContent = '自由練習：' + (freePractice ? '開' : '關');
+      this.textContent = '🐢 自由練習：' + (freePractice ? '開' : '關');
       this.setAttribute('aria-pressed', String(freePractice));
       if (freePractice) {
         showNotice('自由練習模式：題目變成三倍長，<b>不計時、不計星星</b>，慢慢打沒關係。');
       }
       startLevel(levelIndex, true);
+    });
+
+    $('btnStudent').addEventListener('click', function () {
+      setIdPanel($('idPanel').hidden);
+    });
+
+    $('idPanel').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var saved = Engine.saveStudent({
+        klass: $('inputClass').value,
+        seat: $('inputSeat').value
+      });
+      setIdPanel(false);
+      // 換人了：進度換一份、星等的速度標準也跟著年段換，整關重開
+      startLevel(levelIndex, true);
+      renderStudent();
+      if (saved.klass && saved.seat) {
+        showNotice('好了！<b>' + saved.klass + ' 班 ' + saved.seat + ' 號</b>，' +
+                   '接下來的星星都記在你名下。');
+        pullFromCloud(saved);
+      }
     });
 
     $('modalRetry').addEventListener('click', function () { startLevel(levelIndex, true); });
