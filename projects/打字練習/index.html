@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>羅東國小打字練習網 — 英打指法</title>
-<link rel="stylesheet" href="styles.css?v=2026-09-03b">
+<link rel="stylesheet" href="styles.css?v=2026-09-03c">
 </head>
 <body>
 
@@ -14,6 +14,7 @@
      原本它在版面流裡，一跳出來就把鍵盤和手指圖例往下擠出首屏。 -->
 <div class="notice" id="notice" role="status" aria-live="polite">
   <span id="noticeText"></span>
+  <button class="notice-close" id="noticeClose" type="button" aria-label="關掉這則提示">✕</button>
 </div>
 
 <div class="wrap">
@@ -165,17 +166,17 @@
 <!-- 雲端設定。GitHub Actions 部署時才會生成這個檔，本機開／隨身碟開時它不存在，
      那是刻意的：沒有它 cloud.js 就整個靜默停用，孩子照樣練、成績照樣存在本機。
      所以 file:// 底下 console 會有一則 404，那不是壞掉。 -->
-<script src="firebase-config.js?v=2026-09-03b"></script>
+<script src="firebase-config.js?v=2026-09-03c"></script>
 
-<script src="js/keymap.js?v=2026-09-03b"></script>
-<script src="js/levels-en.js?v=2026-09-03b"></script>
-<script src="js/levels-zhuyin.js?v=2026-09-03b"></script>
-<script src="js/levels-en-adv.js?v=2026-09-03b"></script>
-<script src="js/levels-zh-adv.js?v=2026-09-03b"></script>
-<script src="js/engine.js?v=2026-09-03b"></script>
-<script src="js/keyboard.js?v=2026-09-03b"></script>
-<script src="js/mascot.js?v=2026-09-03b"></script>
-<script src="js/cloud.js?v=2026-09-03b"></script>
-<script src="js/app.js?v=2026-09-03b"></script>
+<script src="js/keymap.js?v=2026-09-03c"></script>
+<script src="js/levels-en.js?v=2026-09-03c"></script>
+<script src="js/levels-zhuyin.js?v=2026-09-03c"></script>
+<script src="js/levels-en-adv.js?v=2026-09-03c"></script>
+<script src="js/levels-zh-adv.js?v=2026-09-03c"></script>
+<script src="js/engine.js?v=2026-09-03c"></script>
+<script src="js/keyboard.js?v=2026-09-03c"></script>
+<script src="js/mascot.js?v=2026-09-03c"></script>
+<script src="js/cloud.js?v=2026-09-03c"></script>
+<script src="js/app.js?v=2026-09-03c"></script>
 </body>
 </html>

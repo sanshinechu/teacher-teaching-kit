@@ -121,13 +121,23 @@
   // ---- 提醒條 ------------------------------------------------------------
 
   var noticeTimer = null;
+
+  // 提示條是浮在畫面上方的，會蓋住模式切換與班級座號那排按鈕。
+  //
+  // 🕳️ **sticky 不等於「永遠不收」。** 原本 sticky 的提示只有在孩子「打對一個鍵」
+  // 時才會消失——但會跳這種提示的情境（輸入法沒切對），孩子**根本打不對任何一個鍵**，
+  // 於是它就一直蓋在那裡，連想去點模式切換都被擋住。
+  //
+  // 改成久一點但仍然會自己收。收掉不會讓孩子失去指引：那些條件每按一次鍵
+  // 都會重新觸發一次提示，真的還沒解決的話，一按就又跳出來。
+  var STICKY_MS = 12000;
+  var NORMAL_MS = 6000;
+
   function showNotice(html, sticky) {
     $('noticeText').innerHTML = html;
     $('notice').classList.add('show');
     global.clearTimeout(noticeTimer);
-    if (!sticky) {
-      noticeTimer = global.setTimeout(hideNotice, 6000);
-    }
+    noticeTimer = global.setTimeout(hideNotice, sticky ? STICKY_MS : NORMAL_MS);
   }
   function hideNotice() {
     $('notice').classList.remove('show');
@@ -652,6 +662,13 @@
     if (handleModalKeydown(e)) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
+    // 提示條擋到東西時，Esc 直接關掉（過關視窗優先，所以排在它後面）
+    if (e.key === 'Escape' && $('notice').classList.contains('show')) {
+      e.preventDefault();
+      hideNotice();
+      return;
+    }
+
     // 使用 Tab 導覽到按鈕時，按鍵應保留原本的控制用途，不拿去判分。
     if (e.target && e.target.closest &&
         e.target.closest('button, a, input, select, textarea')) return;
@@ -794,6 +811,13 @@
       if (!isIMELevel(currentLevel())) return;
       if (e.target && e.target.closest && e.target.closest('button, a, input')) return;
       if (imeInput) imeInput.focus({ preventScroll: true });
+    });
+
+    $('noticeClose').addEventListener('click', function () {
+      hideNotice();
+      // 關掉提示後焦點要回到能打字的地方，否則按鍵會被當成「在按鈕上按」而略過
+      var back = isIMELevel(currentLevel()) ? $('imeInput') : $('practiceStage');
+      if (back) back.focus({ preventScroll: true });
     });
 
     $('btnRestart').addEventListener('click', function () { startLevel(levelIndex, true); });
