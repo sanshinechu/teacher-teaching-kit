@@ -223,6 +223,8 @@
     var progress = Engine.loadProgress();
     var box = $('levels');
     box.innerHTML = '';
+    var isZhuyin = currentMode === 'zh';
+
     LEVELS.forEach(function (lv, idx) {
       var rec = progress[lv.id];
       var stars = rec ? rec.stars : 0;
@@ -231,26 +233,24 @@
       card.className = 'level-card' +
         (idx === levelIndex ? ' is-current' : '') +
         (lv.stage === 'adv' ? ' is-adv' : '');
+
+      var iconFile = (isZhuyin && idx < 6)
+        ? 'assets/icons/level_zhuyin.jpg'
+        : ('assets/icons/level_' + (idx + 1) + '.jpg');
+
       card.innerHTML =
         (lv.stage === 'adv' ? '<span class="level-tag">進階</span>' : '') +
+        '<img class="level-icon" src="' + iconFile + '" alt="" loading="lazy">' +
         '<h3>' + lv.name + '</h3>' +
-        '<p>' + lv.desc + '</p>' +
         '<span class="level-stars">' +
           '<span class="' + (stars >= 1 ? 'on' : '') + '">★</span>' +
           '<span class="' + (stars >= 2 ? 'on' : '') + '">★</span>' +
           '<span class="' + (stars >= 3 ? 'on' : '') + '">★</span>' +
-          (rec ? ' <span class="level-best">最佳 ' + rec.accuracy + '%</span>' : '') +
-        '</span>';
+        '</span>' +
+        (rec ? '<span class="level-best">' + rec.accuracy + '%</span>' : '');
       card.addEventListener('click', function () { startLevel(idx, true); });
       box.appendChild(card);
     });
-
-    // 關卡列是橫向捲動的（十關排不進一行）。進階關落在看不見的右邊，
-    // 切過去卻沒捲動的話，孩子會以為畫面沒反應。
-    var currentCard = box.children[levelIndex];
-    if (currentCard && currentCard.scrollIntoView) {
-      currentCard.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    }
   }
 
   function renderModeButtons() {
