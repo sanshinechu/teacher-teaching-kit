@@ -225,56 +225,92 @@
     var mintSide = '#2AA299', mintTop = '#3FC5BB';
     var goldSide = '#D99B00', goldTop = '#FFC53D';
 
+    function makeTwoRowKeys(row1, row2, color1, color2) {
+      var n1 = row1.length, n2 = row2.length;
+      var W = 46, marginX = 2;
+      var w1 = (W - (n1 - 1) * 1) / n1;
+      var w2 = (W - (n2 - 1) * 1) / n2;
+      var svg = '<svg viewBox="0 0 50 44" class="level-icon-svg">';
+      for (var i = 0; i < n1; i++) {
+        var x1 = marginX + i * (w1 + 1);
+        svg += '<rect x="' + x1.toFixed(1) + '" y="5" width="' + w1.toFixed(1) + '" height="17" rx="2.5" fill="' + color1.side + '"/>' +
+          '<rect x="' + x1.toFixed(1) + '" y="2" width="' + w1.toFixed(1) + '" height="17" rx="2" fill="' + color1.top + '"/>' +
+          '<text x="' + (x1 + w1 / 2).toFixed(1) + '" y="10.5" font-size="7.5" font-weight="900" fill="' + (color1.txt || '#fff') + '" text-anchor="middle" dominant-baseline="central">' + row1[i] + '</text>';
+      }
+      for (var j = 0; j < n2; j++) {
+        var x2 = marginX + j * (w2 + 1);
+        svg += '<rect x="' + x2.toFixed(1) + '" y="24" width="' + w2.toFixed(1) + '" height="17" rx="2.5" fill="' + color2.side + '"/>' +
+          '<rect x="' + x2.toFixed(1) + '" y="21" width="' + w2.toFixed(1) + '" height="17" rx="2" fill="' + color2.top + '"/>' +
+          '<text x="' + (x2 + w2 / 2).toFixed(1) + '" y="29.5" font-size="7.5" font-weight="900" fill="' + (color2.txt || '#fff') + '" text-anchor="middle" dominant-baseline="central">' + row2[j] + '</text>';
+      }
+      svg += '</svg>';
+      return svg;
+    }
+
+    function makeThreeRowKeys(row1, row2, row3, c1, c2, c3) {
+      var rows = [row1, row2, row3];
+      var colors = [c1, c2, c3];
+      var W = 46, marginX = 2;
+      var svg = '<svg viewBox="0 0 50 44" class="level-icon-svg">';
+      var yPositions = [{side:4,top:2}, {side:17,top:15}, {side:30,top:28}];
+      for (var r = 0; r < 3; r++) {
+        var keys = rows[r];
+        var n = keys.length;
+        var w = (W - (n - 1) * 1) / n;
+        var col = colors[r];
+        for (var i = 0; i < n; i++) {
+          var x = marginX + i * (w + 1);
+          svg += '<rect x="' + x.toFixed(1) + '" y="' + yPositions[r].side + '" width="' + w.toFixed(1) + '" height="12" rx="2" fill="' + col.side + '"/>' +
+            '<rect x="' + x.toFixed(1) + '" y="' + yPositions[r].top + '" width="' + w.toFixed(1) + '" height="12" rx="1.8" fill="' + col.top + '"/>' +
+            '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (yPositions[r].top + 6) + '" font-size="6.5" font-weight="900" fill="' + (col.txt || '#fff') + '" text-anchor="middle" dominant-baseline="central">' + keys[i] + '</text>';
+        }
+      }
+      svg += '</svg>';
+      return svg;
+    }
+
     if (isZhuyin) {
       if (idx === 0) {
-        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-          '<rect x="13" y="10" width="24" height="28" rx="6" fill="' + orangeSide + '"/>' +
-          '<rect x="13" y="6"  width="24" height="28" rx="5" fill="' + orangeTop + '"/>' +
-          '<text x="25" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
-          '</svg>';
+        return makeTwoRowKeys(
+          ['ㄇ','ㄋ','ㄎ','ㄑ','ㄕ'],
+          ['ㄘ','ㄨ','ㄜ','ㄠ','ㄤ'],
+          { top: orangeTop, side: orangeSide },
+          { top: orangeTop, side: orangeSide }
+        );
       }
       if (idx === 1) {
-        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-          '<text x="14" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
-          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
-          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
-          '<text x="36" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄈ</text>' +
-          '</svg>';
+        return makeTwoRowKeys(
+          ['ㄈ','ㄌ','ㄏ','ㄒ','ㄖ'],
+          ['ㄙ','ㄩ','ㄝ','ㄡ','ㄥ'],
+          { top: mintTop, side: mintSide },
+          { top: mintTop, side: mintSide }
+        );
       }
       if (idx === 2) {
-        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-          '<text x="14" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
-          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + goldSide + '"/>' +
-          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + goldTop + '"/>' +
-          '<text x="36" y="20" font-size="12" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">ㄆ</text>' +
-          '</svg>';
+        return makeTwoRowKeys(
+          ['ㄆ','ㄊ','ㄍ','ㄐ','ㄔ'],
+          ['ㄗ','ㄧ','ㄛ','ㄟ','ㄣ'],
+          { top: goldTop, side: goldSide, txt: '#4A3326' },
+          { top: goldTop, side: goldSide, txt: '#4A3326' }
+        );
       }
       if (idx === 3) {
-        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
-          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
-          '<text x="14" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
-          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-          '<text x="36" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄅ</text>' +
-          '</svg>';
+        return makeTwoRowKeys(
+          ['ㄅ','ㄉ','ㄓ','ㄚ'],
+          ['ㄞ','ㄢ','ㄦ'],
+          { top: orangeTop, side: orangeSide },
+          { top: orangeTop, side: orangeSide }
+        );
       }
       if (idx === 4) {
-        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-          '<rect x="3" y="10" width="13" height="28" rx="4" fill="' + orangeSide + '"/>' +
-          '<rect x="3" y="6"  width="13" height="28" rx="4" fill="' + orangeTop + '"/>' +
-          '<text x="9.5" y="20" font-size="10" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
-          '<rect x="18" y="10" width="13" height="28" rx="4" fill="' + mintSide + '"/>' +
-          '<rect x="18" y="6"  width="13" height="28" rx="4" fill="' + mintTop + '"/>' +
-          '<text x="24.5" y="20" font-size="10" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄆ</text>' +
-          '<rect x="33" y="10" width="13" height="28" rx="4" fill="' + goldSide + '"/>' +
-          '<rect x="33" y="6"  width="13" height="28" rx="4" fill="' + goldTop + '"/>' +
-          '<text x="39.5" y="20" font-size="10" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">ㄈ</text>' +
-          '</svg>';
+        return makeThreeRowKeys(
+          ['ㄆ','ㄊ','ㄍ','ㄐ'],
+          ['ㄇ','ㄋ','ㄎ','ㄑ'],
+          ['ㄈ','ㄌ','ㄏ','ㄒ'],
+          { top: goldTop, side: goldSide, txt: '#4A3326' },
+          { top: orangeTop, side: orangeSide },
+          { top: mintTop, side: mintSide }
+        );
       }
       if (idx === 5) {
         return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
@@ -317,51 +353,46 @@
     }
 
     if (idx === 0) {
-      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-        '<text x="14" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">A</text>' +
-        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
-        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
-        '<text x="36" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">F</text>' +
-        '</svg>';
+      return makeTwoRowKeys(
+        ['A','S','D','F','G'],
+        ['H','J','K','L',';'],
+        { top: orangeTop, side: orangeSide },
+        { top: mintTop, side: mintSide }
+      );
     }
     if (idx === 1) {
-      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
-        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
-        '<text x="14" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">Z</text>' +
-        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
-        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
-        '<text x="36" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">V</text>' +
-        '</svg>';
+      return makeTwoRowKeys(
+        ['Z','X','C','V','B'],
+        ['N','M',',','.','/'],
+        { top: mintTop, side: mintSide },
+        { top: mintTop, side: mintSide }
+      );
     }
     if (idx === 2) {
-      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-        '<text x="14" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">Q</text>' +
-        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-        '<text x="36" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">R</text>' +
-        '</svg>';
+      return makeTwoRowKeys(
+        ['Q','W','E','R','T'],
+        ['Y','U','I','O','P'],
+        { top: orangeTop, side: orangeSide },
+        { top: orangeTop, side: orangeSide }
+      );
     }
     if (idx === 3) {
-      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-        '<rect x="5" y="8"  width="40" height="8" rx="3" fill="' + orangeTop + '"/>' +
-        '<rect x="5" y="18" width="40" height="8" rx="3" fill="' + mintTop + '"/>' +
-        '<rect x="5" y="28" width="40" height="8" rx="3" fill="' + goldTop + '"/>' +
-        '</svg>';
+      return makeThreeRowKeys(
+        ['Q','W','E','R'],
+        ['A','S','D','F'],
+        ['Z','X','C','V'],
+        { top: orangeTop, side: orangeSide },
+        { top: mintTop, side: mintSide },
+        { top: goldTop, side: goldSide, txt: '#4A3326' }
+      );
     }
     if (idx === 4) {
-      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
-        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + goldSide + '"/>' +
-        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + goldTop + '"/>' +
-        '<text x="14" y="20" font-size="14" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">1</text>' +
-        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
-        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
-        '<text x="36" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">2</text>' +
-        '</svg>';
+      return makeTwoRowKeys(
+        ['1','2','3','4','5'],
+        ['6','7','8','9','0'],
+        { top: goldTop, side: goldSide, txt: '#4A3326' },
+        { top: goldTop, side: goldSide, txt: '#4A3326' }
+      );
     }
     if (idx === 5) {
       return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
