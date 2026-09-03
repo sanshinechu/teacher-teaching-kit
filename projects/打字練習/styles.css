@@ -1081,14 +1081,26 @@ body {
    這一段把留白收緊，讓圖例回到看得見的地方。 */
 /* and (min-width: 901px) 是必要的：手機是「又窄又矮」，會同時命中 900 那組，
    少了寬度條件的話這裡的 --kb 40px 會蓋掉 37px，整排鍵盤在手機上爆寬。 */
+/* 🕳️ 教室機是 1280×720，這一段就是為那台存在的。
+   量的是 .wrap 的實高，不是 document.scrollHeight——body 有 min-height:100vh，
+   scrollHeight 永遠不會低於 720，看它會以為「剛剛好」其實已經沒有餘裕了。
+
+   2026-09-03 量到的兩個狀態（同一頁差 77px，因為班級座號面板會佔一整列）：
+     穩態（填過座號，面板收起）  712 → 685
+     面板開著（新生／清過快取）  789 → 754
+   下面每一條都只動內距與間隙，鍵帽（--kb）與關卡卡片一律不碰——
+   那兩個是給孩子看的，縮了就失去意義。面板開著仍會超出一點，那是暫時狀態、
+   捲得到，不值得為它去壓鍵盤。 */
 @media (max-height: 820px) and (min-width: 901px) {
   :root { --kb: 40px; --ch: 27px; }
-  .wrap { padding: 8px 16px 10px; gap: 7px; }
+  .wrap { padding: 6px 16px 6px; gap: 5px; }
   .stat dd { font-size: 18px; }
   .brand h1 { font-size: 22px; }
   .mascot { width: 52px; height: 52px; }
-  .stage { padding: 12px 14px; }
-  .keyboard { padding: 8px 8px; gap: 5px; }
+  .id-panel { padding: 8px 15px; }
+  .levels { padding: 2px 2px 3px; }
+  .stage { padding: 10px 14px; }
+  .keyboard { padding: 6px 8px; gap: 5px; }
   .kb-row { gap: 5px; }
   .legend { padding: 6px 12px; }
 }
