@@ -122,6 +122,11 @@ body {
   font-size: 16px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 背景：一片有雲的天空。純 CSS，不載圖。 */
@@ -486,24 +491,38 @@ body {
   border-radius: var(--r-lg);
   padding: 13px 16px;
   display: grid;
-  grid-template-columns: minmax(220px, 260px) 1fr;
+  grid-template-columns: minmax(200px, 250px) 1fr minmax(200px, 250px);
   grid-template-areas:
-    "mascot label"
-    "mascot word"
-    "mascot ime"
-    "mascot hint"
-    "progress progress";
+    "mascot label    blank"
+    "mascot word     blank"
+    "mascot ime      blank"
+    "mascot hint     blank"
+    "progress progress progress";
   align-items: center;
   gap: 7px 16px;
   box-shadow: var(--shadow);
 }
 .stage:focus { outline: none; }
 .stage .mascot-row { grid-area: mascot; }
-.stage .stage-label { grid-area: label; }
-.stage .word { grid-area: word; }
+.stage .stage-label { grid-area: label; justify-self: center; text-align: center; }
+.stage .word { grid-area: word; justify-self: center; }
 .stage .ime-box { grid-area: ime; justify-self: center; }
 .stage .finger-hint { grid-area: hint; justify-self: center; }
 .stage .progress-track { grid-area: progress; }
+
+@media (max-width: 900px) {
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "mascot"
+      "label"
+      "word"
+      "ime"
+      "hint"
+      "progress";
+    justify-items: center;
+  }
+}
 
 /* ---------- 真輸入法輸入框（中文進階關）---------- */
 
