@@ -155,6 +155,7 @@
   // 讓三十個人各打一次是白費的。座號才是每個人不同的那一格。
   // 換班級上課時老師改一次就好（改了會被記住，下次自動帶出來）。
   var DEFAULT_CLASS = '301';
+  var DEFAULT_SEAT = '01';
 
   function setIdPanel(open) {
     $('idPanel').hidden = !open;
@@ -203,7 +204,7 @@
       : '👤 點我填班級座號';
     $('btnStudent').classList.toggle('is-unset', !known);
     $('inputClass').value = s.klass || DEFAULT_CLASS;
-    $('inputSeat').value = s.seat;
+    $('inputSeat').value = s.seat || DEFAULT_SEAT;
 
     var grade = Engine.gradeOf(s.klass);
     if (!known) {
