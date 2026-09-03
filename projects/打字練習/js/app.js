@@ -220,6 +220,188 @@
 
   // ---- 關卡選單 ----------------------------------------------------------
 
+  function getLevelIconSvg(idx, isZhuyin) {
+    var orangeSide = '#E0693A', orangeTop = '#FF8A5B';
+    var mintSide = '#2AA299', mintTop = '#3FC5BB';
+    var goldSide = '#D99B00', goldTop = '#FFC53D';
+
+    if (isZhuyin) {
+      if (idx === 0) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="13" y="10" width="24" height="28" rx="6" fill="' + orangeSide + '"/>' +
+          '<rect x="13" y="6"  width="24" height="28" rx="5" fill="' + orangeTop + '"/>' +
+          '<text x="25" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
+          '</svg>';
+      }
+      if (idx === 1) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+          '<text x="14" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
+          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+          '<text x="36" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄈ</text>' +
+          '</svg>';
+      }
+      if (idx === 2) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+          '<text x="14" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
+          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + goldSide + '"/>' +
+          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + goldTop + '"/>' +
+          '<text x="36" y="20" font-size="12" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">ㄆ</text>' +
+          '</svg>';
+      }
+      if (idx === 3) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+          '<text x="14" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
+          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+          '<text x="36" y="20" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄅ</text>' +
+          '</svg>';
+      }
+      if (idx === 4) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="3" y="10" width="13" height="28" rx="4" fill="' + orangeSide + '"/>' +
+          '<rect x="3" y="6"  width="13" height="28" rx="4" fill="' + orangeTop + '"/>' +
+          '<text x="9.5" y="20" font-size="10" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄇ</text>' +
+          '<rect x="18" y="10" width="13" height="28" rx="4" fill="' + mintSide + '"/>' +
+          '<rect x="18" y="6"  width="13" height="28" rx="4" fill="' + mintTop + '"/>' +
+          '<text x="24.5" y="20" font-size="10" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄆ</text>' +
+          '<rect x="33" y="10" width="13" height="28" rx="4" fill="' + goldSide + '"/>' +
+          '<rect x="33" y="6"  width="13" height="28" rx="4" fill="' + goldTop + '"/>' +
+          '<text x="39.5" y="20" font-size="10" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">ㄈ</text>' +
+          '</svg>';
+      }
+      if (idx === 5) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="5" y="8" width="40" height="32" rx="7" fill="' + orangeSide + '"/>' +
+          '<rect x="5" y="4" width="40" height="32" rx="6" fill="' + orangeTop + '"/>' +
+          '<text x="25" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ㄅㄆㄇ</text>' +
+          '</svg>';
+      }
+      if (idx === 6) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="5" y="8" width="40" height="32" rx="7" fill="' + mintSide + '"/>' +
+          '<rect x="5" y="4" width="40" height="32" rx="6" fill="' + mintTop + '"/>' +
+          '<text x="25" y="20" font-size="15" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">字</text>' +
+          '</svg>';
+      }
+      if (idx === 7) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+          '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+          '<text x="14" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">，</text>' +
+          '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+          '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+          '<text x="36" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">。</text>' +
+          '</svg>';
+      }
+      if (idx === 8) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<rect x="5" y="8" width="40" height="32" rx="7" fill="' + goldSide + '"/>' +
+          '<rect x="5" y="4" width="40" height="32" rx="6" fill="' + goldTop + '"/>' +
+          '<text x="25" y="20" font-size="13" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">詞語</text>' +
+          '</svg>';
+      }
+      if (idx === 9) {
+        return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+          '<path d="M5 14 L25 5 L45 14 L45 38 L5 38 Z" fill="' + mintSide + '"/>' +
+          '<path d="M5 10 L25 1 L45 10 L45 34 L5 34 Z" fill="' + mintTop + '"/>' +
+          '<text x="25" y="19" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">文章</text>' +
+          '</svg>';
+      }
+    }
+
+    if (idx === 0) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+        '<text x="14" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">A</text>' +
+        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+        '<text x="36" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">F</text>' +
+        '</svg>';
+    }
+    if (idx === 1) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+        '<text x="14" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">Z</text>' +
+        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+        '<text x="36" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">V</text>' +
+        '</svg>';
+    }
+    if (idx === 2) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+        '<text x="14" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">Q</text>' +
+        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+        '<text x="36" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">R</text>' +
+        '</svg>';
+    }
+    if (idx === 3) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="5" y="8"  width="40" height="8" rx="3" fill="' + orangeTop + '"/>' +
+        '<rect x="5" y="18" width="40" height="8" rx="3" fill="' + mintTop + '"/>' +
+        '<rect x="5" y="28" width="40" height="8" rx="3" fill="' + goldTop + '"/>' +
+        '</svg>';
+    }
+    if (idx === 4) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + goldSide + '"/>' +
+        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + goldTop + '"/>' +
+        '<text x="14" y="20" font-size="14" font-weight="900" fill="#4A3326" text-anchor="middle" dominant-baseline="central">1</text>' +
+        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+        '<text x="36" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">2</text>' +
+        '</svg>';
+    }
+    if (idx === 5) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="5" y="8" width="40" height="32" rx="7" fill="' + orangeSide + '"/>' +
+        '<rect x="5" y="4" width="40" height="32" rx="6" fill="' + orangeTop + '"/>' +
+        '<polygon points="25,9 27.5,16 35,16 29,20 31.5,27 25,23 18.5,27 21,20 15,16 22.5,16" fill="' + goldTop + '"/>' +
+        '</svg>';
+    }
+    if (idx === 6) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="5" y="8" width="40" height="32" rx="7" fill="' + mintSide + '"/>' +
+        '<rect x="5" y="4" width="40" height="32" rx="6" fill="' + mintTop + '"/>' +
+        '<text x="25" y="20" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">ABC</text>' +
+        '</svg>';
+    }
+    if (idx === 7) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="4" y="10" width="20" height="28" rx="5" fill="' + mintSide + '"/>' +
+        '<rect x="4" y="6"  width="20" height="28" rx="5" fill="' + mintTop + '"/>' +
+        '<text x="14" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">!</text>' +
+        '<rect x="26" y="10" width="20" height="28" rx="5" fill="' + orangeSide + '"/>' +
+        '<rect x="26" y="6"  width="20" height="28" rx="5" fill="' + orangeTop + '"/>' +
+        '<text x="36" y="20" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">?</text>' +
+        '</svg>';
+    }
+    if (idx === 8) {
+      return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+        '<rect x="5" y="8" width="40" height="32" rx="10" fill="' + orangeSide + '"/>' +
+        '<rect x="5" y="4" width="40" height="32" rx="10" fill="' + orangeTop + '"/>' +
+        '<line x1="13" y1="16" x2="37" y2="16" stroke="#fff" stroke-width="3" stroke-linecap="round"/>' +
+        '<line x1="13" y1="24" x2="29" y2="24" stroke="#fff" stroke-width="3" stroke-linecap="round"/>' +
+        '</svg>';
+    }
+    return '<svg viewBox="0 0 50 44" class="level-icon-svg">' +
+      '<path d="M5 14 L25 5 L45 14 L45 38 L5 38 Z" fill="' + mintSide + '"/>' +
+      '<path d="M5 10 L25 1 L45 10 L45 34 L5 34 Z" fill="' + mintTop + '"/>' +
+      '<text x="25" y="19" font-size="13" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">TEXT</text>' +
+      '</svg>';
+  }
+
   function renderLevels() {
     var progress = Engine.loadProgress();
     var box = $('levels');
@@ -235,13 +417,9 @@
         (idx === levelIndex ? ' is-current' : '') +
         (lv.stage === 'adv' ? ' is-adv' : '');
 
-      var iconFile = (isZhuyin && idx < 6)
-        ? 'assets/icons/level_zhuyin.jpg'
-        : ('assets/icons/level_' + (idx + 1) + '.jpg');
-
       card.innerHTML =
         (lv.stage === 'adv' ? '<span class="level-tag">進階</span>' : '') +
-        '<img class="level-icon" src="' + iconFile + '" alt="" loading="lazy">' +
+        getLevelIconSvg(idx, isZhuyin) +
         '<h3>' + lv.name + '</h3>' +
         '<span class="level-stars">' +
           '<span class="' + (stars >= 1 ? 'on' : '') + '">★</span>' +
