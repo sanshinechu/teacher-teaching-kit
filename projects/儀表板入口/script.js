@@ -10,6 +10,7 @@ const moduleIds = new Map([
   ["flowchart", "flowchart"],
   ["gallery", "gallery"],
   ["music", "music"],
+  ["typing", "typing"],
   ["timer", "timer"],
   ["quotes", "quotes"],
   ["mood", "mood"]

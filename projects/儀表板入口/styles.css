@@ -542,6 +542,10 @@ h3 {
   --accent: #d95f8d;
 }
 
+.typing {
+  --accent: #FF8A5B;
+}
+
 .timer {
   --accent: #f08a24;
 }
