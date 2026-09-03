@@ -244,6 +244,33 @@ body {
 
 .btn-row { display: flex; flex-wrap: wrap; gap: 9px; }
 
+.video-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  background: var(--brand);
+  border-color: var(--brand-deep);
+  color: #fff;
+}
+.video-link:hover {
+  background: var(--brand-deep);
+  border-color: var(--brand-deep);
+}
+.video-link-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+.video-link-icon rect {
+  fill: #fff;
+  stroke: none;
+  opacity: .95;
+}
+.video-link-icon path {
+  fill: var(--brand-deep);
+}
+
 /* ---------- 提醒條 ---------- */
 
 /* 🕳️ 這個提示條原本在版面流裡，一跳出來就把下面全部往下推——
