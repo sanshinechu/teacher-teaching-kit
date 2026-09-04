@@ -242,7 +242,25 @@ body {
 }
 .btn-primary:hover { background: var(--brand-deep); border-color: var(--brand-deep); }
 
-.btn-row { display: flex; flex-wrap: wrap; gap: 9px; }
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  justify-content: center;
+}
+
+@media (max-width: 1200px) {
+  .topbar {
+    justify-content: center;
+  }
+  .brand {
+    justify-content: center;
+  }
+  .btn-row {
+    width: 100%;
+    justify-content: center;
+  }
+}
 
 .video-link {
   display: inline-flex;
