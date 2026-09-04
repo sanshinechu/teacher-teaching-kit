@@ -716,7 +716,10 @@
     focusBeforeModal = document.activeElement;
     $('modalBackdrop').classList.add('show');
     $('modalBackdrop').setAttribute('aria-hidden', 'false');
-    if (result.stars >= 1 && global.TypingSound) global.TypingSound.playCheer();
+    if (global.TypingSound) {
+      global.TypingSound.resume();
+      global.TypingSound.playCheer();
+    }
     if (result.stars >= 2) dropConfetti();
     mascot.say('clear', 0);
     renderLevels();

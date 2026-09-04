@@ -181,6 +181,7 @@
       osc.type = n.type || 'sine';
       osc.frequency.setValueAtTime(n.f, startTime);
 
+      gain.gain.setValueAtTime(0, now);
       gain.gain.setValueAtTime(n.v, startTime);
       gain.gain.linearRampToValueAtTime(0.001, startTime + n.d);
 
