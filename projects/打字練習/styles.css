@@ -168,60 +168,62 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .btn-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px;
-  justify-content: center;
-  width: 100%;
+  align-items: center;
+  gap: 6px;
 }
 
 .brand h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: .02em;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 .badge {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  padding: 4px 13px;
+  padding: 3px 9px;
   border-radius: 999px;
   background: var(--mint-soft);
   color: var(--mint);
   border: 2px solid var(--mint);
+  white-space: nowrap;
 }
 
 .mode-switch {
   display: inline-flex;
-  padding: 3px;
+  padding: 2px;
   border: 2px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 
 .mode-option {
-  min-width: 54px;
+  min-width: 44px;
   border: 0;
   border-radius: 999px;
-  padding: 5px 12px;
+  padding: 4px 10px;
   background: transparent;
   color: var(--ink-soft);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -233,15 +235,16 @@ body {
 
 .btn {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
-  padding: 9px 17px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 2px solid var(--line);
-  border-bottom-width: 4px;
+  border-bottom-width: 3px;
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
+  white-space: nowrap;
   transition: transform .12s, border-color .14s, background .14s;
 }
 .btn:hover { border-color: var(--brand); background: var(--brand-soft); }
@@ -255,12 +258,10 @@ body {
 }
 .btn-primary:hover { background: var(--brand-deep); border-color: var(--brand-deep); }
 
-
-
 .video-link {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   text-decoration: none;
   background: var(--brand);
   border-color: var(--brand-deep);
@@ -271,9 +272,10 @@ body {
   border-color: var(--brand-deep);
 }
 .video-link-icon {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
+}
 }
 .video-link-icon rect {
   fill: #fff;
