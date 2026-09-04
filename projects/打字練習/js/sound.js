@@ -120,8 +120,12 @@
   }
 
   /**
-   * 約 8 秒的歡慶通關樂章
-   * 包含 C 大調升階序曲、高潮 Victory Fanfare 與溫馨終曲三和弦
+   * 約 8 秒的多樂器/多聲部歡慶過關樂章 (Multi-track Fanfare)
+   * 包含：
+   *  1. Bass 低音底座 (Sawtooth + Lowpass Filter)
+   *  2. Warm Strings / Pad 溫馨和旋 (Triangle 波)
+   *  3. Lead Marimba / Glockenspiel 木琴主旋律 (Sine 波)
+   *  4. Sparkle Chimes 風鈴星光特效音 (High Sine)
    */
   function playCheer() {
     if (!enabled) return;
@@ -137,59 +141,144 @@
 
     var now = ctx.currentTime;
 
-    var melody = [
-      // 0.0s - 2.0s: 歡慶序曲 (C大調琶音升階)
-      { t: 0.00, f: 523.25, d: 0.25, v: 0.25, type: 'triangle' }, // C5
-      { t: 0.18, f: 659.25, d: 0.25, v: 0.25, type: 'triangle' }, // E5
-      { t: 0.36, f: 783.99, d: 0.25, v: 0.25, type: 'triangle' }, // G5
-      { t: 0.54, f: 1046.50, d: 0.55, v: 0.32, type: 'sine' },    // C6
-
-      { t: 1.15, f: 587.33, d: 0.22, v: 0.25, type: 'triangle' }, // D5
-      { t: 1.33, f: 698.46, d: 0.22, v: 0.25, type: 'triangle' }, // F5
-      { t: 1.51, f: 880.00, d: 0.22, v: 0.25, type: 'triangle' }, // A5
-      { t: 1.69, f: 1174.66, d: 0.55, v: 0.32, type: 'sine' },    // D6
-
-      // 2.3s - 5.0s: 主旋律熱烈進行 (Victory Fanfare)
-      { t: 2.30, f: 659.25, d: 0.25, v: 0.28, type: 'sine' },    // E5
-      { t: 2.52, f: 783.99, d: 0.25, v: 0.28, type: 'sine' },    // G5
-      { t: 2.74, f: 880.00, d: 0.28, v: 0.28, type: 'sine' },    // A5
-      { t: 3.05, f: 1046.50, d: 0.35, v: 0.32, type: 'sine' },   // C6
-      { t: 3.45, f: 1174.66, d: 0.35, v: 0.32, type: 'sine' },   // D6
-      { t: 3.85, f: 1318.51, d: 1.10, v: 0.35, type: 'sine' },   // E6 (高潮)
-
-      // 和弦伴奏 (3.85s)
-      { t: 3.85, f: 659.25, d: 1.10, v: 0.15, type: 'triangle' },// E5
-      { t: 3.85, f: 783.99, d: 1.10, v: 0.15, type: 'triangle' },// G5
-
-      // 5.1s - 8.0s: 溫馨過關結尾
-      { t: 5.10, f: 1174.66, d: 0.30, v: 0.28, type: 'sine' },   // D6
-      { t: 5.42, f: 1046.50, d: 0.30, v: 0.28, type: 'sine' },   // C6
-      { t: 5.74, f: 880.00, d: 0.35, v: 0.28, type: 'sine' },    // A5
-      { t: 6.10, f: 1046.50, d: 1.80, v: 0.35, type: 'sine' },   // C6 主音
-
-      // 終曲三和弦
-      { t: 6.10, f: 523.25, d: 1.80, v: 0.18, type: 'triangle' },// C5
-      { t: 6.10, f: 659.25, d: 1.80, v: 0.18, type: 'triangle' },// E5
-      { t: 6.10, f: 783.99, d: 1.80, v: 0.18, type: 'triangle' } // G5
+    // --- 聲部 1：Bass 低音底座 (Sawtooth + Lowpass Filter) ---
+    var bassNotes = [
+      { t: 0.00, f: 130.81, d: 1.0, v: 0.18 }, // C3
+      { t: 1.15, f: 146.83, d: 1.0, v: 0.18 }, // D3
+      { t: 2.30, f: 164.81, d: 1.4, v: 0.20 }, // E3
+      { t: 3.85, f: 174.61, d: 1.2, v: 0.20 }, // F3
+      { t: 5.10, f: 196.00, d: 0.9, v: 0.20 }, // G3
+      { t: 6.10, f: 130.81, d: 1.9, v: 0.22 }  // C3 (終曲)
     ];
 
-    melody.forEach(function (n) {
-      var startTime = now + n.t;
+    bassNotes.forEach(function (b) {
+      var st = now + b.t;
+      var osc = ctx.createOscillator();
+      var filter = ctx.createBiquadFilter();
+      var gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(b.f, st);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(350, st);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.setValueAtTime(b.v, st);
+      gain.gain.linearRampToValueAtTime(0.001, st + b.d);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterGain);
+
+      osc.start(st);
+      osc.stop(st + b.d);
+    });
+
+    // --- 聲部 2：Strings / Warm Pad 溫馨和聲 (Triangle 波) ---
+    var padNotes = [
+      { t: 0.00, f: 261.63, d: 1.1, v: 0.12 }, // C4
+      { t: 0.00, f: 329.63, d: 1.1, v: 0.10 }, // E4
+      { t: 1.15, f: 293.66, d: 1.0, v: 0.12 }, // D4
+      { t: 1.15, f: 349.23, d: 1.0, v: 0.10 }, // F4
+      { t: 2.30, f: 329.63, d: 1.4, v: 0.12 }, // E4
+      { t: 2.30, f: 392.00, d: 1.4, v: 0.10 }, // G4
+      { t: 3.85, f: 349.23, d: 1.2, v: 0.14 }, // F4
+      { t: 3.85, f: 440.00, d: 1.2, v: 0.12 }, // A4
+      { t: 5.10, f: 392.00, d: 0.9, v: 0.14 }, // G4
+      { t: 6.10, f: 261.63, d: 1.9, v: 0.15 }, // C4
+      { t: 6.10, f: 329.63, d: 1.9, v: 0.13 }, // E4
+      { t: 6.10, f: 392.00, d: 1.9, v: 0.13 }  // G4
+    ];
+
+    padNotes.forEach(function (p) {
+      var st = now + p.t;
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
 
-      osc.type = n.type || 'sine';
-      osc.frequency.setValueAtTime(n.f, startTime);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(p.f, st);
 
       gain.gain.setValueAtTime(0, now);
-      gain.gain.setValueAtTime(n.v, startTime);
-      gain.gain.linearRampToValueAtTime(0.001, startTime + n.d);
+      gain.gain.setValueAtTime(p.v, st);
+      gain.gain.linearRampToValueAtTime(0.001, st + p.d);
 
       osc.connect(gain);
       gain.connect(masterGain);
 
-      osc.start(startTime);
-      osc.stop(startTime + n.d);
+      osc.start(st);
+      osc.stop(st + p.d);
+    });
+
+    // --- 聲部 3：Lead Marimba 主旋律木琴聲 (Sine 波) ---
+    var leadNotes = [
+      { t: 0.00, f: 523.25, d: 0.22, v: 0.28 }, // C5
+      { t: 0.18, f: 659.25, d: 0.22, v: 0.28 }, // E5
+      { t: 0.36, f: 783.99, d: 0.22, v: 0.28 }, // G5
+      { t: 0.54, f: 1046.50, d: 0.55, v: 0.35 },// C6
+
+      { t: 1.15, f: 587.33, d: 0.20, v: 0.28 }, // D5
+      { t: 1.33, f: 698.46, d: 0.20, v: 0.28 }, // F5
+      { t: 1.51, f: 880.00, d: 0.20, v: 0.28 }, // A5
+      { t: 1.69, f: 1174.66, d: 0.55, v: 0.35 },// D6
+
+      { t: 2.30, f: 659.25, d: 0.22, v: 0.30 }, // E5
+      { t: 2.52, f: 783.99, d: 0.22, v: 0.30 }, // G5
+      { t: 2.74, f: 880.00, d: 0.25, v: 0.30 }, // A5
+      { t: 3.05, f: 1046.50, d: 0.35, v: 0.35 },// C6
+      { t: 3.45, f: 1174.66, d: 0.35, v: 0.35 },// D6
+      { t: 3.85, f: 1318.51, d: 1.10, v: 0.38 },// E6
+
+      { t: 5.10, f: 1174.66, d: 0.28, v: 0.30 },// D6
+      { t: 5.42, f: 1046.50, d: 0.28, v: 0.30 },// C6
+      { t: 5.74, f: 880.00, d: 0.35, v: 0.30 }, // A5
+      { t: 6.10, f: 1046.50, d: 1.80, v: 0.38 } // C6
+    ];
+
+    leadNotes.forEach(function (l) {
+      var st = now + l.t;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(l.f, st);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.setValueAtTime(l.v, st);
+      gain.gain.linearRampToValueAtTime(0.001, st + l.d);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+
+      osc.start(st);
+      osc.stop(st + l.d);
+    });
+
+    // --- 聲部 4：Sparkle Chimes 星光風鈴音 (High Sine) ---
+    var chimeNotes = [
+      { t: 0.54, f: 2093.00, d: 0.35, v: 0.12 }, // C7
+      { t: 1.69, f: 2349.32, d: 0.35, v: 0.12 }, // D7
+      { t: 3.85, f: 2637.02, d: 0.50, v: 0.15 }, // E7
+      { t: 6.10, f: 2093.00, d: 0.80, v: 0.15 }  // C7
+    ];
+
+    chimeNotes.forEach(function (c) {
+      var st = now + c.t;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(c.f, st);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.setValueAtTime(c.v, st);
+      gain.gain.linearRampToValueAtTime(0.001, st + c.d);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+
+      osc.start(st);
+      osc.stop(st + c.d);
     });
   }
 
