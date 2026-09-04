@@ -609,6 +609,7 @@
   // ---- 開始一關 ----------------------------------------------------------
 
   function startLevel(idx, focusStage) {
+    if (global.TypingSound && global.TypingSound.stopCheer) global.TypingSound.stopCheer();
     levelIndex = idx;
     advancing = false;
     var level = LEVELS[idx];
@@ -726,6 +727,7 @@
   }
 
   function closeModal(restoreFocus) {
+    if (global.TypingSound && global.TypingSound.stopCheer) global.TypingSound.stopCheer();
     var wasOpen = $('modalBackdrop').classList.contains('show');
     $('modalBackdrop').classList.remove('show');
     $('modalBackdrop').setAttribute('aria-hidden', 'true');

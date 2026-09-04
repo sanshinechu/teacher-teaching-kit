@@ -6,7 +6,7 @@
  * 2. 音效音量與頻率經專門調校：
  *    - 正確音：清亮歡快的升階二連音 (784Hz -> 1046Hz)，給予良好節奏回饋。
  *    - 錯誤音：低沉雙音 (220Hz -> 140Hz)，具提示效果但不刺耳。
- *    - 過關音：歡快短促的音階 (C5 -> E5 -> G5 -> C6)。
+ *    - 過關音：長達約 8 秒的歡慶過關樂章 (含序曲、主旋律與終曲三和弦)。
  * 3. 處理瀏覽器 Autoplay 政策：首個點擊/按鍵時自動呼叫 resume() 啟動 AudioContext。
  */
 (function (global) {
@@ -15,6 +15,7 @@
   var STORAGE_KEY = 'typing.sound.enabled.v1';
   var audioCtx = null;
   var enabled = true;
+  var activeCheerGain = null;
 
   function loadSetting() {
     try {
@@ -92,7 +93,6 @@
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
 
-    // 使用 triangle/sawtooth 低音組合
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(220, now);
     osc.frequency.linearRampToValueAtTime(130, now + 0.14);
@@ -107,30 +107,88 @@
     osc.stop(now + 0.14);
   }
 
+  function stopCheer() {
+    if (activeCheerGain && audioCtx) {
+      try {
+        var now = audioCtx.currentTime;
+        activeCheerGain.gain.cancelScheduledValues(now);
+        activeCheerGain.gain.setValueAtTime(activeCheerGain.gain.value, now);
+        activeCheerGain.gain.linearRampToValueAtTime(0.001, now + 0.15);
+      } catch (e) {}
+      activeCheerGain = null;
+    }
+  }
+
+  /**
+   * 約 8 秒的歡慶通關樂章
+   * 包含 C 大調升階序曲、高潮 Victory Fanfare 與溫馨終曲三和弦
+   */
   function playCheer() {
     if (!enabled) return;
     var ctx = getAudioContext();
     if (!ctx) return;
 
-    var notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    stopCheer();
+
+    var masterGain = ctx.createGain();
+    activeCheerGain = masterGain;
+    masterGain.gain.setValueAtTime(1.0, ctx.currentTime);
+    masterGain.connect(ctx.destination);
+
     var now = ctx.currentTime;
 
-    notes.forEach(function (freq, i) {
-      var startTime = now + i * 0.09;
+    var melody = [
+      // 0.0s - 2.0s: 歡慶序曲 (C大調琶音升階)
+      { t: 0.00, f: 523.25, d: 0.25, v: 0.25, type: 'triangle' }, // C5
+      { t: 0.18, f: 659.25, d: 0.25, v: 0.25, type: 'triangle' }, // E5
+      { t: 0.36, f: 783.99, d: 0.25, v: 0.25, type: 'triangle' }, // G5
+      { t: 0.54, f: 1046.50, d: 0.55, v: 0.32, type: 'sine' },    // C6
+
+      { t: 1.15, f: 587.33, d: 0.22, v: 0.25, type: 'triangle' }, // D5
+      { t: 1.33, f: 698.46, d: 0.22, v: 0.25, type: 'triangle' }, // F5
+      { t: 1.51, f: 880.00, d: 0.22, v: 0.25, type: 'triangle' }, // A5
+      { t: 1.69, f: 1174.66, d: 0.55, v: 0.32, type: 'sine' },    // D6
+
+      // 2.3s - 5.0s: 主旋律熱烈進行 (Victory Fanfare)
+      { t: 2.30, f: 659.25, d: 0.25, v: 0.28, type: 'sine' },    // E5
+      { t: 2.52, f: 783.99, d: 0.25, v: 0.28, type: 'sine' },    // G5
+      { t: 2.74, f: 880.00, d: 0.28, v: 0.28, type: 'sine' },    // A5
+      { t: 3.05, f: 1046.50, d: 0.35, v: 0.32, type: 'sine' },   // C6
+      { t: 3.45, f: 1174.66, d: 0.35, v: 0.32, type: 'sine' },   // D6
+      { t: 3.85, f: 1318.51, d: 1.10, v: 0.35, type: 'sine' },   // E6 (高潮)
+
+      // 和弦伴奏 (3.85s)
+      { t: 3.85, f: 659.25, d: 1.10, v: 0.15, type: 'triangle' },// E5
+      { t: 3.85, f: 783.99, d: 1.10, v: 0.15, type: 'triangle' },// G5
+
+      // 5.1s - 8.0s: 溫馨過關結尾
+      { t: 5.10, f: 1174.66, d: 0.30, v: 0.28, type: 'sine' },   // D6
+      { t: 5.42, f: 1046.50, d: 0.30, v: 0.28, type: 'sine' },   // C6
+      { t: 5.74, f: 880.00, d: 0.35, v: 0.28, type: 'sine' },    // A5
+      { t: 6.10, f: 1046.50, d: 1.80, v: 0.35, type: 'sine' },   // C6 主音
+
+      // 終曲三和弦
+      { t: 6.10, f: 523.25, d: 1.80, v: 0.18, type: 'triangle' },// C5
+      { t: 6.10, f: 659.25, d: 1.80, v: 0.18, type: 'triangle' },// E5
+      { t: 6.10, f: 783.99, d: 1.80, v: 0.18, type: 'triangle' } // G5
+    ];
+
+    melody.forEach(function (n) {
+      var startTime = now + n.t;
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, startTime);
+      osc.type = n.type || 'sine';
+      osc.frequency.setValueAtTime(n.f, startTime);
 
-      gain.gain.setValueAtTime(0.28, startTime);
-      gain.gain.linearRampToValueAtTime(0.001, startTime + 0.22);
+      gain.gain.setValueAtTime(n.v, startTime);
+      gain.gain.linearRampToValueAtTime(0.001, startTime + n.d);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(masterGain);
 
       osc.start(startTime);
-      osc.stop(startTime + 0.22);
+      osc.stop(startTime + n.d);
     });
   }
 
@@ -139,7 +197,9 @@
     saveSetting(enabled);
     if (enabled) {
       resume();
-      playCorrect(); // 開啟時播放測試聲
+      playCorrect();
+    } else {
+      stopCheer();
     }
   }
 
@@ -152,7 +212,6 @@
     return enabled;
   }
 
-  // 自動綁定互動解鎖
   if (typeof window !== 'undefined') {
     var unlock = function () {
       resume();
@@ -168,6 +227,7 @@
     playCorrect: playCorrect,
     playWrong: playWrong,
     playCheer: playCheer,
+    stopCheer: stopCheer,
     resume: resume,
     setEnabled: setEnabled,
     toggle: toggle,
