@@ -261,7 +261,9 @@ body {
 .video-link {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  font-size: 12px;
+  padding: 4px 9px;
   text-decoration: none;
   background: var(--brand);
   border-color: var(--brand-deep);
@@ -272,8 +274,8 @@ body {
   border-color: var(--brand-deep);
 }
 .video-link-icon {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   flex: 0 0 auto;
 }
 }
