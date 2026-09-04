@@ -165,13 +165,33 @@ body {
 
 .topbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  justify-content: center;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .brand {
+    justify-content: center;
+  }
+}
 
 .brand h1 {
   margin: 0;
@@ -242,25 +262,7 @@ body {
 }
 .btn-primary:hover { background: var(--brand-deep); border-color: var(--brand-deep); }
 
-.btn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 9px;
-  justify-content: center;
-}
 
-@media (max-width: 1200px) {
-  .topbar {
-    justify-content: center;
-  }
-  .brand {
-    justify-content: center;
-  }
-  .btn-row {
-    width: 100%;
-    justify-content: center;
-  }
-}
 
 .video-link {
   display: inline-flex;
