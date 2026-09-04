@@ -715,6 +715,7 @@
     focusBeforeModal = document.activeElement;
     $('modalBackdrop').classList.add('show');
     $('modalBackdrop').setAttribute('aria-hidden', 'false');
+    if (result.stars >= 1 && global.TypingSound) global.TypingSound.playCheer();
     if (result.stars >= 2) dropConfetti();
     mascot.say('clear', 0);
     renderLevels();
@@ -770,6 +771,7 @@
     var nextNode = $('ch-' + st.charIndex);
     if (nextNode) nextNode.classList.add('is-current');
     updateHint(session.expected());
+    if (global.TypingSound) global.TypingSound.playCorrect();
   }
 
   function markWrong() {
@@ -779,6 +781,7 @@
       global.setTimeout(function () { cur.classList.remove('is-wrong'); }, 260);
     }
     mascot.say('oops');
+    if (global.TypingSound) global.TypingSound.playWrong();
   }
 
   function cheerFor(res) {
@@ -869,6 +872,7 @@
   // ---- 鍵盤輸入 ----------------------------------------------------------
 
   function handleKeydown(e) {
+    if (global.TypingSound) global.TypingSound.resume();
     if (handleModalKeydown(e)) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
@@ -1043,6 +1047,20 @@
 
     $('modeEN').addEventListener('click', function () { switchMode('en'); });
     $('modeZH').addEventListener('click', function () { switchMode('zh'); });
+
+    var soundBtn = $('btnSound');
+    if (soundBtn && global.TypingSound) {
+      var updateSoundBtn = function () {
+        var on = global.TypingSound.isEnabled();
+        soundBtn.textContent = '🔊 音效：' + (on ? '開' : '關');
+        soundBtn.setAttribute('aria-pressed', String(on));
+      };
+      updateSoundBtn();
+      soundBtn.addEventListener('click', function () {
+        global.TypingSound.toggle();
+        updateSoundBtn();
+      });
+    }
 
     $('btnFree').addEventListener('click', function () {
       freePractice = !freePractice;
