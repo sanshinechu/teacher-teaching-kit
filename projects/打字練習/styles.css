@@ -165,16 +165,15 @@ body {
 
 .topbar {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -185,12 +184,6 @@ body {
   gap: 9px;
   justify-content: center;
   width: 100%;
-}
-
-@media (max-width: 640px) {
-  .brand {
-    justify-content: center;
-  }
 }
 
 .brand h1 {
