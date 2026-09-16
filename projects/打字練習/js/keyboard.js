@@ -24,13 +24,33 @@
     this.container = container;
     this.mode = mode || 'en';
     this.keyNodes = {};   // code → DOM
+    this.letterSpans = [];
+    this.shiftHeld = false;
+    this.targetUpper = false;
     this.render();
+
+    // 壓住 Shift 字母就變大寫、放開變回小寫，跟手機鍵盤一樣，
+    // 孩子自己就看得出「Shift 是讓字母變大寫的鍵」
+    var self = this;
+    function syncShift(e) {
+      var held = !!e.shiftKey;
+      if (held === self.shiftHeld) return;
+      self.shiftHeld = held;
+      self.updateLetterCase();
+    }
+    global.addEventListener('keydown', syncShift);
+    global.addEventListener('keyup', syncShift);
+    global.addEventListener('blur', function () {
+      self.shiftHeld = false;
+      self.updateLetterCase();
+    });
   }
 
   Keyboard.prototype.render = function () {
     var self = this;
     this.container.innerHTML = '';
     this.keyNodes = {};
+    this.letterSpans = [];
 
     KeyMap.ROWS.forEach(function (row, rowIdx) {
       var rowNode = el('div', 'kb-row kb-row-' + row.id);
@@ -74,7 +94,11 @@
       if (k.upper !== k.lower && !/^[a-z]$/.test(k.lower)) {
         node.appendChild(el('span', 'kb-sub', k.upper));
       }
-      node.appendChild(el('span', 'kb-main', /^[a-z]$/.test(k.lower) ? k.upper : k.lower));
+      // 字母預設印小寫：題目出的是小寫，低年級認不出 D 就是 d（老師反應）。
+      // 要變大寫的時機交給 updateLetterCase()
+      var main = el('span', 'kb-main', k.lower);
+      node.appendChild(main);
+      if (/^[a-z]$/.test(k.lower)) this.letterSpans.push({ span: main, key: k });
     }
 
     this.keyNodes[k.code] = node;
@@ -95,11 +119,23 @@
     return node;
   };
 
+  /** 字母鍵帽大小寫：壓著 Shift，或下一個要打的是大寫字母時顯示大寫 */
+  Keyboard.prototype.updateLetterCase = function () {
+    var upper = this.shiftHeld || this.targetUpper;
+    this.letterSpans.forEach(function (item) {
+      item.span.textContent = upper ? item.key.upper : item.key.lower;
+    });
+  };
+
   /** 清掉所有提示狀態 */
   Keyboard.prototype.clearHighlight = function () {
     Object.keys(this.keyNodes).forEach(function (code) {
       this.keyNodes[code].classList.remove('is-target', 'is-shift-hint');
     }, this);
+    if (this.targetUpper) {
+      this.targetUpper = false;
+      this.updateLetterCase();
+    }
   };
 
   /**
@@ -117,6 +153,10 @@
     if (node) node.classList.add('is-target');
 
     var needShift = this.mode === 'en' && KeyMap.needsShift(ch);
+    if (this.mode === 'en' && /^[A-Z]$/.test(ch)) {
+      this.targetUpper = true;
+      this.updateLetterCase();
+    }
     if (needShift) {
       // 左手管的鍵用右手 Shift，右手管的鍵用左手 Shift
       var shiftCode = k.finger.charAt(0) === 'L' ? 'ShiftRight' : 'ShiftLeft';

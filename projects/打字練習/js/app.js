@@ -594,8 +594,8 @@
     $('fingerText').textContent = currentMode === 'zh'
       ? k.fingerName + (ch === 'ˉ' ? ' 按空白鍵（一聲）' : ' 按 ' + ch + '（' + k.upper + '）')
       : needShift
-      ? k.fingerName + ' 按 ' + k.lower + '，同時用' + shiftHand + '小指壓住 Shift'
-      : k.fingerName + (ch === ' ' ? ' 按空白鍵' : ' 按 ' + k.upper);
+      ? k.fingerName + ' 按 ' + (/^[A-Z]$/.test(ch) ? ch : k.lower) + '，同時用' + shiftHand + '小指壓住 Shift'
+      : k.fingerName + (ch === ' ' ? ' 按空白鍵' : ' 按 ' + k.lower);
   }
 
   function updateStats(s) {
