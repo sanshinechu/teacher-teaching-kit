@@ -7,6 +7,7 @@ Padlet 風格的班級作品展示工具。老師可以建立多個班級，學�
 - 建立多個班級入口
 - 複製班級專屬連結給學生
 - 學生登入後提交作品標題、網址與說明
+- 家長拿到班級連結免登入即可瀏覽作品
 - 作品牆自動產生網站縮圖
 - 未設定 Firebase 時可用本機示範模式
 - 填入 Firebase 設定後可使用 Google 登入與 Firestore 同步
@@ -29,42 +30,14 @@ Firestore 不適合由前端在每次新增班級時建立一個全新的 databa
 2. 在 Authentication 啟用 Google provider。
 3. 建立 Firestore Database。
 4. 將 Firebase Web App 設定填入 `script.js` 最上方的 `firebaseConfig`。
-5. 建議 Firestore Rules 先使用登入後才能讀寫：
+5. Firestore Rules 正本在 repo 根目錄的 `firestore.rules`（整個 `study-b2e59` 專案共用，別在這裡另抄一份）。改完用 `firebase deploy --only firestore:rules` 上線。
 
-```txt
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isClassOwner(classId) {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/projectWallClasses/$(classId))
-        && get(/databases/$(database)/documents/projectWallClasses/$(classId)).data.ownerUid == request.auth.uid;
-    }
+## 誰能看、誰能貼
 
-    function isTeacher() {
-      return request.auth != null
-        && request.auth.token.email == 'shine@tmail.ilc.edu.tw';
-    }
-
-    match /projectWallClasses/{classId} {
-      allow read: if request.auth != null;
-      allow create: if isTeacher()
-        && request.resource.data.ownerUid == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
-
-      match /submissions/{submissionId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
-          && exists(/databases/$(database)/documents/projectWallClasses/$(classId))
-          && request.resource.data.classId == classId
-          && request.resource.data.authorUid == request.auth.uid;
-        allow update: if false;
-        allow delete: if isClassOwner(classId);
-      }
-    }
-  }
-}
-```
+- **看作品**：拿到班級連結（`?class=...`）的人免登入就能看，方便家長瀏覽。
+- **列出所有班級**：需要登入，所以沒有連結的人翻不到其他班。
+- **貼作品**：學生要用 Google 登入，作品會掛上 Google 帳號名稱（家長看得到）。
+- **刪作品**：只有建立該班的老師。
 
 ## 縮圖說明
 

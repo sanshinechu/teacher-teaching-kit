@@ -182,8 +182,11 @@ function renderActiveClass() {
   const hasClass = Boolean(classroom);
 
   elements.activeClassPanel.classList.toggle("is-empty", !hasClass);
+  const needsLogin = state.mode === "firebase" && !state.user;
+  const submitButton = elements.submissionForm.querySelector("button");
   elements.copyClassLinkButton.disabled = !hasClass;
-  elements.submissionForm.querySelector("button").disabled = !hasClass;
+  submitButton.disabled = !hasClass || needsLogin;
+  submitButton.textContent = needsLogin ? "學生請先用 Google 登入再送出" : "送出作品";
 
   if (!classroom) {
     elements.activeClassName.textContent = "尚未選擇班級";
@@ -312,12 +315,30 @@ async function initFirebase() {
 }
 
 function subscribeClasses() {
-  if (state.mode !== "firebase" || !state.user) {
+  if (state.mode !== "firebase") {
     return;
   }
 
   state.unsubscribeClasses?.();
-  const { db, collection, onSnapshot, query, orderBy } = state.firebase;
+  const { db, collection, doc, onSnapshot, query, orderBy } = state.firebase;
+
+  // 未登入（例如家長）：只讀網址指定的那一班，不列出其他班級
+  if (!state.user) {
+    state.classes = [];
+    if (!state.activeClassId) {
+      render();
+      subscribeSubmissions();
+      return;
+    }
+
+    state.unsubscribeClasses = onSnapshot(doc(db, "projectWallClasses", state.activeClassId), (snapshot) => {
+      state.classes = snapshot.exists() ? [{ id: snapshot.id, ...snapshot.data() }] : [];
+      render();
+      subscribeSubmissions();
+    });
+    return;
+  }
+
   const classQuery = query(collection(db, "projectWallClasses"), orderBy("createdAt", "desc"));
 
   state.unsubscribeClasses = onSnapshot(classQuery, (snapshot) => {
@@ -338,7 +359,7 @@ function subscribeClasses() {
 function subscribeSubmissions() {
   state.unsubscribeSubmissions?.();
 
-  if (state.mode !== "firebase" || !state.user || !state.activeClassId) {
+  if (state.mode !== "firebase" || !state.activeClassId) {
     renderGallery();
     return;
   }
