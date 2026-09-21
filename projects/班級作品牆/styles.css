@@ -454,6 +454,50 @@ select {
   gap: 12px;
 }
 
+.gallery-grid.is-showcase {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+/* 訪客看到的資料夾封面：刻意做成不能點（不是連結也不是按鈕） */
+.showcase-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(23, 32, 51, 0.07);
+  cursor: default;
+}
+
+.showcase-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 16 / 10;
+  background: #ffffff;
+}
+
+.showcase-cell {
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(219, 39, 119, 0.12));
+}
+
+.showcase-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.showcase-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 .work-card {
   overflow: hidden;
   border: 1px solid var(--line);

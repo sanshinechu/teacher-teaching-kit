@@ -132,9 +132,10 @@ service cloud.firestore {
       }
     }
 
-    // 班級作品牆的資料夾：只有老師自己看得到，家長與學生不會用到
+    // 班級作品牆的資料夾：訪客可讀（只有名稱與封面摘要，裡面沒有班級代碼），只有老師能改
     match /projectWallFolders/{folderId} {
-      allow read, delete: if isTeacher()
+      allow read: if true;
+      allow delete: if isTeacher()
         && resource.data.ownerUid == request.auth.uid;
       allow create, update: if isTeacher()
         && (resource == null || resource.data.ownerUid == request.auth.uid)

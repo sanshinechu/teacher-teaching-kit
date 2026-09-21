@@ -30,6 +30,7 @@ const elements = {
   previewFrame: document.querySelector(".preview-frame"),
   previewImage: document.querySelector("#previewImage"),
   galleryGrid: document.querySelector("#galleryGrid"),
+  galleryTitle: document.querySelector("#gallery-title"),
   submissionCount: document.querySelector("#submissionCount"),
   classFilter: document.querySelector("#classFilter"),
   classButtonTemplate: document.querySelector("#classButtonTemplate"),
@@ -50,9 +51,17 @@ const state = {
   // 資料夾模式下只看某一班；空字串代表全部
   folderClassFilter: "",
   collapsedFolders: loadCollapsedFolders(),
+  // 訪客看到的資料夾封面
+  showcaseFolders: [],
+  // 老師端用來算封面的作品快取：classId -> 作品陣列
+  summaryWorks: {},
+  summaryListeners: {},
+  summaryTimer: null,
+  classesLoaded: false,
   firebase: null,
   unsubscribeClasses: null,
   unsubscribeFolders: null,
+  unsubscribeShowcase: null,
   unsubscribeSubmissions: []
 };
 
@@ -418,6 +427,74 @@ function renderClassFilter(classIds, allSubmissions) {
   });
 }
 
+function getShowcaseFolders() {
+  // 示範模式沒有 Firestore，封面直接從本機資料現算
+  if (state.mode !== "firebase") {
+    return state.folders.map((folder) => ({
+      ...folder,
+      summary: computeFolderSummary(folder.id, (classId) =>
+        state.submissions.filter((work) => work.classId === classId))
+    }));
+  }
+  return state.showcaseFolders;
+}
+
+// 回傳 true 代表已經畫出資料夾封面
+function renderShowcase() {
+  if (isTeacherUser() || state.activeClassId) {
+    return false;
+  }
+
+  const folders = getShowcaseFolders().filter((folder) => folder.summary?.workCount > 0);
+  if (folders.length === 0) {
+    return false;
+  }
+
+  elements.galleryTitle.textContent = "作品資料夾";
+  elements.submissionCount.textContent = `${folders.length} 個資料夾`;
+  elements.galleryGrid.classList.add("is-showcase");
+
+  folders.forEach((folder) => {
+    const { classCount, workCount, coverThumbs = [] } = folder.summary;
+    const card = document.createElement("article");
+    card.className = "showcase-card";
+
+    const collage = document.createElement("div");
+    collage.className = "showcase-collage";
+    for (let i = 0; i < 4; i += 1) {
+      const cell = document.createElement("div");
+      cell.className = "showcase-cell";
+      if (coverThumbs[i]) {
+        const image = document.createElement("img");
+        image.src = coverThumbs[i];
+        image.alt = "";
+        image.loading = "lazy";
+        image.addEventListener("error", () => image.remove(), { once: true });
+        cell.append(image);
+      }
+      collage.append(cell);
+    }
+
+    const copy = document.createElement("div");
+    copy.className = "work-copy";
+    const title = document.createElement("h3");
+    title.textContent = `📁 ${folder.name}`;
+    const meta = document.createElement("p");
+    meta.className = "work-meta";
+    meta.textContent = `${classCount} 班 · ${workCount} 件作品`;
+    copy.append(title, meta);
+
+    card.append(collage, copy);
+    elements.galleryGrid.append(card);
+  });
+
+  const hint = document.createElement("p");
+  hint.className = "showcase-hint";
+  hint.textContent = "想看完整作品，請向老師索取班級連結。";
+  elements.galleryGrid.append(hint);
+  return true;
+}
+
 function renderGallery() {
   const isFolderView = Boolean(getActiveFolder());
   const classIds = getViewClassIds();
@@ -442,6 +519,12 @@ function renderGallery() {
 
   elements.submissionCount.textContent = `${submissions.length} 件作品`;
   elements.galleryGrid.innerHTML = "";
+  elements.galleryGrid.classList.remove("is-showcase");
+  elements.galleryTitle.textContent = "班級作品";
+
+  if (classIds.length === 0 && renderShowcase()) {
+    return;
+  }
 
   if (classIds.length === 0) {
     const empty = document.createElement("p");
@@ -553,8 +636,113 @@ async function initFirebase() {
     state.user = user;
     subscribeClasses();
     subscribeFolders();
+    subscribeShowcase();
     render();
   });
+}
+
+// 沒有班級連結的訪客：列出所有資料夾的公開封面（只有名稱、件數、縮圖，點不進去）
+function subscribeShowcase() {
+  state.unsubscribeShowcase?.();
+  state.unsubscribeShowcase = null;
+  state.showcaseFolders = [];
+
+  if (state.mode !== "firebase" || isTeacherUser() || state.activeClassId) {
+    return;
+  }
+
+  const { db, collection, onSnapshot } = state.firebase;
+  state.unsubscribeShowcase = onSnapshot(collection(db, "projectWallFolders"), (snapshot) => {
+    state.showcaseFolders = snapshot.docs
+      .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+      .sort((a, b) => getSortTime(a.createdAt) - getSortTime(b.createdAt));
+    renderGallery();
+  }, (error) => {
+    console.error(error);
+    state.showcaseFolders = [];
+    renderGallery();
+  });
+}
+
+function computeFolderSummary(folderId, getClassWorks) {
+  const classesInFolder = getFolderClasses(folderId);
+  const works = classesInFolder.flatMap((classroom) => getClassWorks(classroom.id));
+  const coverThumbs = [...works]
+    .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt))
+    .slice(0, 4)
+    .map((work) => work.thumbnailUrl || getThumbnailUrl(work.url));
+  return { classCount: classesInFolder.length, workCount: works.length, coverThumbs };
+}
+
+function isSameSummary(a, b) {
+  return Boolean(a && b)
+    && a.classCount === b.classCount
+    && a.workCount === b.workCount
+    && (a.coverThumbs || []).join("\n") === (b.coverThumbs || []).join("\n");
+}
+
+// 老師開著頁面時，監聽所有「在資料夾裡」的班級作品，封面有變才寫回資料夾文件。
+// 訪客沒有權限自己算，所以老師沒開頁面時封面會停在上次的樣子。
+function syncSummaryListeners() {
+  const shouldSync = state.mode === "firebase" && isTeacherUser();
+  const folderIds = new Set(state.folders.map((folder) => folder.id));
+  const wanted = new Set(shouldSync
+    ? state.classes.filter((item) => folderIds.has(item.folderId)).map((item) => item.id)
+    : []);
+
+  Object.keys(state.summaryListeners).forEach((classId) => {
+    if (!wanted.has(classId)) {
+      state.summaryListeners[classId]();
+      delete state.summaryListeners[classId];
+      delete state.summaryWorks[classId];
+    }
+  });
+
+  if (!shouldSync) {
+    return;
+  }
+
+  const { db, collection, onSnapshot } = state.firebase;
+  wanted.forEach((classId) => {
+    if (state.summaryListeners[classId]) {
+      return;
+    }
+    state.summaryListeners[classId] = onSnapshot(
+      collection(db, "projectWallClasses", classId, "submissions"),
+      (snapshot) => {
+        state.summaryWorks[classId] = snapshot.docs.map((docSnapshot) => docSnapshot.data());
+        scheduleSummaryWrite();
+      }
+    );
+  });
+  scheduleSummaryWrite();
+}
+
+function scheduleSummaryWrite() {
+  clearTimeout(state.summaryTimer);
+  state.summaryTimer = setTimeout(() => {
+    writeFolderSummaries().catch((error) => console.error(error));
+  }, 1500);
+}
+
+async function writeFolderSummaries() {
+  if (state.mode !== "firebase" || !isTeacherUser()) {
+    return;
+  }
+
+  // 班級清單或某班作品還沒載入完就先不寫，免得把件數寫少
+  const isLoading = !state.classesLoaded || Object.keys(state.summaryListeners).some((classId) => !state.summaryWorks[classId]);
+  if (isLoading) {
+    return;
+  }
+
+  const { db, doc, updateDoc } = state.firebase;
+  for (const folder of state.folders) {
+    const summary = computeFolderSummary(folder.id, (classId) => state.summaryWorks[classId] || []);
+    if (!isSameSummary(summary, folder.summary)) {
+      await updateDoc(doc(db, "projectWallFolders", folder.id), { summary });
+    }
+  }
 }
 
 function subscribeFolders() {
@@ -568,6 +756,7 @@ function subscribeFolders() {
   if (!isTeacherUser()) {
     state.folders = [];
     state.activeFolderId = "";
+    syncSummaryListeners();
     return;
   }
 
@@ -587,6 +776,7 @@ function subscribeFolders() {
 
     render();
     subscribeSubmissions();
+    syncSummaryListeners();
   });
 }
 
@@ -596,6 +786,7 @@ function subscribeClasses() {
   }
 
   state.unsubscribeClasses?.();
+  state.classesLoaded = false;
   const { db, collection, doc, onSnapshot, query, orderBy } = state.firebase;
 
   // 未登入（例如家長）：只讀網址指定的那一班，不列出其他班級
@@ -622,6 +813,7 @@ function subscribeClasses() {
       id: docSnapshot.id,
       ...docSnapshot.data()
     }));
+    state.classesLoaded = true;
 
     if (state.activeClassId && !state.classes.some((item) => item.id === state.activeClassId)) {
       state.activeClassId = "";
@@ -629,6 +821,7 @@ function subscribeClasses() {
 
     render();
     subscribeSubmissions();
+    syncSummaryListeners();
   });
 }
 
