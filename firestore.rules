@@ -131,5 +131,17 @@ service cloud.firestore {
         allow delete: if isClassOwner(classId);
       }
     }
+
+    // 班級作品牆的資料夾：只有老師自己看得到，家長與學生不會用到
+    match /projectWallFolders/{folderId} {
+      allow read, delete: if isTeacher()
+        && resource.data.ownerUid == request.auth.uid;
+      allow create, update: if isTeacher()
+        && (resource == null || resource.data.ownerUid == request.auth.uid)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+    }
   }
 }

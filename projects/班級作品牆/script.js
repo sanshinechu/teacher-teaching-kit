@@ -12,7 +12,11 @@ const elements = {
   teacherPanel: document.querySelector(".teacher-panel"),
   classForm: document.querySelector("#classForm"),
   classNameInput: document.querySelector("#classNameInput"),
+  folderForm: document.querySelector("#folderForm"),
+  folderNameInput: document.querySelector("#folderNameInput"),
   classList: document.querySelector("#classList"),
+  classFolderField: document.querySelector("#classFolderField"),
+  classFolderSelect: document.querySelector("#classFolderSelect"),
   activeClassPanel: document.querySelector("#activeClassPanel"),
   activeClassName: document.querySelector("#activeClassName"),
   activeClassHint: document.querySelector("#activeClassHint"),
@@ -29,15 +33,21 @@ const elements = {
   cardTemplate: document.querySelector("#cardTemplate")
 };
 
+const initialParams = new URLSearchParams(window.location.search);
+
 const state = {
   mode: "local",
   user: null,
   classes: [],
+  folders: [],
   submissions: [],
-  activeClassId: new URLSearchParams(window.location.search).get("class") || "",
+  activeClassId: initialParams.get("class") || "",
+  // 資料夾與班級擇一：有班級連結就以班級為主
+  activeFolderId: initialParams.get("class") ? "" : initialParams.get("folder") || "",
   firebase: null,
   unsubscribeClasses: null,
-  unsubscribeSubmissions: null
+  unsubscribeFolders: null,
+  unsubscribeSubmissions: []
 };
 
 function hasFirebaseConfig() {
@@ -48,9 +58,11 @@ function loadLocalState() {
   try {
     const stored = JSON.parse(localStorage.getItem(storageKey) || "{}");
     state.classes = Array.isArray(stored.classes) ? stored.classes : [];
+    state.folders = Array.isArray(stored.folders) ? stored.folders : [];
     state.submissions = Array.isArray(stored.submissions) ? stored.submissions : [];
   } catch {
     state.classes = [];
+    state.folders = [];
     state.submissions = [];
   }
 }
@@ -58,6 +70,7 @@ function loadLocalState() {
 function saveLocalState() {
   localStorage.setItem(storageKey, JSON.stringify({
     classes: state.classes,
+    folders: state.folders,
     submissions: state.submissions
   }));
 }
@@ -134,22 +147,75 @@ function isTeacherUser() {
   return Boolean(state.user?.email && teacherEmails.includes(state.user.email));
 }
 
-function isTeacherForActiveClass() {
+function getActiveFolder() {
+  return state.folders.find((item) => item.id === state.activeFolderId) || null;
+}
+
+function getFolderClasses(folderId) {
+  return state.classes.filter((item) => item.folderId === folderId);
+}
+
+// 目前畫面要顯示哪些班級的作品：資料夾模式是資料夾內全部班級，否則是單一班級
+function getViewClassIds() {
+  const folder = getActiveFolder();
+  if (folder) {
+    return getFolderClasses(folder.id).map((item) => item.id);
+  }
+
   const classroom = getActiveClass();
+  return classroom ? [classroom.id] : [];
+}
+
+function isClassOwner(classId) {
+  const classroom = state.classes.find((item) => item.id === classId);
   return Boolean(classroom && state.user && classroom.ownerUid === state.user.uid);
+}
+
+function updateViewUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("class");
+  url.searchParams.delete("folder");
+  if (state.activeClassId) {
+    url.searchParams.set("class", state.activeClassId);
+  } else if (state.activeFolderId) {
+    url.searchParams.set("folder", state.activeFolderId);
+  }
+  window.history.replaceState({}, "", url);
 }
 
 function setActiveClass(classId) {
   state.activeClassId = classId;
-  const url = new URL(window.location.href);
-  if (classId) {
-    url.searchParams.set("class", classId);
-  } else {
-    url.searchParams.delete("class");
-  }
-  window.history.replaceState({}, "", url);
+  state.activeFolderId = "";
+  updateViewUrl();
   subscribeSubmissions();
   render();
+}
+
+function setActiveFolder(folderId) {
+  state.activeFolderId = folderId;
+  state.activeClassId = "";
+  updateViewUrl();
+  subscribeSubmissions();
+  render();
+}
+
+function createClassChip(classroom) {
+  const button = elements.classButtonTemplate.content.firstElementChild.cloneNode(true);
+  button.textContent = classroom.name;
+  button.classList.toggle("is-active", classroom.id === state.activeClassId);
+  button.addEventListener("click", () => setActiveClass(classroom.id));
+  return button;
+}
+
+function createSmallButton(text, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "folder-tool-button";
+  button.textContent = text;
+  button.addEventListener("click", () => {
+    onClick().catch((error) => window.alert(error.message));
+  });
+  return button;
 }
 
 function renderClasses() {
@@ -160,7 +226,7 @@ function renderClasses() {
     return;
   }
 
-  if (state.classes.length === 0) {
+  if (state.classes.length === 0 && state.folders.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
     empty.textContent = "尚未建立班級。先建立一個班級，再把班級連結給學生。";
@@ -168,25 +234,106 @@ function renderClasses() {
     return;
   }
 
-  state.classes.forEach((classroom) => {
-    const button = elements.classButtonTemplate.content.firstElementChild.cloneNode(true);
-    button.textContent = classroom.name;
-    button.classList.toggle("is-active", classroom.id === state.activeClassId);
-    button.addEventListener("click", () => setActiveClass(classroom.id));
-    elements.classList.append(button);
+  // 沒有資料夾時維持原本一排班級按鈕
+  if (state.folders.length === 0) {
+    state.classes.forEach((classroom) => elements.classList.append(createClassChip(classroom)));
+    return;
+  }
+
+  const folderIds = new Set(state.folders.map((folder) => folder.id));
+
+  state.folders.forEach((folder) => {
+    const group = document.createElement("div");
+    group.className = "folder-group";
+
+    const header = document.createElement("div");
+    header.className = "folder-header";
+
+    const classesInFolder = getFolderClasses(folder.id);
+    const folderButton = document.createElement("button");
+    folderButton.type = "button";
+    folderButton.className = "folder-chip";
+    folderButton.classList.toggle("is-active", folder.id === state.activeFolderId);
+    folderButton.textContent = `📁 ${folder.name}（${classesInFolder.length} 班）`;
+    folderButton.addEventListener("click", () => setActiveFolder(folder.id));
+
+    header.append(
+      folderButton,
+      createSmallButton("重新命名", () => renameFolder(folder)),
+      createSmallButton("刪除資料夾", () => deleteFolder(folder))
+    );
+
+    const classRow = document.createElement("div");
+    classRow.className = "folder-classes";
+    if (classesInFolder.length === 0) {
+      const hint = document.createElement("span");
+      hint.className = "folder-empty";
+      hint.textContent = "還沒有班級。點班級後，在上方「放進資料夾」選這個資料夾。";
+      classRow.append(hint);
+    } else {
+      classesInFolder.forEach((classroom) => classRow.append(createClassChip(classroom)));
+    }
+
+    group.append(header, classRow);
+    elements.classList.append(group);
   });
+
+  const looseClasses = state.classes.filter((item) => !item.folderId || !folderIds.has(item.folderId));
+  if (looseClasses.length > 0) {
+    const group = document.createElement("div");
+    group.className = "folder-group is-loose";
+    const label = document.createElement("p");
+    label.className = "folder-label";
+    label.textContent = "未分類";
+    const classRow = document.createElement("div");
+    classRow.className = "folder-classes";
+    looseClasses.forEach((classroom) => classRow.append(createClassChip(classroom)));
+    group.append(label, classRow);
+    elements.classList.append(group);
+  }
+}
+
+function renderFolderSelect(classroom) {
+  const canMove = Boolean(classroom) && isTeacherUser() && isClassOwner(classroom.id);
+  elements.classFolderField.classList.toggle("is-hidden", !canMove);
+  if (!canMove) {
+    return;
+  }
+
+  const select = elements.classFolderSelect;
+  select.innerHTML = "";
+  select.append(new Option("未分類", ""));
+  state.folders.forEach((folder) => select.append(new Option(folder.name, folder.id)));
+  const currentFolderExists = state.folders.some((folder) => folder.id === classroom.folderId);
+  select.value = currentFolderExists ? classroom.folderId : "";
 }
 
 function renderActiveClass() {
   const classroom = getActiveClass();
+  const folder = getActiveFolder();
   const hasClass = Boolean(classroom);
 
-  elements.activeClassPanel.classList.toggle("is-empty", !hasClass);
+  elements.activeClassPanel.classList.toggle("is-empty", !hasClass && !folder);
   const needsLogin = state.mode === "firebase" && !state.user;
   const submitButton = elements.submissionForm.querySelector("button");
   elements.copyClassLinkButton.disabled = !hasClass;
+  elements.copyClassLinkButton.classList.toggle("is-hidden", Boolean(folder));
   submitButton.disabled = !hasClass || needsLogin;
-  submitButton.textContent = needsLogin ? "學生請先用 Google 登入再送出" : "送出作品";
+  if (folder) {
+    submitButton.textContent = "資料夾只能瀏覽，送作品請先點一個班級";
+  } else {
+    submitButton.textContent = needsLogin ? "學生請先用 Google 登入再送出" : "送出作品";
+  }
+  renderFolderSelect(classroom);
+
+  if (folder) {
+    const classNames = getFolderClasses(folder.id).map((item) => item.name);
+    elements.activeClassName.textContent = `📁 ${folder.name}`;
+    elements.activeClassHint.textContent = classNames.length > 0
+      ? `共 ${classNames.length} 班：${classNames.join("、")}（資料夾只有老師看得到）`
+      : "這個資料夾還沒有班級。";
+    return;
+  }
 
   if (!classroom) {
     elements.activeClassName.textContent = "尚未選擇班級";
@@ -199,17 +346,16 @@ function renderActiveClass() {
 }
 
 function renderGallery() {
-  const classroom = getActiveClass();
-  const submissions = classroom
-    ? state.submissions
-        .filter((item) => item.classId === classroom.id)
-        .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt))
-    : [];
+  const isFolderView = Boolean(getActiveFolder());
+  const classIds = getViewClassIds();
+  const submissions = state.submissions
+    .filter((item) => classIds.includes(item.classId))
+    .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt));
 
   elements.submissionCount.textContent = `${submissions.length} 件作品`;
   elements.galleryGrid.innerHTML = "";
 
-  if (!classroom) {
+  if (classIds.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
     empty.textContent = "選擇班級後，這裡會顯示學生提交的作品。";
@@ -243,12 +389,17 @@ function renderGallery() {
     }, { once: true });
     title.textContent = work.title;
     note.textContent = work.note || "學生尚未填寫作品說明。";
-    meta.textContent = `${work.authorName || "匿名學生"} · ${formatDate(work.createdAt)}`;
+    const className = isFolderView
+      ? state.classes.find((item) => item.id === work.classId)?.name
+      : "";
+    meta.textContent = [work.authorName || "匿名學生", className, formatDate(work.createdAt)]
+      .filter(Boolean)
+      .join(" · ");
 
-    if (isTeacherForActiveClass()) {
+    if (isClassOwner(work.classId)) {
       deleteButton.classList.remove("is-hidden");
       deleteButton.addEventListener("click", () => {
-        deleteSubmission(work.id, work.title).catch((error) => window.alert(error.message));
+        deleteSubmission(work).catch((error) => window.alert(error.message));
       });
     }
 
@@ -300,9 +451,12 @@ async function initFirebase() {
     doc: firestoreModule.doc,
     setDoc: firestoreModule.setDoc,
     addDoc: firestoreModule.addDoc,
+    updateDoc: firestoreModule.updateDoc,
     deleteDoc: firestoreModule.deleteDoc,
+    writeBatch: firestoreModule.writeBatch,
     onSnapshot: firestoreModule.onSnapshot,
     query: firestoreModule.query,
+    where: firestoreModule.where,
     orderBy: firestoreModule.orderBy,
     serverTimestamp: firestoreModule.serverTimestamp
   };
@@ -310,7 +464,41 @@ async function initFirebase() {
   state.firebase.onAuthStateChanged(auth, (user) => {
     state.user = user;
     subscribeClasses();
+    subscribeFolders();
     render();
+  });
+}
+
+function subscribeFolders() {
+  if (state.mode !== "firebase") {
+    return;
+  }
+
+  state.unsubscribeFolders?.();
+  state.unsubscribeFolders = null;
+
+  if (!isTeacherUser()) {
+    state.folders = [];
+    state.activeFolderId = "";
+    return;
+  }
+
+  const { db, collection, onSnapshot, query, where } = state.firebase;
+  // 規則只放行自己的資料夾，所以查詢一定要帶 ownerUid 條件；排序在前端做，免建複合索引
+  const folderQuery = query(collection(db, "projectWallFolders"), where("ownerUid", "==", state.user.uid));
+
+  state.unsubscribeFolders = onSnapshot(folderQuery, (snapshot) => {
+    state.folders = snapshot.docs
+      .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+      .sort((a, b) => getSortTime(a.createdAt) - getSortTime(b.createdAt));
+
+    if (state.activeFolderId && !getActiveFolder()) {
+      state.activeFolderId = "";
+      updateViewUrl();
+    }
+
+    render();
+    subscribeSubmissions();
   });
 }
 
@@ -357,26 +545,41 @@ function subscribeClasses() {
 }
 
 function subscribeSubmissions() {
-  state.unsubscribeSubmissions?.();
+  state.unsubscribeSubmissions.forEach((unsubscribe) => unsubscribe());
+  state.unsubscribeSubmissions = [];
 
-  if (state.mode !== "firebase" || !state.activeClassId) {
+  if (state.mode !== "firebase") {
+    renderGallery();
+    return;
+  }
+
+  // 資料夾模式時每個班級各開一個監聽，結果合併在 state.submissions
+  const classIds = getViewClassIds();
+  state.submissions = state.submissions.filter((work) => classIds.includes(work.classId));
+
+  if (classIds.length === 0) {
     renderGallery();
     return;
   }
 
   const { db, collection, onSnapshot, query, orderBy } = state.firebase;
-  const submissionQuery = query(
-    collection(db, "projectWallClasses", state.activeClassId, "submissions"),
-    orderBy("createdAt", "desc")
-  );
+  classIds.forEach((classId) => {
+    const submissionQuery = query(
+      collection(db, "projectWallClasses", classId, "submissions"),
+      orderBy("createdAt", "desc")
+    );
 
-  state.unsubscribeSubmissions = onSnapshot(submissionQuery, (snapshot) => {
-    state.submissions = snapshot.docs.map((docSnapshot) => ({
-      id: docSnapshot.id,
-      classId: state.activeClassId,
-      ...docSnapshot.data()
+    state.unsubscribeSubmissions.push(onSnapshot(submissionQuery, (snapshot) => {
+      state.submissions = [
+        ...state.submissions.filter((work) => work.classId !== classId),
+        ...snapshot.docs.map((docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+          classId
+        }))
+      ];
+      renderGallery();
     }));
-    renderGallery();
   });
 }
 
@@ -390,7 +593,9 @@ async function createClass(name) {
     id: createId("class"),
     name,
     createdAt: new Date().toISOString(),
-    ownerUid: state.user?.uid || "local-demo"
+    ownerUid: state.user?.uid || "local-demo",
+    // 開著資料夾時建立的班級，直接放進那個資料夾
+    folderId: getActiveFolder()?.id || null
   };
 
   if (state.mode === "firebase" && !state.user) {
@@ -403,6 +608,7 @@ async function createClass(name) {
     await setDoc(doc(db, "projectWallClasses", classroom.id), {
       name,
       ownerUid: state.user.uid,
+      folderId: classroom.folderId,
       createdAt: serverTimestamp()
     });
   } else {
@@ -441,29 +647,121 @@ async function addSubmission(payload) {
   }
 }
 
-async function deleteSubmission(submissionId, title) {
-  const classroom = getActiveClass();
-  if (!classroom || !submissionId) {
+async function deleteSubmission(work) {
+  if (!work?.id || !work.classId) {
     return;
   }
 
-  if (!isTeacherForActiveClass()) {
+  // 資料夾模式下作品來自不同班級，要看作品本身屬於哪一班
+  if (!isClassOwner(work.classId)) {
     window.alert("只有建立這個班級的教師可以刪除作品。");
     return;
   }
 
-  const shouldDelete = window.confirm(`確定要刪除「${title || "這件作品"}」嗎？`);
+  const shouldDelete = window.confirm(`確定要刪除「${work.title || "這件作品"}」嗎？`);
   if (!shouldDelete) {
     return;
   }
 
   if (state.mode === "firebase") {
     const { db, doc, deleteDoc } = state.firebase;
-    await deleteDoc(doc(db, "projectWallClasses", classroom.id, "submissions", submissionId));
+    await deleteDoc(doc(db, "projectWallClasses", work.classId, "submissions", work.id));
   } else {
-    state.submissions = state.submissions.filter((work) => work.id !== submissionId);
+    state.submissions = state.submissions.filter((item) => item.id !== work.id);
     saveLocalState();
     renderGallery();
+  }
+}
+
+async function createFolder(name) {
+  if (!isTeacherUser()) {
+    window.alert("只有教師帳號可以建立資料夾。");
+    return;
+  }
+
+  if (state.mode === "firebase") {
+    const { db, collection, addDoc, serverTimestamp } = state.firebase;
+    await addDoc(collection(db, "projectWallFolders"), {
+      name,
+      ownerUid: state.user.uid,
+      createdAt: serverTimestamp()
+    });
+  } else {
+    state.folders.push({
+      id: createId("folder"),
+      name,
+      ownerUid: state.user?.uid || "local-demo",
+      createdAt: new Date().toISOString()
+    });
+    saveLocalState();
+    render();
+  }
+}
+
+async function renameFolder(folder) {
+  const name = window.prompt("資料夾新名稱", folder.name)?.trim();
+  if (!name || name === folder.name) {
+    return;
+  }
+
+  if (state.mode === "firebase") {
+    const { db, doc, updateDoc } = state.firebase;
+    await updateDoc(doc(db, "projectWallFolders", folder.id), { name: name.slice(0, 80) });
+  } else {
+    folder.name = name.slice(0, 80);
+    saveLocalState();
+    render();
+  }
+}
+
+async function deleteFolder(folder) {
+  const classesInFolder = getFolderClasses(folder.id);
+  const shouldDelete = window.confirm(
+    `確定要刪除資料夾「${folder.name}」嗎？\n裡面的 ${classesInFolder.length} 個班級和作品都不會被刪除，會回到「未分類」。`
+  );
+  if (!shouldDelete) {
+    return;
+  }
+
+  if (state.mode === "firebase") {
+    const { db, doc, writeBatch } = state.firebase;
+    const batch = writeBatch(db);
+    classesInFolder.forEach((classroom) => {
+      batch.update(doc(db, "projectWallClasses", classroom.id), { folderId: null });
+    });
+    batch.delete(doc(db, "projectWallFolders", folder.id));
+    await batch.commit();
+  } else {
+    classesInFolder.forEach((classroom) => {
+      classroom.folderId = null;
+    });
+    state.folders = state.folders.filter((item) => item.id !== folder.id);
+    saveLocalState();
+  }
+
+  if (state.activeFolderId === folder.id) {
+    setActiveFolder("");
+  } else {
+    render();
+  }
+}
+
+async function moveClassToFolder(classId, folderId) {
+  if (!isClassOwner(classId)) {
+    window.alert("只有建立這個班級的教師可以移動班級。");
+    return;
+  }
+
+  if (state.mode === "firebase") {
+    const { db, doc, updateDoc } = state.firebase;
+    await updateDoc(doc(db, "projectWallClasses", classId), { folderId: folderId || null });
+  } else {
+    const classroom = state.classes.find((item) => item.id === classId);
+    if (classroom) {
+      classroom.folderId = folderId || null;
+      saveLocalState();
+      render();
+    }
   }
 }
 
@@ -472,7 +770,7 @@ async function signIn() {
     const name = window.prompt("示範模式：請輸入顯示名稱", state.user?.displayName || "示範學生");
     if (name) {
       state.user = { uid: "local-demo", displayName: name.trim(), email: "" };
-      renderAuth();
+      render();
     }
     return;
   }
@@ -484,7 +782,7 @@ async function signIn() {
 async function signOutCurrentUser() {
   if (state.mode !== "firebase") {
     state.user = null;
-    renderAuth();
+    render();
     return;
   }
 
@@ -542,6 +840,25 @@ elements.classForm.addEventListener("submit", (event) => {
     .then(() => {
       elements.classNameInput.value = "";
     })
+    .catch((error) => window.alert(error.message));
+});
+
+elements.folderForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = elements.folderNameInput.value.trim();
+  if (!name) {
+    return;
+  }
+
+  createFolder(name)
+    .then(() => {
+      elements.folderNameInput.value = "";
+    })
+    .catch((error) => window.alert(error.message));
+});
+
+elements.classFolderSelect.addEventListener("change", () => {
+  moveClassToFolder(state.activeClassId, elements.classFolderSelect.value)
     .catch((error) => window.alert(error.message));
 });
 

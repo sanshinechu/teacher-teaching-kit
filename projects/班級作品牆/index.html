@@ -39,6 +39,13 @@
             </label>
             <button class="primary-button" type="submit">建立班級</button>
           </form>
+          <form id="folderForm" class="class-form">
+            <label>
+              資料夾名稱
+              <input id="folderNameInput" type="text" placeholder="例如：五年級 Scratch 動畫" maxlength="80" required>
+            </label>
+            <button class="ghost-button" type="submit">新增資料夾</button>
+          </form>
           <div id="classList" class="class-list" aria-label="班級清單"></div>
         </section>
 
@@ -48,7 +55,13 @@
             <h2 id="activeClassName">尚未選擇班級</h2>
             <p id="activeClassHint">請先建立班級，或使用老師提供的班級連結進入。</p>
           </div>
-          <button id="copyClassLinkButton" class="ghost-button" type="button" disabled>複製班級連結</button>
+          <div class="active-class-actions">
+            <label id="classFolderField" class="folder-select-field is-hidden">
+              放進資料夾
+              <select id="classFolderSelect"></select>
+            </label>
+            <button id="copyClassLinkButton" class="ghost-button" type="button" disabled>複製班級連結</button>
+          </div>
         </section>
 
         <section class="submission-layout">

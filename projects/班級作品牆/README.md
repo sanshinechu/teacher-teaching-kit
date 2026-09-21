@@ -5,6 +5,7 @@ Padlet 風格的班級作品展示工具。老師可以建立多個班級，學�
 ## 目前功能
 
 - 建立多個班級入口
+- 用資料夾把幾個班級收在一起（例如「五年級 Scratch 動畫」放 501～503），點資料夾可一次看全部班級的作品
 - 複製班級專屬連結給學生
 - 學生登入後提交作品標題、網址與說明
 - 家長拿到班級連結免登入即可瀏覽作品
@@ -20,6 +21,7 @@ Padlet 風格的班級作品展示工具。老師可以建立多個班級，學�
 - Firestore database：`(default)`
 - 班級資料路徑：`projectWallClasses/{classId}`
 - 作品資料路徑：`projectWallClasses/{classId}/submissions/{submissionId}`
+- 資料夾資料路徑：`projectWallFolders/{folderId}`（`name`、`ownerUid`、`createdAt`）；班級文件用選填的 `folderId` 指向所屬資料夾，沒有就是「未分類」
 - 教師帳號：`shine@tmail.ilc.edu.tw`
 
 Firestore 不適合由前端在每次新增班級時建立一個全新的 database instance；這個工具採用「每個班級一個獨立文件 + 子集合」的結構。對老師與學生來說，每個班級會有自己的班級連結與作品資料區。
@@ -38,6 +40,7 @@ Firestore 不適合由前端在每次新增班級時建立一個全新的 databa
 - **列出所有班級**：需要登入，所以沒有連結的人翻不到其他班。
 - **貼作品**：學生要用 Google 登入，作品會掛上 Google 帳號名稱（家長看得到）。
 - **刪作品**：只有建立該班的老師。
+- **資料夾**：只有老師自己看得到，沒有對外連結；刪資料夾不會刪到裡面的班級與作品，班級會回到「未分類」。
 
 ## 縮圖說明
 
