@@ -670,7 +670,8 @@ function computeFolderSummary(folderId, getClassWorks) {
   const coverThumbs = [...works]
     .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt))
     .slice(0, 4)
-    .map((work) => work.thumbnailUrl || getThumbnailUrl(work.url));
+    // 跟作品卡片一樣從網址現算；舊作品存的 thumbnailUrl 可能是已失效的截圖連結
+    .map((work) => getThumbnailUrl(work.url));
   return { classCount: classesInFolder.length, workCount: works.length, coverThumbs };
 }
 
