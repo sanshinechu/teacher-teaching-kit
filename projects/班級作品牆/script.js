@@ -460,20 +460,22 @@ function renderShowcase() {
     card.className = "showcase-card";
 
     const collage = document.createElement("div");
-    collage.className = "showcase-collage";
-    for (let i = 0; i < 4; i += 1) {
+    // 照縮圖張數排版（1 張滿版、2 張左右、3 張左大右二、4 張四格），不留空格
+    const thumbs = coverThumbs.slice(0, 4);
+    collage.className = `showcase-collage count-${Math.max(thumbs.length, 1)}`;
+    (thumbs.length > 0 ? thumbs : [""]).forEach((thumbUrl) => {
       const cell = document.createElement("div");
       cell.className = "showcase-cell";
-      if (coverThumbs[i]) {
+      if (thumbUrl) {
         const image = document.createElement("img");
-        image.src = coverThumbs[i];
+        image.src = thumbUrl;
         image.alt = "";
         image.loading = "lazy";
         image.addEventListener("error", () => image.remove(), { once: true });
         cell.append(image);
       }
       collage.append(cell);
-    }
+    });
 
     const copy = document.createElement("div");
     copy.className = "work-copy";

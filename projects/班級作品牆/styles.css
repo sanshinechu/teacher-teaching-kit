@@ -478,6 +478,19 @@ select {
   background: #ffffff;
 }
 
+.showcase-collage.count-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.showcase-collage.count-2 {
+  grid-template-rows: 1fr;
+}
+
+.showcase-collage.count-3 .showcase-cell:first-child {
+  grid-row: span 2;
+}
+
 .showcase-cell {
   overflow: hidden;
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(219, 39, 119, 0.12));
