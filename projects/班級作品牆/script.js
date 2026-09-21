@@ -1,6 +1,8 @@
 const firebaseConfig = window.TeacherProjectWallFirebaseConfig || {};
 
 const storageKey = "teacher-project-wall-v1";
+// 收起哪些資料夾只是這台電腦的偏好，不存 Firestore
+const collapsedStorageKey = "teacher-project-wall-collapsed-folders";
 const screenshotBase = "https://image.thum.io/get/width/900/crop/640/noanimate/";
 const teacherEmails = ["shine@tmail.ilc.edu.tw"];
 
@@ -29,6 +31,7 @@ const elements = {
   previewImage: document.querySelector("#previewImage"),
   galleryGrid: document.querySelector("#galleryGrid"),
   submissionCount: document.querySelector("#submissionCount"),
+  classFilter: document.querySelector("#classFilter"),
   classButtonTemplate: document.querySelector("#classButtonTemplate"),
   cardTemplate: document.querySelector("#cardTemplate")
 };
@@ -44,11 +47,38 @@ const state = {
   activeClassId: initialParams.get("class") || "",
   // 資料夾與班級擇一：有班級連結就以班級為主
   activeFolderId: initialParams.get("class") ? "" : initialParams.get("folder") || "",
+  // 資料夾模式下只看某一班；空字串代表全部
+  folderClassFilter: "",
+  collapsedFolders: loadCollapsedFolders(),
   firebase: null,
   unsubscribeClasses: null,
   unsubscribeFolders: null,
   unsubscribeSubmissions: []
 };
+
+function loadCollapsedFolders() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(collapsedStorageKey) || "[]");
+    return new Set(Array.isArray(stored) ? stored : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function toggleFolderCollapsed(folderId) {
+  if (state.collapsedFolders.has(folderId)) {
+    state.collapsedFolders.delete(folderId);
+  } else {
+    state.collapsedFolders.add(folderId);
+  }
+
+  try {
+    localStorage.setItem(collapsedStorageKey, JSON.stringify([...state.collapsedFolders]));
+  } catch {
+    // 無痕視窗等情況存不進去也沒關係，只是下次會全部展開
+  }
+  renderClasses();
+}
 
 function hasFirebaseConfig() {
   return Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId);
@@ -194,6 +224,7 @@ function setActiveClass(classId) {
 function setActiveFolder(folderId) {
   state.activeFolderId = folderId;
   state.activeClassId = "";
+  state.folderClassFilter = "";
   updateViewUrl();
   subscribeSubmissions();
   render();
@@ -250,6 +281,15 @@ function renderClasses() {
     header.className = "folder-header";
 
     const classesInFolder = getFolderClasses(folder.id);
+    const isCollapsed = state.collapsedFolders.has(folder.id);
+    const toggleButton = document.createElement("button");
+    toggleButton.type = "button";
+    toggleButton.className = "folder-toggle";
+    toggleButton.textContent = isCollapsed ? "▸" : "▾";
+    toggleButton.setAttribute("aria-expanded", String(!isCollapsed));
+    toggleButton.setAttribute("aria-label", `${isCollapsed ? "展開" : "收起"}「${folder.name}」`);
+    toggleButton.addEventListener("click", () => toggleFolderCollapsed(folder.id));
+
     const folderButton = document.createElement("button");
     folderButton.type = "button";
     folderButton.className = "folder-chip";
@@ -258,6 +298,7 @@ function renderClasses() {
     folderButton.addEventListener("click", () => setActiveFolder(folder.id));
 
     header.append(
+      toggleButton,
       folderButton,
       createSmallButton("重新命名", () => renameFolder(folder)),
       createSmallButton("刪除資料夾", () => deleteFolder(folder))
@@ -265,6 +306,7 @@ function renderClasses() {
 
     const classRow = document.createElement("div");
     classRow.className = "folder-classes";
+    classRow.classList.toggle("is-hidden", isCollapsed);
     if (classesInFolder.length === 0) {
       const hint = document.createElement("span");
       hint.className = "folder-empty";
@@ -345,12 +387,58 @@ function renderActiveClass() {
   elements.activeClassHint.textContent = `班級代碼：${classroom.id}`;
 }
 
+function renderClassFilter(classIds, allSubmissions) {
+  const bar = elements.classFilter;
+  bar.innerHTML = "";
+  bar.classList.toggle("is-hidden", classIds.length < 2);
+  if (classIds.length < 2) {
+    return;
+  }
+
+  const options = [{ id: "", name: "全部" }, ...classIds.map((id) => ({
+    id,
+    name: state.classes.find((item) => item.id === id)?.name || id
+  }))];
+
+  options.forEach((option) => {
+    const count = option.id
+      ? allSubmissions.filter((work) => work.classId === option.id).length
+      : allSubmissions.length;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "filter-chip";
+    button.classList.toggle("is-active", option.id === state.folderClassFilter);
+    button.setAttribute("aria-pressed", String(option.id === state.folderClassFilter));
+    button.textContent = `${option.name}（${count}）`;
+    button.addEventListener("click", () => {
+      state.folderClassFilter = option.id;
+      renderGallery();
+    });
+    bar.append(button);
+  });
+}
+
 function renderGallery() {
   const isFolderView = Boolean(getActiveFolder());
   const classIds = getViewClassIds();
-  const submissions = state.submissions
+  const allSubmissions = state.submissions
     .filter((item) => classIds.includes(item.classId))
     .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt));
+
+  // 班級被移出資料夾後，篩選條件就不成立了
+  if (!isFolderView || !classIds.includes(state.folderClassFilter)) {
+    state.folderClassFilter = "";
+  }
+  if (isFolderView) {
+    renderClassFilter(classIds, allSubmissions);
+  } else {
+    elements.classFilter.classList.add("is-hidden");
+  }
+
+  const showClassName = isFolderView && !state.folderClassFilter;
+  const submissions = state.folderClassFilter
+    ? allSubmissions.filter((work) => work.classId === state.folderClassFilter)
+    : allSubmissions;
 
   elements.submissionCount.textContent = `${submissions.length} 件作品`;
   elements.galleryGrid.innerHTML = "";
@@ -389,7 +477,7 @@ function renderGallery() {
     }, { once: true });
     title.textContent = work.title;
     note.textContent = work.note || "學生尚未填寫作品說明。";
-    const className = isFolderView
+    const className = showClassName
       ? state.classes.find((item) => item.id === work.classId)?.name
       : "";
     meta.textContent = [work.authorName || "匿名學生", className, formatDate(work.createdAt)]
