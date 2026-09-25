@@ -1,3 +1,5 @@
+import { parseImportText, classifyRows, DEFAULT_TITLE } from "./import-parser.js";
+
 const firebaseConfig = window.TeacherProjectWallFirebaseConfig || {};
 
 const storageKey = "teacher-project-wall-v1";
@@ -17,6 +19,14 @@ const elements = {
   folderForm: document.querySelector("#folderForm"),
   folderNameInput: document.querySelector("#folderNameInput"),
   classList: document.querySelector("#classList"),
+  importPanel: document.querySelector("#importPanel"),
+  importFolderSelect: document.querySelector("#importFolderSelect"),
+  importDefaultTitle: document.querySelector("#importDefaultTitle"),
+  importText: document.querySelector("#importText"),
+  importCheckButton: document.querySelector("#importCheckButton"),
+  importRunButton: document.querySelector("#importRunButton"),
+  importStatus: document.querySelector("#importStatus"),
+  importResult: document.querySelector("#importResult"),
   classFolderField: document.querySelector("#classFolderField"),
   classFolderSelect: document.querySelector("#classFolderSelect"),
   activeClassPanel: document.querySelector("#activeClassPanel"),
@@ -591,6 +601,7 @@ function renderAuth() {
 function render() {
   renderAuth();
   renderClasses();
+  renderImportFolderSelect();
   renderActiveClass();
   renderGallery();
 }
@@ -621,6 +632,7 @@ async function initFirebase() {
     signOut: authModule.signOut,
     onAuthStateChanged: authModule.onAuthStateChanged,
     collection: firestoreModule.collection,
+    getDocs: firestoreModule.getDocs,
     doc: firestoreModule.doc,
     setDoc: firestoreModule.setDoc,
     addDoc: firestoreModule.addDoc,
@@ -1049,6 +1061,244 @@ async function moveClassToFolder(classId, folderId) {
   }
 }
 
+// ---- 批次匯入作品（老師從 Excel 貼上多筆作品網址）----------------------------
+// 規則要求 authorUid 必須是登入者，所以匯入的作品都掛在老師的帳號下，
+// 學生看到的名字（authorName）是另外寫的「501 座號 05」，不含姓名。
+
+const IMPORT_ANY_FOLDER = "__any__";
+// Firestore 規則每筆新增都會查一次班級文件，單一批次最多 20 次查詢，保守用 15 筆
+const IMPORT_BATCH_SIZE = 15;
+
+let importPlan = null;
+let importFolderSignature = "";
+
+function renderImportFolderSelect() {
+  if (!isTeacherUser()) {
+    return;
+  }
+
+  const signature = state.folders
+    .map((folder) => `${folder.id}:${folder.name}:${getFolderClasses(folder.id).length}`)
+    .join("|");
+  if (signature === importFolderSignature) {
+    return;
+  }
+  importFolderSignature = signature;
+
+  const select = elements.importFolderSelect;
+  const previous = select.value;
+  select.replaceChildren();
+
+  const addOption = (value, label) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    select.append(option);
+  };
+
+  state.folders.forEach((folder) => {
+    addOption(folder.id, `${folder.name}（${getFolderClasses(folder.id).length} 班）`);
+  });
+  addOption(IMPORT_ANY_FOLDER, "所有班級（不限資料夾）");
+
+  const wanted = [previous, state.activeFolderId].find((value) => value && [...select.options].some((option) => option.value === value));
+  select.value = wanted || select.options[0].value;
+}
+
+function getImportClasses() {
+  const folderId = elements.importFolderSelect.value;
+  return folderId === IMPORT_ANY_FOLDER || !folderId ? state.classes : getFolderClasses(folderId);
+}
+
+function setImportStatus(message) {
+  elements.importStatus.textContent = message;
+}
+
+function resetImportPlan() {
+  importPlan = null;
+  elements.importRunButton.disabled = true;
+  elements.importRunButton.textContent = "匯入";
+  elements.importResult.classList.add("is-hidden");
+  elements.importResult.replaceChildren();
+  setImportStatus("");
+}
+
+async function loadExistingWorks(classIds) {
+  const result = {};
+
+  if (state.mode !== "firebase") {
+    classIds.forEach((classId) => {
+      result[classId] = state.submissions.filter((work) => work.classId === classId);
+    });
+    return result;
+  }
+
+  const { db, collection, getDocs } = state.firebase;
+  await Promise.all(classIds.map(async (classId) => {
+    const snapshot = await getDocs(collection(db, "projectWallClasses", classId, "submissions"));
+    result[classId] = snapshot.docs.map((docSnapshot) => docSnapshot.data());
+  }));
+  return result;
+}
+
+function renderImportResult(rows) {
+  const labels = { ok: "可匯入", duplicate: "略過", error: "有問題" };
+  const table = document.createElement("table");
+  table.className = "import-table";
+
+  const head = table.createTHead().insertRow();
+  ["行", "班級", "顯示名稱", "標題", "網址", "結果"].forEach((text) => {
+    const cell = document.createElement("th");
+    cell.textContent = text;
+    head.append(cell);
+  });
+
+  const body = table.createTBody();
+  rows.forEach((row) => {
+    const tr = body.insertRow();
+    tr.className = `is-${row.status}`;
+    const notes = [...row.errors, ...row.warnings].join("；");
+    [
+      row.lineNumber,
+      row.className || row.classCell,
+      row.authorName || "—",
+      row.title,
+      row.url || "—",
+      notes ? `${labels[row.status]}：${notes}` : labels[row.status]
+    ].forEach((value) => {
+      tr.insertCell().textContent = String(value);
+    });
+  });
+
+  elements.importResult.replaceChildren(table);
+  elements.importResult.classList.remove("is-hidden");
+}
+
+async function checkImport() {
+  resetImportPlan();
+
+  if (!isTeacherUser()) {
+    setImportStatus("只有教師帳號可以匯入。");
+    return;
+  }
+
+  const text = elements.importText.value;
+  if (!text.trim()) {
+    setImportStatus("請先貼上作品資料。");
+    return;
+  }
+
+  const classes = getImportClasses();
+  if (classes.length === 0) {
+    setImportStatus("這個資料夾底下還沒有班級，請先建立班級。");
+    return;
+  }
+
+  setImportStatus("檢查中…");
+  const rows = parseImportText(text, {
+    classes,
+    defaultTitle: elements.importDefaultTitle.value.trim() || DEFAULT_TITLE
+  });
+
+  if (rows.length === 0) {
+    setImportStatus("沒有讀到任何一行資料。");
+    return;
+  }
+
+  const classIds = [...new Set(rows.map((row) => row.classId).filter(Boolean))];
+  const existing = await loadExistingWorks(classIds);
+  const summary = classifyRows(rows, existing);
+
+  importPlan = { rows, summary };
+  renderImportResult(rows);
+  elements.importRunButton.disabled = summary.ok === 0;
+  elements.importRunButton.textContent = `匯入 ${summary.ok} 件`;
+
+  const parts = [`共 ${summary.total} 行：可匯入 ${summary.ok} 件`];
+  if (summary.duplicate > 0) {
+    parts.push(`重複略過 ${summary.duplicate} 件`);
+  }
+  if (summary.error > 0) {
+    parts.push(`有問題 ${summary.error} 行（不會匯入，修正後再檢查一次）`);
+  }
+  setImportStatus(parts.join("，"));
+}
+
+function buildImportedWork(row, createdAt) {
+  return {
+    title: row.title,
+    url: row.url,
+    note: "",
+    thumbnailUrl: getThumbnailUrl(row.url),
+    classId: row.classId,
+    authorUid: state.user?.uid || "local-demo",
+    authorName: row.authorName,
+    createdAt,
+    importedBy: "teacher-batch"
+  };
+}
+
+async function runImport() {
+  if (!importPlan || !isTeacherUser()) {
+    return;
+  }
+
+  if (state.mode === "firebase" && !state.user) {
+    window.alert("請先使用 Google 登入。");
+    return;
+  }
+
+  const rows = importPlan.rows.filter((row) => row.status === "ok");
+  if (rows.length === 0) {
+    return;
+  }
+
+  if (!window.confirm(`要把 ${rows.length} 件作品匯入班級作品牆嗎？`)) {
+    return;
+  }
+
+  elements.importRunButton.disabled = true;
+  elements.importCheckButton.disabled = true;
+  let done = 0;
+
+  try {
+    if (state.mode === "firebase") {
+      const { db, collection, doc, writeBatch, serverTimestamp } = state.firebase;
+      for (let start = 0; start < rows.length; start += IMPORT_BATCH_SIZE) {
+        const chunk = rows.slice(start, start + IMPORT_BATCH_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach((row) => {
+          const ref = doc(collection(db, "projectWallClasses", row.classId, "submissions"));
+          batch.set(ref, buildImportedWork(row, serverTimestamp()));
+        });
+        await batch.commit();
+        done += chunk.length;
+        setImportStatus(`匯入中… ${done} / ${rows.length}`);
+      }
+    } else {
+      rows.forEach((row) => {
+        state.submissions.unshift({
+          id: createId("work"),
+          ...buildImportedWork(row, new Date().toISOString())
+        });
+        done += 1;
+      });
+      saveLocalState();
+      renderGallery();
+    }
+  } catch (error) {
+    // 已寫入的批次不會回復；重新按「檢查」會把它們標成重複略過，不會產生兩份
+    console.error(error);
+    setImportStatus(`匯入到第 ${done} 件後中斷：${error.message}。已匯入的不會重複，修正後再按一次「檢查」即可。`);
+    elements.importCheckButton.disabled = false;
+    return;
+  }
+
+  elements.importCheckButton.disabled = false;
+  resetImportPlan();
+  setImportStatus(`已匯入 ${done} 件。可以再按「檢查」確認，這些會顯示為重複略過。`);
+}
+
 async function signIn() {
   if (state.mode !== "firebase") {
     const name = window.prompt("示範模式：請輸入顯示名稱", state.user?.displayName || "示範學生");
@@ -1181,6 +1431,24 @@ elements.submissionForm.addEventListener("submit", (event) => {
     elements.submissionForm.reset();
     updatePreview();
   }).catch((error) => window.alert(error.message));
+});
+
+elements.importCheckButton.addEventListener("click", () => {
+  checkImport().catch((error) => {
+    console.error(error);
+    setImportStatus(`檢查失敗：${error.message}`);
+  });
+});
+
+elements.importRunButton.addEventListener("click", () => {
+  runImport().catch((error) => window.alert(error.message));
+});
+
+// 內容一改，先前檢查的結果就作廢，避免按到舊的計畫
+["input", "change"].forEach((eventName) => {
+  [elements.importText, elements.importFolderSelect, elements.importDefaultTitle].forEach((element) => {
+    element.addEventListener(eventName, resetImportPlan);
+  });
 });
 
 initFirebase().catch((error) => {
