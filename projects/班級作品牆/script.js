@@ -25,6 +25,8 @@ const elements = {
   activeClassName: document.querySelector("#activeClassName"),
   activeClassHint: document.querySelector("#activeClassHint"),
   copyClassLinkButton: document.querySelector("#copyClassLinkButton"),
+  copyShareLinkButton: document.querySelector("#copyShareLinkButton"),
+  submissionLayout: document.querySelector(".submission-layout"),
   submissionForm: document.querySelector("#submissionForm"),
   titleInput: document.querySelector("#titleInput"),
   urlInput: document.querySelector("#urlInput"),
@@ -42,6 +44,13 @@ const elements = {
 
 const initialParams = new URLSearchParams(window.location.search);
 
+// 評審分享連結：?share=班級代碼,班級代碼,…&title=資料夾名稱。代碼要長得像班級 id，
+// 不合格的直接丟掉，免得被塞進 Firestore 路徑（例如含斜線）
+const sharedClassIds = (initialParams.get("share") || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter((value) => /^[A-Za-z0-9_-]{6,80}$/.test(value));
+
 const state = {
   mode: "local",
   user: null,
@@ -55,6 +64,8 @@ const state = {
   folderClassFilter: "",
   collapsedFolders: loadCollapsedFolders(),
   galleryView: loadGalleryView(),
+  sharedClassIds,
+  sharedTitle: (initialParams.get("title") || "").slice(0, 80),
   // 訪客看到的資料夾封面
   showcaseFolders: [],
   // 老師端用來算封面的作品快取：classId -> 作品陣列
@@ -217,7 +228,16 @@ function getFolderClasses(folderId) {
 }
 
 // 目前畫面要顯示哪些班級的作品：資料夾模式是資料夾內全部班級，否則是單一班級
+// 評審分享連結開出來的唯讀畫面（老師本人不套用，老師看的還是完整的管理畫面）
+function isSharedView() {
+  return state.sharedClassIds.length > 0 && !isTeacherUser();
+}
+
 function getViewClassIds() {
+  if (isSharedView()) {
+    return state.sharedClassIds.filter((id) => state.classes.some((item) => item.id === id));
+  }
+
   const folder = getActiveFolder();
   if (folder) {
     return getFolderClasses(folder.id).map((item) => item.id);
@@ -382,9 +402,27 @@ function renderFolderSelect(classroom) {
 }
 
 function renderActiveClass() {
+  // 評審分享畫面：唯讀，不顯示送作品的表單與任何管理按鈕
+  const shared = isSharedView();
+  elements.submissionLayout.classList.toggle("is-hidden", shared);
+  if (shared) {
+    elements.activeClassPanel.classList.remove("is-empty");
+    elements.copyClassLinkButton.classList.add("is-hidden");
+    elements.copyShareLinkButton.classList.add("is-hidden");
+    elements.classFolderField.classList.add("is-hidden");
+    elements.activeClassName.textContent = `📁 ${state.sharedTitle || "學生作品成果"}`;
+    const classCount = getViewClassIds().length;
+    elements.activeClassHint.textContent = classCount > 0
+      ? `共 ${classCount} 班・唯讀分享，作者以編號顯示，不含學生姓名`
+      : "載入中…";
+    return;
+  }
+
   const classroom = getActiveClass();
   const folder = getActiveFolder();
   const hasClass = Boolean(classroom);
+  // 只有老師在資料夾畫面才有「評審分享連結」
+  elements.copyShareLinkButton.classList.toggle("is-hidden", !(folder && isTeacherUser()));
 
   elements.activeClassPanel.classList.toggle("is-empty", !hasClass && !folder);
   const needsLogin = state.mode === "firebase" && !state.user;
@@ -519,6 +557,50 @@ function renderShowcase() {
   return true;
 }
 
+// 班級名稱通常是「115_506_我的第一個程式」，取最後一組三碼（前面那組是學年度）當班號
+function getClassCode(classroom) {
+  const name = classroom?.name || "";
+  const codes = name.match(/(?<!\d)\d{3}(?!\d)/g);
+  return codes ? codes[codes.length - 1] : name;
+}
+
+// 老師自己提交的作品（測試、示範）不算學生成果：作者就是班級的建立者。
+// 示範模式所有人共用同一個 uid，這個判斷不適用。
+function isTeacherWork(work) {
+  if (state.mode !== "firebase") {
+    return false;
+  }
+  const ownerUid = state.classes.find((item) => item.id === work.classId)?.ownerUid;
+  return Boolean(ownerUid) && work.authorUid === ownerUid;
+}
+
+// 去識別化的作者標籤：同一班內依「第一次提交的時間」替每位學生編號（例如「501 學生 03」），
+// 同一位學生永遠是同一個編號；姓名與帳號不顯示。資料庫裡的 authorName 沒動，只是不畫出來。
+function buildAuthorLabels() {
+  const firstSeen = new Map();
+  state.submissions.filter((work) => !isTeacherWork(work)).forEach((work) => {
+    const key = `${work.classId}|${work.authorUid || work.id}`;
+    const time = getSortTime(work.createdAt);
+    if (!firstSeen.has(key) || time < firstSeen.get(key)) {
+      firstSeen.set(key, time);
+    }
+  });
+
+  const labels = new Map();
+  const classIds = [...new Set([...firstSeen.keys()].map((key) => key.split("|")[0]))];
+  classIds.forEach((classId) => {
+    const code = getClassCode(state.classes.find((item) => item.id === classId));
+    [...firstSeen.entries()]
+      .filter(([key]) => key.startsWith(`${classId}|`))
+      .sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))
+      .forEach(([key], index) => {
+        labels.set(key, `${code} 學生 ${String(index + 1).padStart(2, "0")}`);
+      });
+  });
+
+  return (work) => labels.get(`${work.classId}|${work.authorUid || work.id}`) || "學生";
+}
+
 function createWorkLink(work) {
   const link = document.createElement("a");
   link.href = work.url;
@@ -529,12 +611,12 @@ function createWorkLink(work) {
 }
 
 // 清單檢視：一列一件，標題直接是連結。依「班級 → 作者」排，方便對著名單點
-function renderWorkList(submissions, isFolderView) {
+function renderWorkList(submissions, isFolderView, getAuthorLabel) {
   const className = (work) => state.classes.find((item) => item.id === work.classId)?.name || "";
   const collator = new Intl.Collator("zh-Hant", { numeric: true });
   const sorted = [...submissions].sort((a, b) =>
     collator.compare(className(a), className(b))
-    || collator.compare(a.authorName || "", b.authorName || "")
+    || collator.compare(getAuthorLabel(a), getAuthorLabel(b))
     || getSortTime(a.createdAt) - getSortTime(b.createdAt));
 
   const showClass = isFolderView;
@@ -553,16 +635,15 @@ function renderWorkList(submissions, isFolderView) {
     const row = body.insertRow();
     row.insertCell().textContent = String(index + 1);
     if (showClass) {
-      // 班級名稱通常是「115_506_我的第一個程式」，清單裡只留班號 506，欄位才不會被擠成一字一行
-      const codes = className(work).match(/(?<!\d)\d{3}(?!\d)/g);
+      // 清單裡只留班號 506，欄位才不會被擠成一字一行
       const classCell = row.insertCell();
       classCell.className = "nowrap";
-      classCell.textContent = codes ? codes[codes.length - 1] : className(work);
+      classCell.textContent = getClassCode(state.classes.find((item) => item.id === work.classId));
       classCell.title = className(work);
     }
     const authorCell = row.insertCell();
     authorCell.className = "nowrap";
-    authorCell.textContent = work.authorName || "匿名學生";
+    authorCell.textContent = getAuthorLabel(work);
     row.insertCell().append(createWorkLink(work));
     const noteCell = row.insertCell();
     noteCell.className = "work-list-note";
@@ -589,11 +670,15 @@ function renderWorkList(submissions, isFolderView) {
 }
 
 function renderGallery() {
-  const isFolderView = Boolean(getActiveFolder());
+  const isFolderView = Boolean(getActiveFolder()) || isSharedView();
   const classIds = getViewClassIds();
-  const allSubmissions = state.submissions
-    .filter((item) => classIds.includes(item.classId))
+  const viewSubmissions = state.submissions.filter((item) => classIds.includes(item.classId));
+  // 老師自己提交的作品不列入學生成果（卡片、清單、計數都一樣）
+  const teacherWorks = viewSubmissions.filter(isTeacherWork);
+  const allSubmissions = viewSubmissions
+    .filter((item) => !isTeacherWork(item))
     .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt));
+  const getAuthorLabel = buildAuthorLabels();
 
   // 班級被移出資料夾後，篩選條件就不成立了
   if (!isFolderView || !classIds.includes(state.folderClassFilter)) {
@@ -610,7 +695,12 @@ function renderGallery() {
     ? allSubmissions.filter((work) => work.classId === state.folderClassFilter)
     : allSubmissions;
 
-  elements.submissionCount.textContent = `${submissions.length} 件作品`;
+  // 只有老師看得到被藏起來的件數，免得以為作品不見了
+  const hiddenCount = (state.folderClassFilter
+    ? teacherWorks.filter((work) => work.classId === state.folderClassFilter)
+    : teacherWorks).length;
+  elements.submissionCount.textContent = `${submissions.length} 件作品`
+    + (isTeacherUser() && hiddenCount > 0 ? `（另有 ${hiddenCount} 件老師提交的已隱藏）` : "");
   elements.galleryGrid.innerHTML = "";
   elements.galleryGrid.classList.remove("is-showcase", "is-list");
   elements.galleryTitle.textContent = "班級作品";
@@ -630,7 +720,9 @@ function renderGallery() {
   if (classIds.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
-    empty.textContent = "選擇班級後，這裡會顯示學生提交的作品。";
+    empty.textContent = isSharedView()
+      ? "載入中…如果一直沒有內容，代表這個分享連結已失效，請向老師索取新的連結。"
+      : "選擇班級後，這裡會顯示學生提交的作品。";
     elements.galleryGrid.append(empty);
     return;
   }
@@ -644,7 +736,7 @@ function renderGallery() {
   }
 
   if (state.galleryView === "list") {
-    renderWorkList(submissions, isFolderView);
+    renderWorkList(submissions, isFolderView, getAuthorLabel);
     return;
   }
 
@@ -670,7 +762,7 @@ function renderGallery() {
     const className = showClassName
       ? state.classes.find((item) => item.id === work.classId)?.name
       : "";
-    meta.textContent = [work.authorName || "匿名學生", className, formatDate(work.createdAt)]
+    meta.textContent = [getAuthorLabel(work), className, formatDate(work.createdAt)]
       .filter(Boolean)
       .join(" · ");
 
@@ -754,7 +846,7 @@ function subscribeShowcase() {
   state.unsubscribeShowcase = null;
   state.showcaseFolders = [];
 
-  if (state.mode !== "firebase" || isTeacherUser() || state.activeClassId) {
+  if (state.mode !== "firebase" || isTeacherUser() || state.activeClassId || isSharedView()) {
     return;
   }
 
@@ -773,13 +865,32 @@ function subscribeShowcase() {
 
 function computeFolderSummary(folderId, getClassWorks) {
   const classesInFolder = getFolderClasses(folderId);
-  const works = classesInFolder.flatMap((classroom) => getClassWorks(classroom.id));
-  const coverThumbs = [...works]
-    .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt))
-    .slice(0, 4)
-    // 跟作品卡片一樣從網址現算；舊作品存的 thumbnailUrl 可能是已失效的截圖連結
-    .map((work) => getThumbnailUrl(work.url));
-  return { classCount: classesInFolder.length, workCount: works.length, coverThumbs };
+  // 每班各自的作品（新到舊），不含老師自己提交的；沒交作品的班級不參與封面，最近有人交的班級排前面
+  const perClass = classesInFolder
+    .map((classroom) => getClassWorks(classroom.id)
+      .filter((work) => !isTeacherWork(work))
+      .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt)))
+    .filter((list) => list.length > 0)
+    .sort((a, b) => getSortTime(b[0].createdAt) - getSortTime(a[0].createdAt));
+  const workCount = perClass.reduce((sum, list) => sum + list.length, 0);
+
+  // 封面盡量湊不同班級：先每班取最新一件，班級不足 4 個再輪流補各班次新的作品
+  const picked = [];
+  for (let round = 0; picked.length < 4; round += 1) {
+    const before = picked.length;
+    perClass.forEach((list) => {
+      if (picked.length < 4 && list[round]) {
+        picked.push(list[round]);
+      }
+    });
+    if (picked.length === before) {
+      break;
+    }
+  }
+
+  // 跟作品卡片一樣從網址現算；舊作品存的 thumbnailUrl 可能是已失效的截圖連結
+  const coverThumbs = picked.map((work) => getThumbnailUrl(work.url));
+  return { classCount: classesInFolder.length, workCount, coverThumbs };
 }
 
 function isSameSummary(a, b) {
@@ -896,6 +1007,37 @@ function subscribeClasses() {
   state.unsubscribeClasses?.();
   state.classesLoaded = false;
   const { db, collection, doc, onSnapshot, query, orderBy } = state.firebase;
+
+  // 評審分享連結：只讀連結裡指定的那幾班（班級文件與作品都是公開可讀，不必登入），不列出其他班級
+  if (isSharedView()) {
+    const found = new Map();
+    let lastKey = "";
+    state.classes = [];
+    const unsubscribers = state.sharedClassIds.map((classId) => onSnapshot(
+      doc(db, "projectWallClasses", classId),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          found.set(classId, { id: snapshot.id, ...snapshot.data() });
+        } else {
+          found.delete(classId);
+        }
+
+        state.classes = state.sharedClassIds.filter((id) => found.has(id)).map((id) => found.get(id));
+        state.classesLoaded = true;
+        render();
+
+        // 班級名單沒變就不必重接作品監聽
+        const key = state.classes.map((item) => item.id).join(",");
+        if (key !== lastKey) {
+          lastKey = key;
+          subscribeSubmissions();
+        }
+      },
+      (error) => console.error(error)
+    ));
+    state.unsubscribeClasses = () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+    return;
+  }
 
   // 未登入（例如家長）：只讀網址指定的那一班，不列出其他班級
   if (!state.user) {
@@ -1263,6 +1405,34 @@ elements.copyClassLinkButton.addEventListener("click", async () => {
   elements.copyClassLinkButton.textContent = "已複製";
   window.setTimeout(() => {
     elements.copyClassLinkButton.textContent = "複製班級連結";
+  }, 1400);
+});
+
+elements.copyShareLinkButton.addEventListener("click", async () => {
+  const folder = getActiveFolder();
+  if (!folder) {
+    return;
+  }
+
+  // 連結裡直接帶班級代碼：不需要改 Firestore 規則，也不會把全部班級代碼公開出去。
+  // 之後資料夾新增班級，舊連結不會自動多出來，要重新複製一次。
+  const collator = new Intl.Collator("zh-Hant", { numeric: true });
+  const classIds = getFolderClasses(folder.id)
+    .sort((a, b) => collator.compare(a.name, b.name))
+    .map((item) => item.id);
+  if (classIds.length === 0) {
+    window.alert("這個資料夾還沒有班級，沒有東西可以分享。");
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("share", classIds.join(","));
+  url.searchParams.set("title", folder.name);
+  await navigator.clipboard.writeText(url.toString());
+  elements.copyShareLinkButton.textContent = "已複製";
+  window.setTimeout(() => {
+    elements.copyShareLinkButton.textContent = "複製評審分享連結";
   }, 1400);
 });
 
