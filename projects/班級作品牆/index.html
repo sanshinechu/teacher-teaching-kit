@@ -47,37 +47,6 @@
             <button class="ghost-button" type="submit">新增資料夾</button>
           </form>
           <div id="classList" class="class-list" aria-label="班級清單"></div>
-
-          <details id="importPanel" class="import-panel">
-            <summary>批次匯入作品（從 Excel 貼上）</summary>
-            <div class="import-body">
-              <p class="import-hint">
-                每行一件作品，欄位依序是 <strong>班級、座號、作品網址</strong>，後面可以再加一格作品標題。
-                直接從 Excel 複製貼上即可；班級只寫 <strong>501</strong> 就行，第一行若是「班級　座號　網址」的標題列會自動略過。
-                作品旁只會顯示「501 座號 05」，不會出現學生姓名。
-              </p>
-              <div class="import-options">
-                <label>
-                  匯入到哪個資料夾的班級
-                  <select id="importFolderSelect"></select>
-                </label>
-                <label>
-                  沒填標題時使用
-                  <input id="importDefaultTitle" type="text" maxlength="100" value="我的第一個程式">
-                </label>
-              </div>
-              <label>
-                貼上作品資料
-                <textarea id="importText" rows="8" spellcheck="false" placeholder="501&#9;5&#9;https://s3.ilc.edu.tw/projects/12345&#10;501&#9;6&#9;https://s3.ilc.edu.tw/projects/12346&#10;502&#9;1&#9;https://scratch.mit.edu/projects/23456/"></textarea>
-              </label>
-              <div class="import-actions">
-                <button id="importCheckButton" class="ghost-button" type="button">檢查</button>
-                <button id="importRunButton" class="primary-button" type="button" disabled>匯入</button>
-                <span id="importStatus" class="import-status" aria-live="polite"></span>
-              </div>
-              <div id="importResult" class="import-result is-hidden"></div>
-            </div>
-          </details>
         </section>
 
         <section id="activeClassPanel" class="active-class is-empty" aria-live="polite">
