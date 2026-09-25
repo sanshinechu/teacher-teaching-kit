@@ -3,6 +3,8 @@ const firebaseConfig = window.TeacherProjectWallFirebaseConfig || {};
 const storageKey = "teacher-project-wall-v1";
 // 收起哪些資料夾只是這台電腦的偏好，不存 Firestore
 const collapsedStorageKey = "teacher-project-wall-collapsed-folders";
+// 作品用「卡片」還是「清單」顯示，同樣只記在這台電腦
+const viewStorageKey = "teacher-project-wall-view";
 const screenshotBase = "https://image.thum.io/get/width/900/crop/640/noanimate/";
 const teacherEmails = ["shine@tmail.ilc.edu.tw"];
 
@@ -30,6 +32,7 @@ const elements = {
   previewFrame: document.querySelector(".preview-frame"),
   previewImage: document.querySelector("#previewImage"),
   galleryGrid: document.querySelector("#galleryGrid"),
+  viewToggle: document.querySelector("#viewToggle"),
   galleryTitle: document.querySelector("#gallery-title"),
   submissionCount: document.querySelector("#submissionCount"),
   classFilter: document.querySelector("#classFilter"),
@@ -51,6 +54,7 @@ const state = {
   // 資料夾模式下只看某一班；空字串代表全部
   folderClassFilter: "",
   collapsedFolders: loadCollapsedFolders(),
+  galleryView: loadGalleryView(),
   // 訪客看到的資料夾封面
   showcaseFolders: [],
   // 老師端用來算封面的作品快取：classId -> 作品陣列
@@ -72,6 +76,24 @@ function loadCollapsedFolders() {
   } catch {
     return new Set();
   }
+}
+
+function loadGalleryView() {
+  try {
+    return localStorage.getItem(viewStorageKey) === "list" ? "list" : "cards";
+  } catch {
+    return "cards";
+  }
+}
+
+function setGalleryView(view) {
+  state.galleryView = view === "list" ? "list" : "cards";
+  try {
+    localStorage.setItem(viewStorageKey, state.galleryView);
+  } catch {
+    // 存不進去也沒關係，只是下次會回到卡片
+  }
+  renderGallery();
 }
 
 function toggleFolderCollapsed(folderId) {
@@ -497,6 +519,75 @@ function renderShowcase() {
   return true;
 }
 
+function createWorkLink(work) {
+  const link = document.createElement("a");
+  link.href = work.url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = work.title;
+  return link;
+}
+
+// 清單檢視：一列一件，標題直接是連結。依「班級 → 作者」排，方便對著名單點
+function renderWorkList(submissions, isFolderView) {
+  const className = (work) => state.classes.find((item) => item.id === work.classId)?.name || "";
+  const collator = new Intl.Collator("zh-Hant", { numeric: true });
+  const sorted = [...submissions].sort((a, b) =>
+    collator.compare(className(a), className(b))
+    || collator.compare(a.authorName || "", b.authorName || "")
+    || getSortTime(a.createdAt) - getSortTime(b.createdAt));
+
+  const showClass = isFolderView;
+  const table = document.createElement("table");
+  table.className = "work-list";
+
+  const headRow = table.createTHead().insertRow();
+  ["#", ...(showClass ? ["班級"] : []), "作者", "作品", "說明", "時間", ""].forEach((text) => {
+    const cell = document.createElement("th");
+    cell.textContent = text;
+    headRow.append(cell);
+  });
+
+  const body = table.createTBody();
+  sorted.forEach((work, index) => {
+    const row = body.insertRow();
+    row.insertCell().textContent = String(index + 1);
+    if (showClass) {
+      // 班級名稱通常是「115_506_我的第一個程式」，清單裡只留班號 506，欄位才不會被擠成一字一行
+      const codes = className(work).match(/(?<!\d)\d{3}(?!\d)/g);
+      const classCell = row.insertCell();
+      classCell.className = "nowrap";
+      classCell.textContent = codes ? codes[codes.length - 1] : className(work);
+      classCell.title = className(work);
+    }
+    const authorCell = row.insertCell();
+    authorCell.className = "nowrap";
+    authorCell.textContent = work.authorName || "匿名學生";
+    row.insertCell().append(createWorkLink(work));
+    const noteCell = row.insertCell();
+    noteCell.className = "work-list-note";
+    noteCell.textContent = work.note || "";
+    const timeCell = row.insertCell();
+    timeCell.className = "nowrap work-list-time";
+    timeCell.textContent = formatDate(work.createdAt);
+
+    const actionCell = row.insertCell();
+    if (isClassOwner(work.classId)) {
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "delete-work-button";
+      deleteButton.textContent = "刪除";
+      deleteButton.addEventListener("click", () => {
+        deleteSubmission(work).catch((error) => window.alert(error.message));
+      });
+      actionCell.append(deleteButton);
+    }
+  });
+
+  elements.galleryGrid.classList.add("is-list");
+  elements.galleryGrid.append(table);
+}
+
 function renderGallery() {
   const isFolderView = Boolean(getActiveFolder());
   const classIds = getViewClassIds();
@@ -521,8 +612,16 @@ function renderGallery() {
 
   elements.submissionCount.textContent = `${submissions.length} 件作品`;
   elements.galleryGrid.innerHTML = "";
-  elements.galleryGrid.classList.remove("is-showcase");
+  elements.galleryGrid.classList.remove("is-showcase", "is-list");
   elements.galleryTitle.textContent = "班級作品";
+
+  // 卡片／清單切換：沒選班級（空白或訪客封面）時不需要
+  elements.viewToggle.classList.toggle("is-hidden", classIds.length === 0);
+  elements.viewToggle.querySelectorAll("button").forEach((button) => {
+    const active = button.dataset.view === state.galleryView;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
 
   if (classIds.length === 0 && renderShowcase()) {
     return;
@@ -544,6 +643,11 @@ function renderGallery() {
     return;
   }
 
+  if (state.galleryView === "list") {
+    renderWorkList(submissions, isFolderView);
+    return;
+  }
+
   submissions.forEach((work) => {
     const card = elements.cardTemplate.content.firstElementChild.cloneNode(true);
     const link = card.querySelector(".thumb-link");
@@ -560,7 +664,8 @@ function renderGallery() {
       image.src = "";
       image.alt = "";
     }, { once: true });
-    title.textContent = work.title;
+    // 標題也是連結：縮圖載不出來時，不必再去找那個小小的縮圖
+    title.replaceChildren(createWorkLink(work));
     note.textContent = work.note || "學生尚未填寫作品說明。";
     const className = showClassName
       ? state.classes.find((item) => item.id === work.classId)?.name
@@ -1159,6 +1264,13 @@ elements.copyClassLinkButton.addEventListener("click", async () => {
   window.setTimeout(() => {
     elements.copyClassLinkButton.textContent = "複製班級連結";
   }, 1400);
+});
+
+elements.viewToggle.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-view]");
+  if (button) {
+    setGalleryView(button.dataset.view);
+  }
 });
 
 elements.urlInput.addEventListener("input", updatePreview);

@@ -101,7 +101,13 @@
               <p class="eyebrow">Gallery</p>
               <h2 id="gallery-title">班級作品</h2>
             </div>
-            <span id="submissionCount" class="count-pill">0 件作品</span>
+            <div class="gallery-tools">
+              <div id="viewToggle" class="view-toggle" role="group" aria-label="作品顯示方式">
+                <button type="button" class="filter-chip" data-view="cards">卡片</button>
+                <button type="button" class="filter-chip" data-view="list">清單</button>
+              </div>
+              <span id="submissionCount" class="count-pill">0 件作品</span>
+            </div>
           </div>
           <div id="classFilter" class="class-filter is-hidden" role="group" aria-label="依班級篩選作品"></div>
           <div id="galleryGrid" class="gallery-grid"></div>
