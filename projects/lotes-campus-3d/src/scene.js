@@ -1,4 +1,4 @@
-// 羅東國小 3D 場景管理器：光影立體感升級版
+// 羅東國小 3D 場景管理器：高飽和度、立體色彩增強版
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 import { OrbitControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/OrbitControls.js';
 
@@ -27,34 +27,34 @@ export class CampusScene {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 柔和陰影
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    // 使用標準色調對應，避免強光過曝白化，保留飽滿色彩
+    this.renderer.toneMapping = THREE.LinearToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
     this.container.appendChild(this.renderer.domElement);
   }
 
   initScene() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#dbe7df'); // 柔和草木綠灰背景
-    this.scene.fog = new THREE.FogExp2('#dbe7df', 0.0028);
+    this.scene.background = new THREE.Color('#cce2d3'); // 飽滿晴空草木綠底
+    this.scene.fog = new THREE.FogExp2('#cce2d3', 0.0022);
   }
 
   initCamera() {
     this.camera = new THREE.PerspectiveCamera(42, this.width / this.height, 1, 1000);
-    // 預設立體鳥瞰：從西南側斜 38 度角眺望校園核心，清楚看到建物側面窗戶與操場
     this.defaultCameraPos = new THREE.Vector3(-110, 68, 105);
     this.defaultTarget = new THREE.Vector3(5, 5, -8);
     this.camera.position.copy(this.defaultCameraPos);
   }
 
   initLights() {
-    // 1. 半球環境光（降低散射強度，避免沖淡陰影）
-    this.hemiLight = new THREE.HemisphereLight('#fefefe', '#8da892', 0.55);
+    // 降低環境光散射強度，拉開受光面與背光面的立體明暗反差
+    this.hemiLight = new THREE.HemisphereLight('#ffffff', '#5c8065', 0.45);
     this.scene.add(this.hemiLight);
 
-    // 2. 太陽平行光（增強陽光對比，拉出建築物立體陰影）
-    this.sunLight = new THREE.DirectionalLight('#fff8e7', 1.45);
+    // 主要太陽直射光（微暖金黃陽光）
+    this.sunLight = new THREE.DirectionalLight('#fff5db', 1.6);
     this.sunLight.position.set(-130, 160, 90);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
@@ -68,54 +68,57 @@ export class CampusScene {
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
-    // 3. 背側冷色微補光
-    this.fillLight = new THREE.DirectionalLight('#92b9cf', 0.35);
+    // 側面微冷補光，讓背光面有細節但保持立體深淺
+    this.fillLight = new THREE.DirectionalLight('#7daecc', 0.25);
     this.fillLight.position.set(120, 70, -110);
     this.scene.add(this.fillLight);
   }
 
   initMaterials() {
-    const createMat = (color, roughness = 0.75, metalness = 0.05) =>
+    const createMat = (color, roughness = 0.65, metalness = 0.05) =>
       new THREE.MeshStandardMaterial({ color, roughness, metalness });
 
     this.materials = {
-      grass: createMat('#7ca86b', 0.9, 0),        // 校園濃綠草皮
-      field: createMat('#5c9c57', 0.85, 0),       // 操場中央足球場草地
-      track: createMat('#b85448', 0.65, 0.05),    // 200M PU 紅色跑道（更鮮明）
-      road: createMat('#4a555e', 0.75, 0.1),      // 周圍柏油道路（沉穩深灰）
-      roadLine: new THREE.LineBasicMaterial({ color: '#f0e68c', linewidth: 2 }),
-      pave: createMat('#ded4be', 0.8, 0.05),      // 中庭石磚
+      // 鮮明飽滿的戶外地坪與球場
+      grass: createMat('#5d944c', 0.85, 0),        // 濃郁生機校園綠草地
+      field: createMat('#468a3f', 0.8, 0),         // 足球場深綠茵草坪
+      track: createMat('#c04234', 0.55, 0.05),     // 鮮紅標準 PU 跑道
+      road: createMat('#37424a', 0.7, 0.1),        // 沉穩瀝青柏油路
+      roadLine: new THREE.LineBasicMaterial({ color: '#f5d04c', linewidth: 2 }),
+      pave: createMat('#cfbe9b', 0.75, 0.05),      // 中庭溫潤石板鋪面
       lineWhite: new THREE.LineBasicMaterial({ color: '#ffffff', linewidth: 2 }),
 
-      // 建物牆身與屋頂（增強色彩對比）
-      hanyu: createMat('#dfe9dc', 0.7),           // 涵育樓淡青雅白
-      xiaoyou: createMat('#f5e8cf', 0.7),         // 校友館溫潤米黃
-      yingxi_north: createMat('#ece6d8', 0.75),   // 迎曦樓淺奶茶
-      yingxi_south: createMat('#ece6d8', 0.75),
-      bailing_main: createMat('#e5dcce', 0.75),   // 百齡樓質感灰棕
-      bailing_kindergarten: createMat('#ffebb8', 0.7), // 幼兒園陽光黃
-      gymnasium: createMat('#d2ded0', 0.7),       // 樹人館
-      science: createMat('#d8e4eb', 0.7),         // 科學館
+      // 建物牆身與屋頂（色彩飽和度加重，各棟特色分明）
+      hanyu: createMat('#cde2cb', 0.65),           // 涵育樓青翠淡綠磚
+      xiaoyou: createMat('#ebd1a0', 0.65),         // 校友館溫潤米黃石
+      yingxi_north: createMat('#d8ceb9', 0.7),     // 迎曦樓典雅奶茶色
+      yingxi_south: createMat('#d8ceb9', 0.7),
+      bailing_main: createMat('#d4c3ab', 0.7),     // 百齡樓質感棕褐
+      bailing_kindergarten: createMat('#ffdb8b', 0.65), // 幼兒園活潑金黃
+      gymnasium: createMat('#bed4bc', 0.65),       // 樹人館
+      science: createMat('#bed4e3', 0.65),         // 科學館科技藍灰
 
-      wallCream: createMat('#ece3d2', 0.75),
-      wallWhite: createMat('#ffffff', 0.65),
-      wallBrick: createMat('#ad5949', 0.8),
-      roofRed: createMat('#964132', 0.65),        // 磚紅琉璃瓦
-      roofGreen: createMat('#396b52', 0.6),       // 墨綠屋頂
-      roofDark: createMat('#465057', 0.7),        // 女兒牆壓頂灰
+      wallCream: createMat('#dfd2bb', 0.7),
+      wallWhite: createMat('#f5f5f5', 0.6),
+      wallBrick: createMat('#a84b39', 0.75),       // 濃郁紅磚門柱
+      roofRed: createMat('#943324', 0.55),         // 鮮明磚紅琉璃瓦
+      roofGreen: createMat('#2b6647', 0.55),       // 濃郁墨綠圓拱頂
+      roofDark: createMat('#373f45', 0.65),        // 深灰色女兒牆輪廓線
 
-      // 窗櫺（深海青藍反射，立體感來源）
+      // 深邃寶藍色窗格（立體感最強的視覺亮點）
       window: new THREE.MeshStandardMaterial({
-        color: '#2e5163',
-        roughness: 0.15,
-        metalness: 0.45
+        color: '#1a4154',
+        roughness: 0.1,
+        metalness: 0.6
       }),
       windowFrame: createMat('#ffffff', 0.5),
-      metal: createMat('#3d474e', 0.4, 0.6),
-      trunk: createMat('#5c4432', 0.9, 0),
-      treeFoliage: createMat('#2d6342', 0.85, 0),
-      treeLight: createMat('#427e54', 0.85, 0),
-      treeAccent: createMat('#589464', 0.85, 0)
+      metal: createMat('#333d45', 0.35, 0.7),
+      trunk: createMat('#4f3622', 0.9, 0),
+
+      // 濃郁立體樹冠（三種深淺綠意交疊）
+      treeFoliage: createMat('#1f5735', 0.8, 0),
+      treeLight: createMat('#337848', 0.8, 0),
+      treeAccent: createMat('#48945b', 0.8, 0)
     };
   }
 
@@ -132,19 +135,19 @@ export class CampusScene {
   toggleDayNight() {
     this.isNight = !this.isNight;
     if (this.isNight) {
-      this.scene.background.set('#0d1520');
-      this.scene.fog.color.set('#0d1520');
-      this.hemiLight.intensity = 0.2;
-      this.sunLight.intensity = 0.12;
-      this.sunLight.color.set('#6a82a0');
-      this.materials.window.emissive.set('#ffcc66');
-      this.materials.window.emissiveIntensity = 0.8;
+      this.scene.background.set('#0a111a');
+      this.scene.fog.color.set('#0a111a');
+      this.hemiLight.intensity = 0.18;
+      this.sunLight.intensity = 0.1;
+      this.sunLight.color.set('#5f7591');
+      this.materials.window.emissive.set('#ffc34d');
+      this.materials.window.emissiveIntensity = 0.9;
     } else {
-      this.scene.background.set('#dbe7df');
-      this.scene.fog.color.set('#dbe7df');
-      this.hemiLight.intensity = 0.55;
-      this.sunLight.intensity = 1.45;
-      this.sunLight.color.set('#fff8e7');
+      this.scene.background.set('#cce2d3');
+      this.scene.fog.color.set('#cce2d3');
+      this.hemiLight.intensity = 0.45;
+      this.sunLight.intensity = 1.6;
+      this.sunLight.color.set('#fff5db');
       this.materials.window.emissive.set('#000000');
       this.materials.window.emissiveIntensity = 0;
     }
