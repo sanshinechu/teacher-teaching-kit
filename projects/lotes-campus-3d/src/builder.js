@@ -58,12 +58,12 @@ export class CampusBuilder {
 
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
-    // 操場跑道中心：X=32（東側操場帶，與東側體育館/科學館隔開 14 米）、Z=6（南北向長軸中點）
-    trackGroup.position.set(32, 0.12, 6);
+    // 操場跑道中心：X=36（位於校園東北開闊區）、Z=-30（北側鄰近清潭路與白兔門）
+    trackGroup.position.set(36, 0.12, -30);
 
     // 南北向標準 200M 跑道幾何形狀（直線跑道沿 Z 軸長 38 米，兩端半圓沿 X 軸半徑 24 米）
     const slen = 19; // 直線段半長 (Z 軸向從 -19 到 +19，全長 38 米)
-    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米，範圍 X: 8 到 56)
+    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米，範圍 X: 12 到 60)
 
     const trackShape = new THREE.Shape();
     // 從北端彎道起點出發 (順時針繪製)
@@ -97,21 +97,21 @@ export class CampusBuilder {
     innerMesh.receiveShadow = true;
     trackGroup.add(innerMesh);
 
-    // 6 條白漆跑道分隔線
+    // 6 條白漆跑道分隔線（完美封閉圓滑同心環，無任何對角線交叉 bug）
     for (let i = 0; i <= 5; i++) {
       const cr = ir + (r - ir) * (i / 5);
       const linePoints = [];
-      // 北半圓
+      // 1. 北半圓：從西側 (-cr, -slen) 弧線繞到東側 (cr, -slen)
       for (let a = Math.PI; a >= 0; a -= Math.PI / 32) {
         linePoints.push(new THREE.Vector3(Math.cos(a) * cr, 0.03, -slen - Math.sin(a) * cr));
       }
-      // 東直線
+      // 2. 東直線：從 (cr, -slen) 沿直線向南延伸至 (cr, slen)
       linePoints.push(new THREE.Vector3(cr, 0.03, slen));
-      // 南半圓
+      // 3. 南半圓：從東側 (cr, slen) 弧線繞到西側 (-cr, slen)
       for (let a = 0; a <= Math.PI; a += Math.PI / 32) {
-        linePoints.push(new THREE.Vector3(-Math.cos(a) * cr, 0.03, slen + Math.sin(a) * cr));
+        linePoints.push(new THREE.Vector3(Math.cos(a) * cr, 0.03, slen + Math.sin(a) * cr));
       }
-      // 西直線
+      // 4. 西直線：從 (-cr, slen) 沿直線向北返回 (-cr, -slen)
       linePoints.push(new THREE.Vector3(-cr, 0.03, -slen));
       linePoints.push(linePoints[0]);
 
