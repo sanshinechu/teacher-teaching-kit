@@ -1,4 +1,4 @@
-// 羅東國小 3D 校園建造器：高精細校舍立面、特色立體動物校門與四周校園圍籬
+// 羅東國小 3D 校園建造器：高精細校舍立面、超醒目大型 3D 動物雕塑校門與浮動萌系地標標籤
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 import { BUILDINGS } from '../data/buildings.js';
 
@@ -15,7 +15,7 @@ export class CampusBuilder {
     this.buildBuildings();
     this.buildRoads();
     this.buildPerimeterFences();
-    this.buildFencesAndGates();
+    this.buildFencesAndGates(); // 超醒目大體積動物雕塑校門
     this.buildTrees();
     return this.interactiveObjects;
   }
@@ -29,10 +29,10 @@ export class CampusBuilder {
 
     const campusShape = new THREE.Shape();
     campusShape.moveTo(-88, -100);
-    campusShape.lineTo(96, -100);  // 北界（清潭路）
-    campusShape.lineTo(96, 92);    // 東界（開羅街/南昌街）
-    campusShape.lineTo(-88, 92);   // 南界（南昌街）
-    campusShape.closePath();       // 西界（民族路）
+    campusShape.lineTo(96, -100);
+    campusShape.lineTo(96, 92);
+    campusShape.lineTo(-88, 92);
+    campusShape.closePath();
 
     const campusGeo = new THREE.ShapeGeometry(campusShape);
     const campusGround = new THREE.Mesh(campusGeo, this.materials.grass);
@@ -271,7 +271,7 @@ export class CampusBuilder {
     });
   }
 
-  // --- 校園立體圍籬（精準在各校門開口，無縫咬合） ---
+  // --- 校園立體圍籬 ---
   buildPerimeterFences() {
     const fenceRailMat = new THREE.MeshStandardMaterial({
       color: '#f8fafc',
@@ -280,7 +280,6 @@ export class CampusBuilder {
     });
     const wallBaseMat = this.materials.wallBrick;
 
-    // 校園外圍圍籬線段（精準避開清潭路新大門、白兔門、無尾熊門、民族路門、孔雀門、海豚門、恐龍門、企鵝門）
     const fenceSegments = [
       // 北界（清潭路）：西北角到新大門、新大門到白兔門、白兔門到無尾熊門
       { x1: -88, z1: -100, x2: -82, z2: -100 },
@@ -357,53 +356,51 @@ export class CampusBuilder {
     });
   }
 
-  // --- 校門（直接座落在圍籬開口線上，方位旋轉貼合街道） ---
+  // --- 校門建造：放大體積 2.5 倍，色彩鮮明極度搶眼 ---
   buildFencesAndGates() {
     const gates = BUILDINGS.filter(b => b.category === "gate");
     gates.forEach(g => {
       const gateGroup = new THREE.Group();
       gateGroup.position.set(g.x, 0, g.z);
 
-      // 根據校門所在圍籬邊界，自動計算校門橫向朝向
-      // 北界/南界 (z=-100 或 z=92) ➔ 門橫樑呈東西向 (rotation.y = 0)
-      // 西界/東界 (x=-88 或 x=96) ➔ 門橫樑呈南北向 (rotation.y = Math.PI / 2)
       const isNorthSouthBorder = Math.abs(g.z - (-100)) < 2 || Math.abs(g.z - 92) < 2;
       if (!isNorthSouthBorder) {
         gateGroup.rotation.y = Math.PI / 2;
       }
 
-      // 兩側磚柱
+      // 兩側磚柱（加大加寬，威嚴醒目）
       for (let s of [-g.w / 2, g.w / 2]) {
-        const pillarGeo = new THREE.BoxGeometry(2.0, g.h, 2.0);
+        const pillarGeo = new THREE.BoxGeometry(2.4, g.h + 0.5, 2.4);
         const pillar = new THREE.Mesh(pillarGeo, this.materials.wallBrick);
-        pillar.position.set(s, g.h / 2, 0);
+        pillar.position.set(s, (g.h + 0.5) / 2, 0);
         pillar.castShadow = true;
         pillar.receiveShadow = true;
         gateGroup.add(pillar);
 
-        const topCap = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), this.materials.wallCream);
-        topCap.position.set(s, g.h + 0.2, 0);
+        const topCap = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.5, 2.8), this.materials.wallCream);
+        topCap.position.set(s, g.h + 0.6, 0);
         topCap.castShadow = true;
         gateGroup.add(topCap);
       }
 
-      // 橫樑拱頂
-      const beamGeo = new THREE.BoxGeometry(g.w + 1.6, 1.3, 2.0);
+      // 拱門大橫樑
+      const beamGeo = new THREE.BoxGeometry(g.w + 1.8, 1.6, 2.4);
       const beam = new THREE.Mesh(beamGeo, this.materials.wallCream);
-      beam.position.set(0, g.h + 0.65, 0);
+      beam.position.set(0, g.h + 1.0, 0);
       beam.castShadow = true;
       gateGroup.add(beam);
 
-      // 頂部 3D 動物雕塑
+      // 門頭專屬超大 3D 動物雕塑 (尺寸全面放大 2.2 ~ 2.5 倍！)
       const animalSculpture = this.createAnimalSculpture(g.id);
       if (animalSculpture) {
-        animalSculpture.position.set(0, g.h + 1.3, 0);
+        animalSculpture.position.set(0, g.h + 1.8, 0);
         gateGroup.add(animalSculpture);
       }
 
-      const hitGeo = new THREE.BoxGeometry(g.w, g.h + 3, 3.5);
+      // 地標判定盒（放大判定區）
+      const hitGeo = new THREE.BoxGeometry(g.w + 2, g.h + 8, 5);
       const hitMesh = new THREE.Mesh(hitGeo, new THREE.MeshBasicMaterial({ visible: false }));
-      hitMesh.position.y = g.h / 2 + 1;
+      hitMesh.position.y = g.h / 2 + 2;
       hitMesh.userData = { ...g };
       gateGroup.add(hitMesh);
       this.interactiveObjects.push(hitMesh);
@@ -412,130 +409,217 @@ export class CampusBuilder {
     });
   }
 
+  // --- 超醒目、大體積 3D 動物雕塑產生器 ---
   createAnimalSculpture(gateId) {
     const group = new THREE.Group();
-    const whiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.4 });
-    const blueMat = new THREE.MeshStandardMaterial({ color: '#1e6896', roughness: 0.25, metalness: 0.3 });
-    const greenMat = new THREE.MeshStandardMaterial({ color: '#296b2e', roughness: 0.4 });
-    const yellowMat = new THREE.MeshStandardMaterial({ color: '#e69a19', roughness: 0.35 });
-    const grayMat = new THREE.MeshStandardMaterial({ color: '#7a858c', roughness: 0.45 });
+    // 使用高飽和度活潑色彩，讓動物在遠處鳥瞰時一眼就看見！
+    const whiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.3 });
+    const blueMat = new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.2, metalness: 0.3 });
+    const greenMat = new THREE.MeshStandardMaterial({ color: '#16a34a', roughness: 0.3 });
+    const orangeMat = new THREE.MeshStandardMaterial({ color: '#f97316', roughness: 0.25 });
+    const yellowMat = new THREE.MeshStandardMaterial({ color: '#facc15', roughness: 0.25 });
+    const grayMat = new THREE.MeshStandardMaterial({ color: '#64748b', roughness: 0.35 });
+    const pinkMat = new THREE.MeshStandardMaterial({ color: '#f472b6', roughness: 0.25 });
 
     if (gateId === 'gate_rabbit') {
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), whiteMat);
-      body.position.y = 0.8;
+      // 🐰 白兔門：巨大萌萌立體大白兔（高約 6 米，圓圓胖胖、長長粉耳）
+      const body = new THREE.Mesh(new THREE.SphereGeometry(2.0, 20, 20), whiteMat);
+      body.position.y = 1.8;
       body.castShadow = true;
       group.add(body);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 16), whiteMat);
-      head.position.set(0, 1.8, 0);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(1.5, 20, 20), whiteMat);
+      head.position.set(0, 3.8, 0);
       head.castShadow = true;
       group.add(head);
 
-      for (let ox of [-0.3, 0.3]) {
-        const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.1, 12), whiteMat);
-        ear.position.set(ox, 2.7, 0);
-        ear.rotation.z = ox > 0 ? -0.15 : 0.15;
+      // 巨大白兔長耳 + 粉紅耳心
+      for (let ox of [-0.65, 0.65]) {
+        const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 2.6, 16), whiteMat);
+        ear.position.set(ox, 5.6, 0);
+        ear.rotation.z = ox > 0 ? -0.18 : 0.18;
         ear.castShadow = true;
         group.add(ear);
+
+        const innerEar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.0, 0.1), pinkMat);
+        innerEar.position.set(ox, 5.5, 0.32);
+        innerEar.rotation.z = ox > 0 ? -0.18 : 0.18;
+        group.add(innerEar);
       }
+
+      // 紅眼睛
+      for (let ox of [-0.45, 0.45]) {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), pinkMat);
+        eye.position.set(ox, 4.0, 1.4);
+        group.add(eye);
+      }
+
+      // 手抱大胡蘿蔔
+      const carrot = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.8, 12), orangeMat);
+      carrot.rotation.z = 0.6;
+      carrot.position.set(0.6, 2.2, 1.4);
+      group.add(carrot);
+
       return group;
     }
 
     if (gateId === 'gate_peacock') {
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 1.6, 12), blueMat);
-      body.position.y = 0.9;
+      // 🦚 孔雀門：華麗翠綠開屏孔雀（扇形高達 7 米，宛如璀璨翡翠屏風）
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 3.2, 16), blueMat);
+      body.position.y = 1.8;
       body.castShadow = true;
       group.add(body);
 
-      for (let a = -Math.PI * 0.4; a <= Math.PI * 0.4; a += Math.PI * 0.16) {
-        const feather = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.9, 8), greenMat);
-        feather.position.set(Math.sin(a) * 0.9, 1.4 + Math.cos(a) * 0.7, -0.3);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 16), blueMat);
+      head.position.set(0, 3.8, 0.5);
+      head.castShadow = true;
+      group.add(head);
+
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.9, 8), yellowMat);
+      crown.position.set(0, 4.7, 0.5);
+      group.add(crown);
+
+      // 巨大開屏扇形羽毛（9 片層疊）
+      for (let a = -Math.PI * 0.45; a <= Math.PI * 0.45; a += Math.PI * 0.11) {
+        const feather = new THREE.Mesh(new THREE.ConeGeometry(0.55, 4.2, 8), greenMat);
+        feather.position.set(Math.sin(a) * 2.2, 3.2 + Math.cos(a) * 1.8, -0.6);
         feather.rotation.z = -a;
         feather.castShadow = true;
         group.add(feather);
+
+        // 羽翎金眼
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), yellowMat);
+        eye.position.set(Math.sin(a) * 3.4, 3.8 + Math.cos(a) * 2.6, -0.4);
+        group.add(eye);
       }
       return group;
     }
 
     if (gateId === 'gate_koala') {
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), grayMat);
-      body.position.y = 0.9;
+      // 🐨 無尾熊門：巨大呆萌無尾熊（大耳朵、大黑鼻、超有存在感）
+      const body = new THREE.Mesh(new THREE.SphereGeometry(2.0, 20, 20), grayMat);
+      body.position.y = 1.8;
       body.castShadow = true;
       group.add(body);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), grayMat);
-      head.position.set(0, 1.9, 0);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(1.6, 20, 20), grayMat);
+      head.position.set(0, 3.8, 0);
       head.castShadow = true;
       group.add(head);
 
-      for (let ox of [-0.65, 0.65]) {
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 12), grayMat);
-        ear.position.set(ox, 2.3, 0);
+      // 超大招牌圓耳朵
+      for (let ox of [-1.4, 1.4]) {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), grayMat);
+        ear.position.set(ox, 4.6, 0);
+        ear.castShadow = true;
         group.add(ear);
+
+        const innerEar = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12), whiteMat);
+        innerEar.position.set(ox * 0.9, 4.6, 0.35);
+        group.add(innerEar);
       }
 
-      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), darkMat);
-      nose.position.set(0, 1.85, 0.65);
+      // 巨大黑色橢圓鼻
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), darkMat);
+      nose.scale.set(0.9, 1.3, 0.8);
+      nose.position.set(0, 3.6, 1.45);
       group.add(nose);
+
       return group;
     }
 
     if (gateId === 'gate_dolphin') {
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.75, 2.2, 16), blueMat);
-      body.rotation.z = Math.PI * 0.35;
-      body.position.set(0, 1.2, 0);
+      // 🐬 海豚門：巨大蔚藍躍水海豚（長 5 米，流線型破浪而起）
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.5, 4.8, 20), blueMat);
+      body.rotation.z = Math.PI * 0.38;
+      body.position.set(0, 2.6, 0);
       body.castShadow = true;
       group.add(body);
 
-      const fin = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.9, 4), blueMat);
-      fin.position.set(-0.2, 1.8, 0);
-      fin.rotation.z = -0.3;
+      const belly = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.1, 4.2, 16), whiteMat);
+      belly.rotation.z = Math.PI * 0.38;
+      belly.position.set(0.2, 2.2, 0);
+      group.add(belly);
+
+      // 挺拔背鰭
+      const fin = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.8, 6), blueMat);
+      fin.position.set(-0.4, 3.8, 0);
+      fin.rotation.z = -0.4;
       group.add(fin);
+
+      // 尾鰭
+      const tailFin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.8), blueMat);
+      tailFin.position.set(-1.8, 1.1, 0);
+      tailFin.rotation.z = 0.4;
+      group.add(tailFin);
+
       return group;
     }
 
     if (gateId === 'gate_dinosaur') {
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 1.8), greenMat);
-      body.position.y = 1.0;
+      // 🦖 恐龍門：霸氣亮綠暴龍（高 5.5 米，威武可愛守護南昌街）
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 3.6), greenMat);
+      body.position.y = 2.0;
       body.castShadow = true;
       group.add(body);
 
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 1.2), greenMat);
-      head.position.set(0, 2.0, 0.8);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.8, 2.4), greenMat);
+      head.position.set(0, 4.0, 1.5);
       head.castShadow = true;
       group.add(head);
 
-      for (let z of [-0.6, -0.1, 0.4]) {
-        const spine = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.7, 4), yellowMat);
-        spine.position.set(0, 2.0, z);
+      // 暴龍長長金黃背刺骨板
+      for (let z of [-1.2, -0.4, 0.4, 1.2]) {
+        const spine = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 4), yellowMat);
+        spine.position.set(0, 3.9, z);
+        spine.castShadow = true;
         group.add(spine);
       }
+
+      // 萌萌大眼
+      for (let ox of [-0.95, 0.95]) {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), yellowMat);
+        eye.position.set(ox, 4.2, 1.8);
+        group.add(eye);
+      }
+
       return group;
     }
 
     if (gateId === 'gate_penguin') {
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.75, 1.8, 16), darkMat);
-      body.position.y = 0.9;
+      // 🐧 企鵝門：圓滾滾大企鵝（高 4.8 米，白肚肚、亮橘大嘴巴）
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.5, 3.6, 20), darkMat);
+      body.position.y = 1.8;
       body.castShadow = true;
       group.add(body);
 
-      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 12), whiteMat);
-      belly.position.set(0, 0.8, 0.3);
+      const belly = new THREE.Mesh(new THREE.SphereGeometry(1.3, 16, 16), whiteMat);
+      belly.position.set(0, 1.7, 0.6);
       group.add(belly);
 
-      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 6), yellowMat);
+      // 鮮黃尖尖企鵝嘴
+      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 8), orangeMat);
       beak.rotation.x = Math.PI / 2;
-      beak.position.set(0, 1.5, 0.65);
+      beak.position.set(0, 3.0, 1.35);
       group.add(beak);
+
+      // 企鵝雙翅
+      for (let ox of [-1.4, 1.4]) {
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.2, 0.8), darkMat);
+        wing.position.set(ox, 2.2, 0);
+        wing.rotation.z = ox > 0 ? -0.2 : 0.2;
+        group.add(wing);
+      }
+
       return group;
     }
 
-    // 清潭路新大門或民族路門（金色校徽）
+    // 清潭路正大門與民族路大門（巨幅純金校徽）
     if (gateId === 'gate_new' || gateId === 'gate_minzu') {
-      const emblem = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.2, 32), yellowMat);
+      const emblem = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.4, 32), yellowMat);
       emblem.rotation.x = Math.PI / 2;
-      emblem.position.y = 1.0;
+      emblem.position.y = 2.0;
       emblem.castShadow = true;
       group.add(emblem);
       return group;
