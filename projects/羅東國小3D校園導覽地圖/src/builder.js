@@ -41,28 +41,28 @@ export class CampusBuilder {
     campusGround.receiveShadow = true;
     this.scene.add(campusGround);
 
-    const courtGeo = new THREE.PlaneGeometry(30, 46);
+    const courtGeo = new THREE.PlaneGeometry(28, 70);
     const courtMesh = new THREE.Mesh(courtGeo, this.materials.pave);
     courtMesh.rotation.x = -Math.PI / 2;
-    courtMesh.position.set(-14, 0.08, 16);
+    courtMesh.position.set(-42, 0.08, -12);
     courtMesh.receiveShadow = true;
     this.scene.add(courtMesh);
 
-    const plazaGeo = new THREE.PlaneGeometry(40, 20);
+    const plazaGeo = new THREE.PlaneGeometry(38, 22);
     const plazaMesh = new THREE.Mesh(plazaGeo, this.materials.pave);
     plazaMesh.rotation.x = -Math.PI / 2;
-    plazaMesh.position.set(-55, 0.08, -20);
+    plazaMesh.position.set(-56, 0.08, -88);
     plazaMesh.receiveShadow = true;
     this.scene.add(plazaMesh);
   }
 
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
-    trackGroup.position.set(18, 0.12, -68);
+    trackGroup.position.set(42, 0.12, 2);
 
     const trackShape = new THREE.Shape();
-    const w = 40;
-    const r = 25;
+    const w = 38;
+    const r = 40;
     trackShape.moveTo(-w, -r);
     trackShape.lineTo(w, -r);
     trackShape.absarc(w, 0, r, -Math.PI / 2, Math.PI / 2, false);
@@ -78,8 +78,8 @@ export class CampusBuilder {
     this.interactiveObjects.push(trackMesh);
 
     const innerShape = new THREE.Shape();
-    const iw = 38;
-    const ir = 18;
+    const iw = 36;
+    const ir = 30;
     innerShape.moveTo(-iw, -ir);
     innerShape.lineTo(iw, -ir);
     innerShape.absarc(iw, 0, ir, -Math.PI / 2, Math.PI / 2, false);
@@ -216,9 +216,9 @@ export class CampusBuilder {
     const pillarMat = this.materials.metal;
 
     const corridors = [
-      { x1: -55, z1: -28, x2: -55, z2: -15, w: 3.2 },
-      { x1: -55, z1: -15, x2: -10, z2: -15, w: 3.2 },
-      { x1: -10, z1: -8, x2: -10, z2: 6, w: 3.2 }
+      { x1: -56, z1: -60, x2: -56, z2: -56, w: 3.2 },
+      { x1: -56, z1: -56, x2: -16, z2: -56, w: 3.2 },
+      { x1: -16, z1: -60, x2: -16, z2: -56, w: 3.2 }
     ];
 
     corridors.forEach(c => {
@@ -638,17 +638,17 @@ export class CampusBuilder {
       treePositions.push({ x: 72, z, scale: 1.2 + (z % 2) * 0.1 });
     }
 
-    for (let z = -70; z <= -18; z += 8) {
-      treePositions.push({ x: -76, z, scale: 1.1 });
+    for (let z = -70; z <= 20; z += 10) {
+      treePositions.push({ x: -82, z, scale: 1.1 });
     }
 
-    treePositions.push({ x: -14, z: 6, scale: 1.4 });
-    treePositions.push({ x: -20, z: 18, scale: 1.3 });
-    treePositions.push({ x: -12, z: 28, scale: 1.35 });
-    treePositions.push({ x: -18, z: 36, scale: 1.2 });
+    treePositions.push({ x: -42, z: -30, scale: 1.3 });
+    treePositions.push({ x: -42, z: -10, scale: 1.4 });
+    treePositions.push({ x: -42, z: 10, scale: 1.35 });
+    treePositions.push({ x: -42, z: 25, scale: 1.2 });
 
-    for (let z = 20; z <= 75; z += 12) {
-      treePositions.push({ x: 30, z, scale: 1.15 });
+    for (let z = -40; z <= 50; z += 15) {
+      treePositions.push({ x: 88, z, scale: 1.15 });
     }
 
     treePositions.forEach((pos, idx) => {
