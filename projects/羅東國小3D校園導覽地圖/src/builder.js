@@ -277,26 +277,79 @@ export class CampusBuilder {
       }
 
       // 主體量體
-      const bodyGeo = new THREE.BoxGeometry(b.w, b.h, b.d);
-      const bodyMat = this.materials[b.id] || this.materials.wallCream;
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.y = b.h / 2;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      body.userData = { ...b };
-      group.add(body);
-      this.interactiveObjects.push(body);
+      if (b.id === "bailing") {
+        // 🏛️ 百齡樓雙翼複合建築群（依空照紅框兩道箭頭精確構建雙翼連通大樓）
+        // 北翼：高年級教學棟
+        const w1Geo = new THREE.BoxGeometry(22, b.h, 32);
+        const w1 = new THREE.Mesh(w1Geo, this.materials.wallCream);
+        w1.position.set(-11, b.h / 2, -7);
+        w1.castShadow = true;
+        w1.receiveShadow = true;
+        w1.userData = { ...b };
+        group.add(w1);
+        this.interactiveObjects.push(w1);
 
-      // 女兒牆石材收邊
-      const edgeGeo = new THREE.BoxGeometry(b.w + 0.8, 0.6, b.d + 0.8);
-      const edge = new THREE.Mesh(edgeGeo, this.materials.roofDark);
-      edge.position.y = b.h + 0.3;
-      edge.castShadow = true;
-      group.add(edge);
+        const edge1 = new THREE.Mesh(new THREE.BoxGeometry(22.8, 0.6, 32.8), this.materials.roofDark);
+        edge1.position.set(-11, b.h + 0.3, -7);
+        edge1.castShadow = true;
+        group.add(edge1);
+
+        const solar1 = new THREE.Mesh(new THREE.BoxGeometry(16, 0.2, 24), this.materials.solarPanel);
+        solar1.position.set(-11, b.h + 0.9, -7);
+        solar1.rotation.x = 0.08;
+        group.add(solar1);
+
+        // 南翼：生活、幼兒園與中央廚房棟
+        const h2 = 13.5;
+        const w2Geo = new THREE.BoxGeometry(32, h2, 22);
+        const w2 = new THREE.Mesh(w2Geo, this.materials.wallCream);
+        w2.position.set(15, h2 / 2, 14);
+        w2.castShadow = true;
+        w2.receiveShadow = true;
+        w2.userData = { ...b };
+        group.add(w2);
+        this.interactiveObjects.push(w2);
+
+        const edge2 = new THREE.Mesh(new THREE.BoxGeometry(32.8, 0.6, 22.8), this.materials.roofDark);
+        edge2.position.set(15, h2 + 0.3, 14);
+        edge2.castShadow = true;
+        group.add(edge2);
+
+        const solar2 = new THREE.Mesh(new THREE.BoxGeometry(24, 0.2, 15), this.materials.solarPanel);
+        solar2.position.set(15, h2 + 0.9, 14);
+        solar2.rotation.z = -0.06;
+        group.add(solar2);
+
+        // 轉角連通穿堂
+        const cornerGeo = new THREE.BoxGeometry(14, 15, 14);
+        const corner = new THREE.Mesh(cornerGeo, this.materials.wallCream);
+        corner.position.set(-2, 7.5, 6);
+        corner.castShadow = true;
+        corner.userData = { ...b };
+        group.add(corner);
+        this.interactiveObjects.push(corner);
+      } else {
+        const bodyGeo = new THREE.BoxGeometry(b.w, b.h, b.d);
+        const bodyMat = this.materials[b.id] || this.materials.wallCream;
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = b.h / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        body.userData = { ...b };
+        group.add(body);
+        this.interactiveObjects.push(body);
+
+        // 女兒牆石材收邊
+        const edgeGeo = new THREE.BoxGeometry(b.w + 0.8, 0.6, b.d + 0.8);
+        const edge = new THREE.Mesh(edgeGeo, this.materials.roofDark);
+        edge.position.y = b.h + 0.3;
+        edge.castShadow = true;
+        group.add(edge);
+      }
 
       // --- 各棟特色屋頂架構 ---
-      if (b.id === "bailing_wave") {
-        // 🏛️ 百齡樓波浪綠大樓：6 連棟雙色交替圓拱拱頂（空照圖正中心最醒目特徵！）
+      if (b.id === "wind_rain_court") {
+        // 🏛️ 風雨操場：6 連棟雙色交替圓拱拱頂（空照圖正中心最醒目的綠色圓拱屋頂！）
         const archCount = 6;
         const archWidth = b.w / archCount;
         const archRadius = archWidth * 0.55;
@@ -311,19 +364,6 @@ export class CampusBuilder {
           archMesh.castShadow = true;
           group.add(archMesh);
         }
-      } else if (b.id === "xiaoyou") {
-        // 🏛️ 校友館：古典斜坡尖頂與特色鐘樓
-        const roofGeo = new THREE.ConeGeometry(b.w * 0.6, 4.2, 4);
-        const roof = new THREE.Mesh(roofGeo, this.materials.roofRed);
-        roof.position.y = b.h + 2.1;
-        roof.rotation.y = Math.PI / 4;
-        roof.castShadow = true;
-        group.add(roof);
-
-        const spireGeo = new THREE.CylinderGeometry(0.2, 0.5, 3.2, 8);
-        const spire = new THREE.Mesh(spireGeo, this.materials.wallWhite);
-        spire.position.y = b.h + 5.2;
-        group.add(spire);
       } else if (b.id === "gymnasium") {
         // 🏛️ 體育館（樹人館）：大跨度挑高雙斜坡鋼構屋頂（北坡光電板、南坡紅瓦邊）
         const roofHeight = 4.2;
@@ -415,14 +455,12 @@ export class CampusBuilder {
     const pillarMat = this.materials.metal;
 
     const corridors = [
-      // 涵育樓至百齡樓綠波浪綜合棟
-      { x1: -4, z1: -58, x2: -15, z2: -15, w: 3.2 },
-      // 百齡樓至迎曦樓中庭走廊
-      { x1: -23, z1: -5, x2: -52, z2: -18, w: 3.2 },
-      // 涵育樓至校友館
-      { x1: -16, z1: -66, x2: -24, z2: -70, w: 2.8 },
-      // 百齡樓至幼兒園
-      { x1: -23, z1: 5, x2: -28, z2: 36, w: 3.0 }
+      // 涵育樓至風雨操場
+      { x1: -3, z1: -47, x2: -18, z2: -15, w: 3.2 },
+      // 風雨操場至迎曦樓中庭走廊
+      { x1: -36, z1: -9, x2: -48, z2: -25, w: 3.2 },
+      // 風雨操場至百齡樓
+      { x1: -25, z1: 2, x2: -35, z2: 22, w: 3.0 }
     ];
 
     corridors.forEach(c => {

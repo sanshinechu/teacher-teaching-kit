@@ -14,12 +14,12 @@ export const SCHOOL_INFO = {
 export const DEPARTMENTS = [
   {
     name: "校長室與行政核心",
-    buildingId: "xiaoyou",
-    buildingName: "校友館",
-    location: "校友館 2 樓",
+    buildingId: "hanyu",
+    buildingName: "涵育樓",
+    location: "涵育樓 2 樓",
     items: [
       { name: "校長室", floor: "2F", desc: "校務統籌與校園領導核心" },
-      { name: "校史室", floor: "2F", desc: "典藏百年建校文物、歷史老照片與歷屆校友回憶" },
+      { name: "校史展示區", floor: "2F", desc: "典藏百年建校文物、歷史老照片與歷屆校友回憶" },
       { name: "創意發想中心", floor: "3F", desc: "教師跨領域備課研發與創新教學基地" }
     ]
   },
@@ -38,9 +38,9 @@ export const DEPARTMENTS = [
   },
   {
     name: "學務處",
-    buildingId: "xiaoyou",
-    buildingName: "校友館",
-    location: "校友館 1 樓",
+    buildingId: "hanyu",
+    buildingName: "涵育樓",
+    location: "涵育樓 1 樓",
     items: [
       { name: "學務處辦公室", floor: "1F", desc: "生教組、訓育組、體育組、衛生組" },
       { name: "教師辦公室", floor: "1F", desc: "全體教師交流備課與教學支援空間" },
@@ -49,7 +49,7 @@ export const DEPARTMENTS = [
   },
   {
     name: "總務處",
-    buildingId: "bailing_main",
+    buildingId: "bailing",
     buildingName: "百齡樓",
     location: "百齡樓 1 樓 (01)",
     items: [
@@ -72,7 +72,7 @@ export const DEPARTMENTS = [
   },
   {
     name: "音樂與雙語專科專區",
-    buildingId: "bailing_main",
+    buildingId: "bailing",
     buildingName: "百齡樓",
     location: "百齡樓 4 樓",
     items: [
@@ -84,9 +84,10 @@ export const DEPARTMENTS = [
   {
     name: "科學與體育場館",
     buildingId: "science",
-    buildingName: "科學館 & 體育館",
-    location: "科學館與樹人館",
+    buildingName: "科學館、風雨操場 & 體育館",
+    location: "專科探索與體育設施",
     items: [
+      { name: "風雨操場", floor: "1F", desc: "6 連棟翠綠波浪圓拱頂半戶外雨天球場與體育空間" },
       { name: "科學館大型視聽教室", floor: "1F~2F", desc: "大型多媒體演講、電影賞析與專案發表會" },
       { name: "自然實驗專科教室", floor: "2F~3F", desc: "動手做科學實驗與科學展覽探索空間" },
       { name: "樹人館（體育館）", floor: "1F~2F", desc: "全校室內大型體育運動、體操訓練與典禮空間" }
@@ -95,10 +96,10 @@ export const DEPARTMENTS = [
 ];
 
 export const GRADE_DISTRIBUTION = [
-  { grade: "幼兒園", building: "百齡樓（幼兒專區）", classrooms: "幼兒班、彩虹班、太陽班、星星班" },
+  { grade: "幼兒園", building: "百齡樓（南翼幼兒專區）", classrooms: "幼兒班、彩虹班、太陽班、星星班" },
   { grade: "一年級", building: "涵育樓 2F~3F", classrooms: "一忠、一孝、一仁、一愛、一信" },
   { grade: "二年級", building: "迎曦樓 2F", classrooms: "二忠、二孝、二仁、二愛、二信" },
-  { grade: "三年級", building: "迎曦樓（北側）3F~4F", classrooms: "三忠、三孝、三仁、三愛、三信" },
+  { grade: "三年級", building: "迎曦樓 3F~4F", classrooms: "三忠、三孝、三仁、三愛、三信" },
   { grade: "四年級", building: "迎曦樓 1F & 百齡樓 2F", classrooms: "四忠、四孝、四仁、四愛、四信" },
   { grade: "五年級", building: "百齡樓 3F", classrooms: "五忠、五孝、五仁、五愛、五信、五義" },
   { grade: "六年級", building: "百齡樓 2F~3F", classrooms: "六忠、六孝、六仁、六愛、六信" }
