@@ -1,4 +1,4 @@
-// 羅東國小 3D 校園主應用程式：介面互動、搜尋、點選校舍、導覽巡航與彈窗綁定
+﻿// 羅東國小 3D 校園主應用程式：介面互動、搜尋、點選校舍、導覽巡航與彈窗綁定
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 import { BUILDINGS, TOUR_STATIONS } from '../data/buildings.js';
 import { SCHOOL_INFO, DEPARTMENTS, GRADE_DISTRIBUTION } from '../data/offices.js';
@@ -202,10 +202,28 @@ class App {
     });
 
     document.getElementById('fullscreen-btn')?.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
+      // 在 Google 協作平台 iframe 內部，若被瀏覽器安全性原則阻擋 Fullscreen API，則自動開新視窗滿版開啟
+      const tryFullscreen = async () => {
+        try {
+          if (!document.fullscreenElement) {
+            await (document.documentElement.requestFullscreen?.() || 
+                   document.documentElement.webkitRequestFullscreen?.() || 
+                   document.body.requestFullscreen?.());
+          } else {
+            await (document.exitFullscreen?.() || document.webkitExitFullscreen?.());
+          }
+        } catch (err) {
+          console.warn("Iframe blocked fullscreen, opening in standalone tab:", err);
+          window.open(window.location.href, '_blank', 'noopener,noreferrer');
+        }
+      };
+
+      // 檢查是否處於被限制 full-screen 的 iframe 中
+      const inIframe = window.self !== window.top;
+      if (inIframe && !document.fullscreenEnabled) {
+        window.open(window.location.href, '_blank', 'noopener,noreferrer');
       } else {
-        document.exitFullscreen();
+        tryFullscreen();
       }
     });
 
@@ -374,3 +392,4 @@ class App {
 window.addEventListener('DOMContentLoaded', () => {
   new App();
 });
+
