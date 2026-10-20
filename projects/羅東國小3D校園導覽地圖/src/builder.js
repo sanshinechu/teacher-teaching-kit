@@ -58,16 +58,20 @@ export class CampusBuilder {
 
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
-    trackGroup.position.set(42, 0.12, 2);
+    // 操場跑道中心：X=40（東側開闊帶）、Z=8（南北向長軸中點）
+    trackGroup.position.set(40, 0.12, 8);
+
+    // 南北向標準 200M 跑道幾何形狀（直線跑道沿 Z 軸長 38 米，兩端半圓沿 X 軸半徑 24 米）
+    const slen = 19; // 直線段半長 (Z 軸向從 -19 到 +19，全長 38 米)
+    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米)
 
     const trackShape = new THREE.Shape();
-    const w = 38;
-    const r = 40;
-    trackShape.moveTo(-w, -r);
-    trackShape.lineTo(w, -r);
-    trackShape.absarc(w, 0, r, -Math.PI / 2, Math.PI / 2, false);
-    trackShape.lineTo(-w, r);
-    trackShape.absarc(-w, 0, r, Math.PI / 2, 3 * Math.PI / 2, false);
+    // 從北端彎道起點出發 (順時針繪製)
+    trackShape.moveTo(-r, -slen);
+    trackShape.absarc(0, -slen, r, Math.PI, 0, false); // 北端半圓彎道（弧頂朝北）
+    trackShape.lineTo(r, slen);                       // 東側直線跑道
+    trackShape.absarc(0, slen, r, 0, Math.PI, false);  // 南端半圓彎道（弧頂朝南）
+    trackShape.lineTo(-r, -slen);                      // 西側直線跑道
 
     const trackGeo = new THREE.ShapeGeometry(trackShape);
     const trackMesh = new THREE.Mesh(trackGeo, this.materials.track);
@@ -77,14 +81,14 @@ export class CampusBuilder {
     trackGroup.add(trackMesh);
     this.interactiveObjects.push(trackMesh);
 
+    // 內圈綠茵球場
+    const ir = 16.5; // 內圈半徑
     const innerShape = new THREE.Shape();
-    const iw = 36;
-    const ir = 30;
-    innerShape.moveTo(-iw, -ir);
-    innerShape.lineTo(iw, -ir);
-    innerShape.absarc(iw, 0, ir, -Math.PI / 2, Math.PI / 2, false);
-    innerShape.lineTo(-iw, ir);
-    innerShape.absarc(-iw, 0, ir, Math.PI / 2, 3 * Math.PI / 2, false);
+    innerShape.moveTo(-ir, -slen);
+    innerShape.absarc(0, -slen, ir, Math.PI, 0, false);
+    innerShape.lineTo(ir, slen);
+    innerShape.absarc(0, slen, ir, 0, Math.PI, false);
+    innerShape.lineTo(-ir, -slen);
 
     const innerGeo = new THREE.ShapeGeometry(innerShape);
     const innerMesh = new THREE.Mesh(innerGeo, this.materials.field);
@@ -93,37 +97,46 @@ export class CampusBuilder {
     innerMesh.receiveShadow = true;
     trackGroup.add(innerMesh);
 
-    for (let i = 0; i <= 4; i++) {
-      const cr = ir + (r - ir) * (i / 4);
+    // 6 條白漆跑道分隔線
+    for (let i = 0; i <= 5; i++) {
+      const cr = ir + (r - ir) * (i / 5);
       const linePoints = [];
-      for (let a = -Math.PI / 2; a <= Math.PI / 2; a += Math.PI / 32) {
-        linePoints.push(new THREE.Vector3(iw + Math.cos(a) * cr, 0.03, Math.sin(a) * cr));
+      // 北半圓
+      for (let a = Math.PI; a >= 0; a -= Math.PI / 32) {
+        linePoints.push(new THREE.Vector3(Math.cos(a) * cr, 0.03, -slen - Math.sin(a) * cr));
       }
-      for (let a = Math.PI / 2; a <= (3 * Math.PI) / 2; a += Math.PI / 32) {
-        linePoints.push(new THREE.Vector3(-iw + Math.cos(a) * cr, 0.03, Math.sin(a) * cr));
+      // 東直線
+      linePoints.push(new THREE.Vector3(cr, 0.03, slen));
+      // 南半圓
+      for (let a = 0; a <= Math.PI; a += Math.PI / 32) {
+        linePoints.push(new THREE.Vector3(-Math.cos(a) * cr, 0.03, slen + Math.sin(a) * cr));
       }
+      // 西直線
+      linePoints.push(new THREE.Vector3(-cr, 0.03, -slen));
       linePoints.push(linePoints[0]);
+
       const lineGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
       const line = new THREE.Line(lineGeo, this.materials.lineWhite);
       trackGroup.add(line);
     }
 
-    const stageGeo = new THREE.BoxGeometry(16, 2.2, 8);
+    // 司令台（位於操場西側直道外緣，坐西朝東面向全操場）
+    const stageGeo = new THREE.BoxGeometry(7, 2.2, 14);
     const stage = new THREE.Mesh(stageGeo, this.materials.wallCream);
-    stage.position.set(0, 1.1, 23);
+    stage.position.set(-r - 3.8, 1.1, 0);
     stage.castShadow = true;
     stage.receiveShadow = true;
     trackGroup.add(stage);
 
-    const roofGeo = new THREE.BoxGeometry(18, 0.6, 10);
+    const roofGeo = new THREE.BoxGeometry(9, 0.6, 16);
     const roof = new THREE.Mesh(roofGeo, this.materials.roofRed);
-    roof.position.set(0, 4.4, 23);
+    roof.position.set(-r - 3.8, 4.4, 0);
     roof.castShadow = true;
     trackGroup.add(roof);
 
-    for (let px of [-7.5, 7.5]) {
-      for (let pz of [19.5, 26.5]) {
-        const pillarGeo = new THREE.CylinderGeometry(0.25, 0.25, 2.8);
+    for (let px of [-r - 6.8, -r - 0.8]) {
+      for (let pz of [-6.5, 6.5]) {
+        const pillarGeo = new THREE.CylinderGeometry(0.22, 0.22, 2.8);
         const pillar = new THREE.Mesh(pillarGeo, this.materials.metal);
         pillar.position.set(px, 2.9, pz);
         trackGroup.add(pillar);

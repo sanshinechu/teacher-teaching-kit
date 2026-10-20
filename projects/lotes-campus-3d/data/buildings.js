@@ -174,13 +174,13 @@ export const BUILDINGS = [
     name: "200M PU操場與綠茵足球場",
     category: "sports",
     categoryName: "戶外運動",
-    x: 42,
-    z: 2,
+    x: 40,
+    z: 8,
     y: 0.1,
-    w: 84,
-    d: 96,
+    w: 52,
+    d: 88,
     h: 0.2,
-    description: "標準 200 公尺紅色 PU 跑道操場，內圈為茵茵綠草皮多功能球場與升旗司令台。",
+    description: "標準 200 公尺紅色 PU 跑道操場，長軸呈南北向，內圈為茵茵綠草皮多功能球場，西側設有司令台。",
     tags: ["PU跑道", "司令台", "足球場"]
   },
   {
