@@ -1,4 +1,4 @@
-// 羅東國小 3D 校園建造器：高精細校舍立面、特色立體動物校門與四周校園圍籬
+// 羅東國小 3D 校園建造器：高清晰醒目校園圍籬、校地專屬地坪與特色 3D 動物雕塑
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 import { BUILDINGS } from '../data/buildings.js';
 
@@ -14,37 +14,56 @@ export class CampusBuilder {
     this.buildTrackAndField();
     this.buildBuildings();
     this.buildRoads();
-    this.buildPerimeterFences(); // 圍繞校園周圍的立體圍籬
-    this.buildFencesAndGates();  // 各校門與門頂特色 3D 動物雕塑
+    this.buildPerimeterFences(); // 圍繞校園邊界、明確標示校地範圍的醒目圍籬
+    this.buildFencesAndGates();  // 校門與門頂 3D 動物雕塑
     this.buildTrees();
     return this.interactiveObjects;
   }
 
   buildGround() {
-    const groundGeo = new THREE.PlaneGeometry(320, 280);
-    const ground = new THREE.Mesh(groundGeo, this.materials.grass);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
+    // 1. 校園外部大環境（稍暗灰綠底色，凸顯校內校外差別）
+    const outerGeo = new THREE.PlaneGeometry(360, 320);
+    const outerGround = new THREE.Mesh(outerGeo, new THREE.MeshStandardMaterial({ color: '#2a4d2e', roughness: 0.9 }));
+    outerGround.rotation.x = -Math.PI / 2;
+    outerGround.receiveShadow = true;
+    this.scene.add(outerGround);
 
+    // 2. 羅東國小專屬「校園內部校地範圍」（鮮濃生機翠綠，範圍一目了然）
+    // 校園多邊形邊界：西沿民族路、北沿清潭路、東沿開羅街、南沿南昌街
+    const campusShape = new THREE.Shape();
+    campusShape.moveTo(-88, -100);
+    campusShape.lineTo(96, -100);  // 北界（清潭路）
+    campusShape.lineTo(96, 92);    // 東界（開羅街/南昌街）
+    campusShape.lineTo(-88, 92);   // 南界（南昌街）
+    campusShape.closePath();       // 西界（民族路）
+
+    const campusGeo = new THREE.ShapeGeometry(campusShape);
+    const campusGround = new THREE.Mesh(campusGeo, this.materials.grass);
+    campusGround.rotation.x = -Math.PI / 2;
+    campusGround.position.y = 0.04;
+    campusGround.receiveShadow = true;
+    this.scene.add(campusGround);
+
+    // 中庭鋪面
     const courtGeo = new THREE.PlaneGeometry(30, 46);
     const courtMesh = new THREE.Mesh(courtGeo, this.materials.pave);
     courtMesh.rotation.x = -Math.PI / 2;
-    courtMesh.position.set(-14, 0.05, 16);
+    courtMesh.position.set(-14, 0.08, 16);
     courtMesh.receiveShadow = true;
     this.scene.add(courtMesh);
 
+    // 涵育樓前庭小廣場
     const plazaGeo = new THREE.PlaneGeometry(40, 20);
     const plazaMesh = new THREE.Mesh(plazaGeo, this.materials.pave);
     plazaMesh.rotation.x = -Math.PI / 2;
-    plazaMesh.position.set(-55, 0.05, -20);
+    plazaMesh.position.set(-55, 0.08, -20);
     plazaMesh.receiveShadow = true;
     this.scene.add(plazaMesh);
   }
 
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
-    trackGroup.position.set(18, 0.08, -68);
+    trackGroup.position.set(18, 0.12, -68);
 
     const trackShape = new THREE.Shape();
     const w = 40;
@@ -252,36 +271,42 @@ export class CampusBuilder {
       const roadGeo = new THREE.PlaneGeometry(r.w, r.d);
       const road = new THREE.Mesh(roadGeo, roadMat);
       road.rotation.x = -Math.PI / 2;
-      road.position.set(r.x, 0.02, r.z);
+      road.position.set(r.x, 0.03, r.z);
       road.receiveShadow = true;
       this.scene.add(road);
     });
   }
 
-  // --- 校園立體圍籬（圍牆＋白色金屬透空欄杆） ---
+  // --- 明確標示學校範圍的立體醒目圍籬 ---
   buildPerimeterFences() {
-    const fenceMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.35, metalness: 0.6 });
-    const wallBaseMat = this.materials.wallBrick;
+    // 圍籬採用醒目的亮白色烤漆欄杆與紅磚基座，一眼辨識校園邊界
+    const fenceRailMat = new THREE.MeshStandardMaterial({
+      color: '#f8fafc',
+      roughness: 0.2,
+      metalness: 0.7
+    });
+    const wallBaseMat = this.materials.wallBrick; // 濃郁紅磚基座
 
-    // 校園周圍圍籬線段（避開各主要校門）
+    // 校園周圍連續圍籬線段（精確沿著校園地界圍繞，只在校門處留開口）
     const fenceSegments = [
-      // 西側（民族路段，白兔門到新大門之間、新大門到開元市場門之間）
-      { x1: -88, z1: -85, x2: -88, z2: -60 },
-      { x1: -88, z1: -45, x2: -88, z2: 40 },
-      { x1: -88, z1: 56, x2: -88, z2: 90 },
+      // 西界（民族路）：白兔門與新大門、新大門與開元市場門之間的實體圍牆
+      { x1: -88, z1: -96, x2: -88, z2: -82 },
+      { x1: -88, z1: -66, x2: -88, z2: -58 },
+      { x1: -88, z1: -46, x2: -88, z2: 42 },
+      { x1: -88, z1: 54, x2: -88, z2: 92 },
 
-      // 北側（清潭路段，孔雀門到無尾熊門）
-      { x1: -80, z1: -100, x2: -42, z2: -100 },
+      // 北界（清潭路）：白兔門到無尾熊門
+      { x1: -88, z1: -100, x2: -42, z2: -100 },
       { x1: -30, z1: -100, x2: -10, z2: -100 },
       { x1: 2, z1: -100, x2: 96, z2: -100 },
 
-      // 東側（開羅街/南昌街，無尾熊門到海豚門、海豚門到體育館南昌街）
-      { x1: 96, z1: -95, x2: 96, z2: -74 },
-      { x1: 96, z1: -62, x2: 96, z2: 35 },
-      { x1: 96, z1: 48, x2: 96, z2: 90 },
+      // 東界（開羅街/南昌街）：無尾熊門到海豚門、海豚門到體育館東側
+      { x1: 96, z1: -94, x2: 96, z2: -74 },
+      { x1: 96, z1: -62, x2: 96, z2: 36 },
+      { x1: 96, z1: 48, x2: 96, z2: 92 },
 
-      // 南側（南昌街段，博愛醫院/聖母醫院對面）
-      { x1: -80, z1: 92, x2: -18, z2: 92 },
+      // 南界（南昌街）：企鵝門到恐龍門、恐龍門到體育館角
+      { x1: -88, z1: 92, x2: -18, z2: 92 },
       { x1: -6, z1: 92, x2: 42, z2: 92 },
       { x1: 54, z1: 92, x2: 96, z2: 92 }
     ];
@@ -292,46 +317,54 @@ export class CampusBuilder {
       const mx = (seg.x1 + seg.x2) / 2;
       const mz = (seg.z1 + seg.z2) / 2;
 
-      // 矮磚牆基座 (高 0.8米)
-      const baseGeo = new THREE.BoxGeometry(0.6, 0.8, len);
+      // 1. 厚實紅磚圍牆基座 (寬 0.8米，高 1.0米)
+      const baseGeo = new THREE.BoxGeometry(0.8, 1.0, len);
       const base = new THREE.Mesh(baseGeo, wallBaseMat);
-      base.position.set(mx, 0.4, mz);
+      base.position.set(mx, 0.5, mz);
       base.rotation.y = angle;
       base.castShadow = true;
       base.receiveShadow = true;
       this.scene.add(base);
 
-      // 上方透空金屬白欄杆 (高 1.6米)
-      const railGeo = new THREE.BoxGeometry(0.12, 0.12, len);
-      const topRail = new THREE.Mesh(railGeo, fenceMat);
-      topRail.position.set(mx, 2.2, mz);
+      // 2. 圍牆頂部白色壓頂石條
+      const capGeo = new THREE.BoxGeometry(0.95, 0.2, len);
+      const cap = new THREE.Mesh(capGeo, this.materials.wallWhite);
+      cap.position.set(mx, 1.05, mz);
+      cap.rotation.y = angle;
+      cap.castShadow = true;
+      this.scene.add(cap);
+
+      // 3. 上方立體白色安全格柵欄杆 (高 1.6米)
+      const topRailGeo = new THREE.BoxGeometry(0.15, 0.15, len);
+      const topRail = new THREE.Mesh(topRailGeo, fenceRailMat);
+      topRail.position.set(mx, 2.5, mz);
       topRail.rotation.y = angle;
       topRail.castShadow = true;
       this.scene.add(topRail);
 
-      const midRail = new THREE.Mesh(railGeo, fenceMat);
-      midRail.position.set(mx, 1.5, mz);
+      const midRail = new THREE.Mesh(topRailGeo, fenceRailMat);
+      midRail.position.set(mx, 1.8, mz);
       midRail.rotation.y = angle;
       midRail.castShadow = true;
       this.scene.add(midRail);
 
-      // 每隔 2.5米立一根白色圍籬立柱
-      const postCount = Math.max(2, Math.floor(len / 2.5));
+      // 每隔 2.2米立一根白色格柵支柱
+      const postCount = Math.max(2, Math.floor(len / 2.2));
       for (let i = 0; i <= postCount; i++) {
         const t = i / postCount;
         const px = seg.x1 + (seg.x2 - seg.x1) * t;
         const pz = seg.z1 + (seg.z2 - seg.z1) * t;
 
-        const postGeo = new THREE.BoxGeometry(0.25, 1.6, 0.25);
-        const post = new THREE.Mesh(postGeo, fenceMat);
-        post.position.set(px, 1.5, pz);
+        const postGeo = new THREE.BoxGeometry(0.3, 1.6, 0.3);
+        const post = new THREE.Mesh(postGeo, fenceRailMat);
+        post.position.set(px, 1.8, pz);
         post.castShadow = true;
         this.scene.add(post);
       }
     });
   }
 
-  // --- 校門與門頂 3D 立體動物雕塑雕刻 ---
+  // --- 校門與門頂 3D 立體動物雕塑 ---
   buildFencesAndGates() {
     const gates = BUILDINGS.filter(b => b.category === "gate");
     gates.forEach(g => {
@@ -340,34 +373,33 @@ export class CampusBuilder {
 
       // 兩側磚柱
       for (let s of [-g.w / 2, g.w / 2]) {
-        const pillarGeo = new THREE.BoxGeometry(1.8, g.h, 1.8);
+        const pillarGeo = new THREE.BoxGeometry(2.0, g.h, 2.0);
         const pillar = new THREE.Mesh(pillarGeo, this.materials.wallBrick);
         pillar.position.set(s, g.h / 2, 0);
         pillar.castShadow = true;
         pillar.receiveShadow = true;
         gateGroup.add(pillar);
 
-        const topCap = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.35, 2.2), this.materials.wallCream);
-        topCap.position.set(s, g.h + 0.18, 0);
+        const topCap = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), this.materials.wallCream);
+        topCap.position.set(s, g.h + 0.2, 0);
         topCap.castShadow = true;
         gateGroup.add(topCap);
       }
 
       // 橫樑拱頂
-      const beamGeo = new THREE.BoxGeometry(g.w + 1.4, 1.2, 1.8);
+      const beamGeo = new THREE.BoxGeometry(g.w + 1.6, 1.3, 2.0);
       const beam = new THREE.Mesh(beamGeo, this.materials.wallCream);
-      beam.position.set(0, g.h + 0.6, 0);
+      beam.position.set(0, g.h + 0.65, 0);
       beam.castShadow = true;
       gateGroup.add(beam);
 
       // 根據校門 ID，在橫樑頂端雕刻特色 3D 動物雕塑！
       const animalSculpture = this.createAnimalSculpture(g.id);
       if (animalSculpture) {
-        animalSculpture.position.set(0, g.h + 1.2, 0);
+        animalSculpture.position.set(0, g.h + 1.3, 0);
         gateGroup.add(animalSculpture);
       }
 
-      // 點選地標判定物件
       const hitGeo = new THREE.BoxGeometry(g.w, g.h + 3, 3.5);
       const hitMesh = new THREE.Mesh(hitGeo, new THREE.MeshBasicMaterial({ visible: false }));
       hitMesh.position.y = g.h / 2 + 1;
@@ -379,18 +411,16 @@ export class CampusBuilder {
     });
   }
 
-  // 打造各大校門立體 3D 可愛動物造型雕塑
   createAnimalSculpture(gateId) {
     const group = new THREE.Group();
     const whiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: '#222222', roughness: 0.4 });
-    const blueMat = new THREE.MeshStandardMaterial({ color: '#2b75a6', roughness: 0.25, metalness: 0.2 });
-    const greenMat = new THREE.MeshStandardMaterial({ color: '#387e35', roughness: 0.4 });
-    const yellowMat = new THREE.MeshStandardMaterial({ color: '#e8a623', roughness: 0.35 });
-    const grayMat = new THREE.MeshStandardMaterial({ color: '#828d94', roughness: 0.45 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.4 });
+    const blueMat = new THREE.MeshStandardMaterial({ color: '#1e6896', roughness: 0.25, metalness: 0.3 });
+    const greenMat = new THREE.MeshStandardMaterial({ color: '#296b2e', roughness: 0.4 });
+    const yellowMat = new THREE.MeshStandardMaterial({ color: '#e69a19', roughness: 0.35 });
+    const grayMat = new THREE.MeshStandardMaterial({ color: '#7a858c', roughness: 0.45 });
 
     if (gateId === 'gate_rabbit') {
-      // 🐰 白兔門：白色圓圓身體 + 兩支長耳朵 + 紅蘿蔔裝飾
       const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), whiteMat);
       body.position.y = 0.8;
       body.castShadow = true;
@@ -401,7 +431,6 @@ export class CampusBuilder {
       head.castShadow = true;
       group.add(head);
 
-      // 兩支長耳朵
       for (let ox of [-0.3, 0.3]) {
         const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.1, 12), whiteMat);
         ear.position.set(ox, 2.7, 0);
@@ -413,13 +442,11 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_peacock') {
-      // 🦚 孔雀門：優雅藍色胸軀 + 開屏多面羽翼扇形
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 1.6, 12), blueMat);
       body.position.y = 0.9;
       body.castShadow = true;
       group.add(body);
 
-      // 開屏孔雀羽毛扇形
       for (let a = -Math.PI * 0.4; a <= Math.PI * 0.4; a += Math.PI * 0.16) {
         const feather = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.9, 8), greenMat);
         feather.position.set(Math.sin(a) * 0.9, 1.4 + Math.cos(a) * 0.7, -0.3);
@@ -431,7 +458,6 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_koala') {
-      // 🐨 無尾熊門：灰色圓球身軀 + 兩側大圓耳朵 + 圓圓大鼻子
       const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), grayMat);
       body.position.y = 0.9;
       body.castShadow = true;
@@ -442,14 +468,12 @@ export class CampusBuilder {
       head.castShadow = true;
       group.add(head);
 
-      // 兩隻毛茸茸大耳朵
       for (let ox of [-0.65, 0.65]) {
         const ear = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 12), grayMat);
         ear.position.set(ox, 2.3, 0);
         group.add(ear);
       }
 
-      // 黑大鼻
       const nose = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), darkMat);
       nose.position.set(0, 1.85, 0.65);
       group.add(nose);
@@ -457,14 +481,12 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_dolphin') {
-      // 🐬 海豚門：躍出海面的流線型湛藍海豚 + 揚起尾鰭
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.75, 2.2, 16), blueMat);
       body.rotation.z = Math.PI * 0.35;
       body.position.set(0, 1.2, 0);
       body.castShadow = true;
       group.add(body);
 
-      // 背鰭
       const fin = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.9, 4), blueMat);
       fin.position.set(-0.2, 1.8, 0);
       fin.rotation.z = -0.3;
@@ -473,7 +495,6 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_dinosaur') {
-      // 🦖 恐龍門：霸氣亮綠暴龍造型 + 圓盾長尾
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 1.8), greenMat);
       body.position.y = 1.0;
       body.castShadow = true;
@@ -484,7 +505,6 @@ export class CampusBuilder {
       head.castShadow = true;
       group.add(head);
 
-      // 背部劍龍骨板或小棘刺
       for (let z of [-0.6, -0.1, 0.4]) {
         const spine = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.7, 4), yellowMat);
         spine.position.set(0, 2.0, z);
@@ -494,18 +514,15 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_penguin') {
-      // 🐧 企鵝門：黑白燕尾服企鵝 + 鵝黃尖嘴
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.75, 1.8, 16), darkMat);
       body.position.y = 0.9;
       body.castShadow = true;
       group.add(body);
 
-      // 白肚肚
       const belly = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 12), whiteMat);
       belly.position.set(0, 0.8, 0.3);
       group.add(belly);
 
-      // 黃嘴巴
       const beak = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 6), yellowMat);
       beak.rotation.x = Math.PI / 2;
       beak.position.set(0, 1.5, 0.65);
@@ -513,7 +530,6 @@ export class CampusBuilder {
       return group;
     }
 
-    // 民族路新大門（學校徽章立體金字招牌）
     if (gateId === 'gate_new') {
       const emblem = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.2, 32), yellowMat);
       emblem.rotation.x = Math.PI / 2;
