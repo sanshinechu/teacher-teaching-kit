@@ -1,0 +1,749 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羅東國民小學 3D 校園導覽地圖（協作平台嵌入版）</title>
+  
+  <!-- 優雅霞鶩文楷手寫字體與 Inter 英文英數 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide 圖示庫 -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-color: #f5f8f5;
+      --text-main: #243329;
+      --text-muted: #607267;
+      --primary: #2d6a4f;
+      --primary-light: #40916c;
+      --accent: #d4a373;
+      --panel-bg: rgba(255, 255, 255, 0.88);
+      --panel-border: rgba(45, 106, 79, 0.14);
+      --panel-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+      --radius: 14px;
+      --font-family: "LXGW WenKai TC", "Noto Sans TC", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      user-select: none;
+    }
+
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    #scene {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* 頂部導覽列 */
+    .topbar {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      height: 60px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--panel-shadow);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 19px;
+    }
+
+    .brand-title strong {
+      font-size: 18px;
+      letter-spacing: 0.5px;
+      display: block;
+    }
+
+    .brand-title small {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(45, 106, 79, 0.08);
+      color: var(--primary);
+    }
+
+    /* 左側校園探索邊欄 */
+    .sidebar {
+      position: absolute;
+      top: 92px;
+      left: 16px;
+      bottom: 24px;
+      width: 320px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--panel-shadow);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+      padding: 16px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar-header h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+
+    .searchbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1px solid #d4ded7;
+      border-radius: 8px;
+      padding: 6px 12px;
+      margin-bottom: 12px;
+    }
+
+    .searchbox input {
+      border: none;
+      outline: none;
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      background: transparent;
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .category-tabs button {
+      background: #edf2ee;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .category-tabs button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .place-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .place-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: #ffffff;
+      border: 1px solid #e3ebe5;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .place-item:hover, .place-item.selected {
+      background: #eef6f1;
+      border-color: var(--primary-light);
+      transform: translateX(2px);
+    }
+
+    .place-symbol {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: #e5efe8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin-right: 10px;
+    }
+
+    .place-name {
+      font-weight: 700;
+      font-size: 14px;
+      display: block;
+    }
+
+    .place-type {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* 右上視角與工具列 */
+    .view-switch {
+      position: absolute;
+      top: 92px;
+      right: 16px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 6px;
+      display: flex;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .view-switch button {
+      background: none;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .view-switch button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .map-toolbar {
+      position: absolute;
+      top: 154px;
+      right: 16px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .tool-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: none;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    .tool-btn:hover {
+      background: rgba(45, 106, 79, 0.1);
+      color: var(--primary);
+    }
+
+    .tool-btn.active {
+      background: #e2f0e7;
+      color: var(--primary);
+    }
+
+    /* 地點介紹滑出卡片 */
+    .detail-card {
+      position: absolute;
+      bottom: 24px;
+      right: 16px;
+      width: 360px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--panel-shadow);
+      border-radius: var(--radius);
+      padding: 20px;
+      z-index: 20;
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .detail-card.has-selection {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .detail-card h3 {
+      font-size: 20px;
+      color: var(--primary);
+    }
+
+    .detail-category {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .detail-card p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #3b4d41;
+      margin-bottom: 14px;
+    }
+
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .tag-chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: #e8f2ec;
+      border-radius: 4px;
+      color: var(--primary);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    /* 底部操作與巡航 Bar */
+    .bottom-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 356px;
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .pill-btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--panel-border);
+      padding: 10px 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--panel-shadow);
+      transition: all 0.2s;
+    }
+
+    .pill-btn:hover {
+      background: #ffffff;
+      color: var(--primary);
+    }
+
+    .tourbar {
+      position: absolute;
+      bottom: 74px;
+      left: 356px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: 30px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--panel-shadow);
+      z-index: 20;
+    }
+
+    .tour-progress {
+      width: 100px;
+      height: 4px;
+      background: #dce5de;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .tour-progress span {
+      display: block;
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    /* 第一人稱漫遊提示 */
+    .walk-controls {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* 彈出對話框 */
+    dialog {
+      margin: auto;
+      padding: 24px;
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      background: #ffffff;
+      width: 90%;
+      max-width: 680px;
+      max-height: 80vh;
+      overflow-y: auto;
+      font-family: var(--font-family);
+      outline: none;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #edf2ee;
+      padding-bottom: 12px;
+    }
+
+    .dialog-header h2 {
+      color: var(--primary);
+      font-size: 22px;
+    }
+
+    .office-group {
+      margin-bottom: 20px;
+    }
+
+    .office-group h3 {
+      font-size: 16px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .office-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 8px;
+    }
+
+    .office-item {
+      background: #f7faf8;
+      border: 1px solid #e2ede5;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .office-floor {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      height: fit-content;
+    }
+
+    .grade-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .grade-table th, .grade-table td {
+      border: 1px solid #e2ece5;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    .grade-table th {
+      background: #f0f6f2;
+      color: var(--primary);
+    }
+
+    /* 載入中動畫 */
+    #loading {
+      position: absolute;
+      inset: 0;
+      background: #eaf2ec;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      font-size: 16px;
+      color: var(--primary);
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(45, 106, 79, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 14px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 頂部列 -->
+    <header class="topbar">
+      <a class="brand" href="#">
+        <div class="brand-logo">羅</div>
+        <div class="brand-title">
+          <strong>宜蘭縣羅東國小</strong>
+          <small>校園 3D 導覽地圖 · CAMPUS EXPLORER</small>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <button class="nav-btn" id="offices-btn">
+          <i data-lucide="building-2"></i><span>處室配置</span>
+        </button>
+        <button class="nav-btn" id="grades-btn">
+          <i data-lucide="graduation-cap"></i><span>年級教室</span>
+        </button>
+        <button class="nav-btn" id="map-btn">
+          <i data-lucide="map"></i><span>2D 平面圖</span>
+        </button>
+        <a class="nav-btn" href="https://www.lotes.ilc.edu.tw/" target="_blank" rel="noopener noreferrer">
+          <span>學校官網</span><i data-lucide="arrow-up-right"></i>
+        </a>
+      </nav>
+    </header>
+
+    <!-- 3D 畫布容器 -->
+    <main id="scene" tabindex="0">
+      <div id="loading">
+        <div class="spinner"></div>
+        <p>正在展開羅東國小百年校園…</p>
+      </div>
+    </main>
+
+    <!-- 左側探索邊欄 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>漫遊羅東國小</h2>
+      </div>
+      <div class="searchbox">
+        <i data-lucide="search"></i>
+        <input id="place-search" placeholder="搜尋涵育樓、電腦教室、孔雀門…" autocomplete="off">
+      </div>
+      <div class="category-tabs" id="categories">
+        <button class="active" data-cat="all">全部</button>
+        <button data-cat="teaching">教學大樓</button>
+        <button data-cat="admin">行政核心</button>
+        <button data-cat="sports">運動場地</button>
+        <button data-cat="gate">特色校門</button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;" id="list-count">載入中…</div>
+      <div class="place-list" id="place-list"></div>
+    </aside>
+
+    <!-- 右上視角切換器 -->
+    <div class="view-switch">
+      <button class="active" data-mode="orbit"><i data-lucide="box"></i>3D 鳥瞰</button>
+      <button data-mode="top"><i data-lucide="map"></i>俯視</button>
+      <button data-mode="walk"><i data-lucide="footprints"></i>地面漫遊</button>
+    </div>
+
+    <!-- 右側地圖工具列 -->
+    <div class="map-toolbar">
+      <button class="tool-btn" id="compass" title="指北針">
+        <i data-lucide="compass"></i>
+      </button>
+      <button class="tool-btn" id="reset-view" title="回到校園全景">
+        <i data-lucide="scan"></i>
+      </button>
+      <button class="tool-btn" id="rotate-btn" title="自動環繞旋轉">
+        <i data-lucide="rotate-3d"></i>
+      </button>
+      <button class="tool-btn" id="day-btn" title="切換日夜氛圍">
+        <i data-lucide="sun-moon"></i>
+      </button>
+      <button class="tool-btn" id="fullscreen-btn" title="全螢幕">
+        <i data-lucide="maximize"></i>
+      </button>
+    </div>
+
+    <!-- 地點詳細卡片 -->
+    <section class="detail-card" id="detail-card">
+      <div class="detail-header">
+        <h3 id="detail-title">校舍名稱</h3>
+        <button class="close-btn" id="close-detail"><i data-lucide="x"></i></button>
+      </div>
+      <span class="detail-category" id="detail-category">分類</span>
+      <p id="detail-description">詳細說明文字</p>
+      <div class="tag-container" id="detail-tags"></div>
+    </section>
+
+    <!-- 底部功能與巡航列 -->
+    <div class="bottom-bar">
+      <button class="pill-btn" id="tour-btn">
+        <i data-lucide="play"></i>精選校園巡航（12 站）
+      </button>
+    </div>
+
+    <!-- 巡航播放器 -->
+    <div class="tourbar" id="tourbar" hidden>
+      <button class="close-btn" id="tour-prev"><i data-lucide="skip-back"></i></button>
+      <span id="tour-counter" style="font-size: 13px; font-weight: 700;">01 / 12</span>
+      <span id="tour-name" style="font-size: 14px; font-weight: 700; color: var(--primary);">民族路新大門</span>
+      <div class="tour-progress"><span id="tour-progress"></span></div>
+      <button class="close-btn" id="tour-next"><i data-lucide="skip-forward"></i></button>
+      <button class="close-btn" id="tour-close"><i data-lucide="x"></i></button>
+    </div>
+
+    <!-- 第一人稱行走提示 -->
+    <div class="walk-controls" id="walk-controls" hidden>
+      按鍵盤 WASD 或方向鍵行走 · 滑鼠拖曳環顧四周 · 按 Esc 返回鳥瞰
+    </div>
+
+    <!-- 處室總覽彈窗 -->
+    <dialog id="offices-dialog">
+      <div class="dialog-header">
+        <h2>行政處室與專科教室配置表</h2>
+        <button class="close-btn" data-close><i data-lucide="x"></i></button>
+      </div>
+      <div id="offices-content"></div>
+    </dialog>
+
+    <!-- 年級教室彈窗 -->
+    <dialog id="grades-dialog">
+      <div class="dialog-header">
+        <h2>115 學年度全校年級教室配置</h2>
+        <button class="close-btn" data-close><i data-lucide="x"></i></button>
+      </div>
+      <div id="grades-content"></div>
+    </dialog>
+
+    <!-- 2D 平面地圖彈窗 -->
+    <dialog id="map-dialog" style="max-width: 880px;">
+      <div class="dialog-header">
+        <h2>羅東國小校園平面與防災避難地圖</h2>
+        <button class="close-btn" data-close><i data-lucide="x"></i></button>
+      </div>
+      <img src="assets/羅小防災地圖.jpg" alt="羅東國小校園防災地圖" style="width: 100%; border-radius: 8px;">
+    </dialog>
+  </div>
+
+  <!-- 主邏輯程式碼載入 -->
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
+
