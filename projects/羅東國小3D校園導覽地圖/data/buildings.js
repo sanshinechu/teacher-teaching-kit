@@ -302,14 +302,14 @@ export const BUILDINGS = [
     name: "恐龍門",
     category: "gate",
     categoryName: "特色校門",
-    x: 48,
-    z: 92, // 南界南昌街圍籬線上
+    x: 96,
+    z: 36, // 東界開羅街圍籬線上（鄰近體育館）
     y: 0,
     w: 8,
     d: 3,
     h: 4.5,
-    description: "位於南昌街南側，緊鄰樹人館體育館後方，門頂有暴龍立體雕塑。",
-    tags: ["恐龍門", "南昌街", "樹人館南側"]
+    description: "位於東界開羅街上，鄰近樹人館體育館東側，門頂有暴龍立體雕塑。",
+    tags: ["恐龍門", "開羅街", "體育館東側"]
   },
   {
     id: "gate_penguin",
