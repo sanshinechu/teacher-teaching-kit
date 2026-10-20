@@ -1,4 +1,4 @@
-// 羅東國小 3D 校園建造器：高精細校舍立面、超醒目大型 3D 動物雕塑校門與浮動萌系地標標籤
+// 羅東國小 3D 校園建造器：依 Google 衛星空照真實形狀與方位建造高精細校舍、特色動物雕塑校門與周邊道路
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 import { BUILDINGS } from '../data/buildings.js';
 
@@ -21,17 +21,31 @@ export class CampusBuilder {
   }
 
   buildGround() {
-    const outerGeo = new THREE.PlaneGeometry(360, 320);
-    const outerGround = new THREE.Mesh(outerGeo, new THREE.MeshStandardMaterial({ color: '#2a4d2e', roughness: 0.9 }));
+    // 1. 周邊城市大地基座
+    const outerGeo = new THREE.PlaneGeometry(380, 360);
+    const outerGround = new THREE.Mesh(outerGeo, new THREE.MeshStandardMaterial({ color: '#1e3823', roughness: 0.9 }));
     outerGround.rotation.x = -Math.PI / 2;
     outerGround.receiveShadow = true;
     this.scene.add(outerGround);
 
+    // 2. 羅東國小空照真實多邊形校園草坪輪廓
     const campusShape = new THREE.Shape();
-    campusShape.moveTo(-88, -100);
-    campusShape.lineTo(96, -100);
-    campusShape.lineTo(96, 92);
-    campusShape.lineTo(-88, 92);
+    campusShape.moveTo(-25, -88); // 北端清潭路大門段
+    campusShape.lineTo(25, -61);  // 沿清潭路斜向東南
+    campusShape.lineTo(47, -25);  // 開羅街/清潭路轉角
+    campusShape.lineTo(61, -20);
+    campusShape.lineTo(81, -14);  // 操場東北角
+    campusShape.lineTo(86, 79);   // 操場東南開羅街角
+    campusShape.lineTo(82, 86);   // 東南角（南昌街東端）
+    campusShape.lineTo(-54, 86);  // 南界南昌街西端
+    campusShape.lineTo(-65, 79);  // 西南角切角
+    campusShape.lineTo(-79, 68);  // 開元市場側門段
+    campusShape.lineTo(-82, 39);  // 西界弧形向上
+    campusShape.lineTo(-86, 7);   // 民族路/孔雀門段
+    campusShape.lineTo(-82, -25);
+    campusShape.lineTo(-74, -54); // 民族路歷史門牌段
+    campusShape.lineTo(-57, -72); // 西北角弧線
+    campusShape.lineTo(-39, -84); // 接回北界
     campusShape.closePath();
 
     const campusGeo = new THREE.ShapeGeometry(campusShape);
@@ -41,32 +55,112 @@ export class CampusBuilder {
     campusGround.receiveShadow = true;
     this.scene.add(campusGround);
 
-    const courtGeo = new THREE.PlaneGeometry(28, 70);
+    // 3. 北側清潭路新大門迎賓停車廣場（斜向 -32 度）
+    const northPlazaGeo = new THREE.PlaneGeometry(30, 22);
+    const northPlaza = new THREE.Mesh(northPlazaGeo, this.materials.parkingPave);
+    northPlaza.rotation.x = -Math.PI / 2;
+    northPlaza.rotation.z = -0.56;
+    northPlaza.position.set(18, 0.08, -54);
+    northPlaza.receiveShadow = true;
+    this.scene.add(northPlaza);
+
+    // 迎賓停車格標線
+    for (let i = -3; i <= 3; i++) {
+      const lineGeo = new THREE.PlaneGeometry(0.18, 5.0);
+      const lineMesh = new THREE.Mesh(lineGeo, this.materials.lineWhite);
+      lineMesh.rotation.x = -Math.PI / 2;
+      lineMesh.rotation.z = -0.56;
+      const lx = 18 + Math.cos(-0.56) * (i * 2.8);
+      const lz = -54 - Math.sin(-0.56) * (i * 2.8);
+      lineMesh.position.set(lx, 0.09, lz);
+      this.scene.add(lineMesh);
+    }
+
+    // 4. 西南教職員停車場
+    const swPlazaGeo = new THREE.PlaneGeometry(26, 24);
+    const swPlaza = new THREE.Mesh(swPlazaGeo, this.materials.parkingPave);
+    swPlaza.rotation.x = -Math.PI / 2;
+    swPlaza.position.set(-62, 0.08, 52);
+    swPlaza.receiveShadow = true;
+    this.scene.add(swPlaza);
+
+    for (let i = -3; i <= 3; i++) {
+      const lineGeo = new THREE.PlaneGeometry(0.18, 5.2);
+      const lineMesh = new THREE.Mesh(lineGeo, this.materials.lineWhite);
+      lineMesh.rotation.x = -Math.PI / 2;
+      lineMesh.position.set(-62 + i * 2.8, 0.09, 52);
+      this.scene.add(lineMesh);
+    }
+
+    // 5. 中庭溫潤石磚步道花園（迎曦樓、涵育樓與百齡樓之間）
+    const courtGeo = new THREE.PlaneGeometry(26, 52);
     const courtMesh = new THREE.Mesh(courtGeo, this.materials.pave);
     courtMesh.rotation.x = -Math.PI / 2;
-    courtMesh.position.set(-42, 0.08, -12);
+    courtMesh.position.set(-36, 0.07, -20);
     courtMesh.receiveShadow = true;
     this.scene.add(courtMesh);
 
-    const plazaGeo = new THREE.PlaneGeometry(38, 22);
-    const plazaMesh = new THREE.Mesh(plazaGeo, this.materials.pave);
-    plazaMesh.rotation.x = -Math.PI / 2;
-    plazaMesh.position.set(-56, 0.08, -88);
-    plazaMesh.receiveShadow = true;
-    this.scene.add(plazaMesh);
+    // 6. 迎風圓形展演涼亭（空照圖操場西側醒目圓形紅白同心條紋頂棚）
+    const pavilionGroup = new THREE.Group();
+    pavilionGroup.position.set(23, 0, 38);
+
+    // 同心圓階梯基座
+    const step1Geo = new THREE.CylinderGeometry(7.2, 7.5, 0.35, 32);
+    const step1 = new THREE.Mesh(step1Geo, this.materials.pave);
+    step1.position.y = 0.18;
+    step1.receiveShadow = true;
+    pavilionGroup.add(step1);
+
+    const step2Geo = new THREE.CylinderGeometry(6.0, 6.2, 0.3, 32);
+    const step2 = new THREE.Mesh(step2Geo, this.materials.wallWhite);
+    step2.position.y = 0.45;
+    step2.receiveShadow = true;
+    pavilionGroup.add(step2);
+
+    // 鋼構立柱
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      const pillarGeo = new THREE.CylinderGeometry(0.14, 0.14, 3.8, 12);
+      const pillar = new THREE.Mesh(pillarGeo, this.materials.metal);
+      pillar.position.set(Math.cos(a) * 4.8, 2.35, Math.sin(a) * 4.8);
+      pillar.castShadow = true;
+      pavilionGroup.add(pillar);
+    }
+
+    // 條紋圓頂遮陽棚
+    const canopyGeo = new THREE.ConeGeometry(5.8, 2.2, 24);
+    const canopy = new THREE.Mesh(canopyGeo, this.materials.roofRed);
+    canopy.position.y = 4.8;
+    canopy.castShadow = true;
+    pavilionGroup.add(canopy);
+
+    const ringGeo = new THREE.TorusGeometry(5.8, 0.25, 8, 32);
+    const ring = new THREE.Mesh(ringGeo, this.materials.wallWhite);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 3.8;
+    pavilionGroup.add(ring);
+
+    this.scene.add(pavilionGroup);
+
+    // 7. 圓形生態景觀花園（圓形亭子北方）
+    const gardenGeo = new THREE.CircleGeometry(5.5, 24);
+    const garden = new THREE.Mesh(gardenGeo, this.materials.field);
+    garden.rotation.x = -Math.PI / 2;
+    garden.position.set(18, 0.08, 16);
+    this.scene.add(garden);
   }
 
+  // --- 200M PU 操場跑道與內圈多功能球場（精確定位於東南開闊區） ---
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
-    // 操場跑道中心：X=36（位於校園東北開闊區）、Z=-30（北側鄰近清潭路與白兔門）
-    trackGroup.position.set(36, 0.12, -30);
+    // 操場跑道中心：X=54（東南象限）、Z=34（南依南昌街、東臨開羅街）
+    trackGroup.position.set(54, 0.12, 34);
+    trackGroup.rotation.y = -0.05; // 微傾斜約 3 度，對齊開照道路走向
 
     // 南北向標準 200M 跑道幾何形狀（直線跑道沿 Z 軸長 38 米，兩端半圓沿 X 軸半徑 24 米）
     const slen = 19; // 直線段半長 (Z 軸向從 -19 到 +19，全長 38 米)
-    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米，範圍 X: 12 到 60)
+    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米，範圍 X: 30 到 78)
 
     const trackShape = new THREE.Shape();
-    // 從北端彎道起點出發 (順時針繪製)
     trackShape.moveTo(-r, -slen);
     trackShape.absarc(0, -slen, r, Math.PI, 0, false); // 北端半圓彎道（弧頂朝北）
     trackShape.lineTo(r, slen);                       // 東側直線跑道
@@ -74,14 +168,14 @@ export class CampusBuilder {
     trackShape.lineTo(-r, -slen);                      // 西側直線跑道
 
     const trackGeo = new THREE.ShapeGeometry(trackShape);
-    const trackMesh = new THREE.Mesh(trackGeo, this.materials.track);
+    const trackMesh = new THREE.Mesh(trackGeo, this.materials.track); // 湛藍色 PU 跑道
     trackMesh.rotation.x = -Math.PI / 2;
     trackMesh.receiveShadow = true;
-    trackMesh.userData = { id: "track_field", name: "200M PU 操場跑道" };
+    trackMesh.userData = { id: "track_field", name: "200M 湛藍 PU 操場" };
     trackGroup.add(trackMesh);
     this.interactiveObjects.push(trackMesh);
 
-    // 內圈綠茵球場
+    // 內圈球場基座（暖黃橙色排球/籃球場地坪，空照圖真實特徵）
     const ir = 16.5; // 內圈半徑
     const innerShape = new THREE.Shape();
     innerShape.moveTo(-ir, -slen);
@@ -91,33 +185,58 @@ export class CampusBuilder {
     innerShape.lineTo(-ir, -slen);
 
     const innerGeo = new THREE.ShapeGeometry(innerShape);
-    const innerMesh = new THREE.Mesh(innerGeo, this.materials.field);
+    const innerMesh = new THREE.Mesh(innerGeo, this.materials.court);
     innerMesh.rotation.x = -Math.PI / 2;
     innerMesh.position.y = 0.02;
     innerMesh.receiveShadow = true;
     trackGroup.add(innerMesh);
 
-    // 6 條白漆跑道分隔線（完美封閉圓滑同心環，無任何對角線交叉 bug）
+    // 內圈中央跳球區與緩衝草坪
+    const centerGrassGeo = new THREE.PlaneGeometry(16, 20);
+    const centerGrass = new THREE.Mesh(centerGrassGeo, this.materials.courtInner);
+    centerGrass.rotation.x = -Math.PI / 2;
+    centerGrass.position.set(0, 0.025, 0);
+    trackGroup.add(centerGrass);
+
+    // 6 條白漆跑道分隔線（完美封閉同心圓滑環）
     for (let i = 0; i <= 5; i++) {
       const cr = ir + (r - ir) * (i / 5);
       const linePoints = [];
-      // 1. 北半圓：從西側 (-cr, -slen) 弧線繞到東側 (cr, -slen)
       for (let a = Math.PI; a >= 0; a -= Math.PI / 32) {
         linePoints.push(new THREE.Vector3(Math.cos(a) * cr, 0.03, -slen - Math.sin(a) * cr));
       }
-      // 2. 東直線：從 (cr, -slen) 沿直線向南延伸至 (cr, slen)
       linePoints.push(new THREE.Vector3(cr, 0.03, slen));
-      // 3. 南半圓：從東側 (cr, slen) 弧線繞到西側 (-cr, slen)
       for (let a = 0; a <= Math.PI; a += Math.PI / 32) {
         linePoints.push(new THREE.Vector3(Math.cos(a) * cr, 0.03, slen + Math.sin(a) * cr));
       }
-      // 4. 西直線：從 (-cr, slen) 沿直線向北返回 (-cr, -slen)
       linePoints.push(new THREE.Vector3(-cr, 0.03, -slen));
       linePoints.push(linePoints[0]);
 
       const lineGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
       const line = new THREE.Line(lineGeo, this.materials.lineWhite);
       trackGroup.add(line);
+    }
+
+    // 內圈球場標線（籃球禁區與中線）
+    for (let sz of [-slen * 0.55, slen * 0.55]) {
+      const courtLinePoints = [
+        new THREE.Vector3(-8, 0.035, sz - 7),
+        new THREE.Vector3(8, 0.035, sz - 7),
+        new THREE.Vector3(8, 0.035, sz + 7),
+        new THREE.Vector3(-8, 0.035, sz + 7),
+        new THREE.Vector3(-8, 0.035, sz - 7)
+      ];
+      const clGeo = new THREE.BufferGeometry().setFromPoints(courtLinePoints);
+      const cl = new THREE.Line(clGeo, this.materials.lineWhite);
+      trackGroup.add(cl);
+
+      // 三秒區鑰匙圈
+      const hoopPoints = [];
+      for (let a = 0; a <= Math.PI * 2; a += Math.PI / 16) {
+        hoopPoints.push(new THREE.Vector3(Math.cos(a) * 2.8, 0.035, sz + Math.sin(a) * 2.8));
+      }
+      const hoopGeo = new THREE.BufferGeometry().setFromPoints(hoopPoints);
+      trackGroup.add(new THREE.Line(hoopGeo, this.materials.lineWhite));
     }
 
     // 司令台（位於操場西側直道外緣，坐西朝東面向全操場）
@@ -146,13 +265,18 @@ export class CampusBuilder {
     this.scene.add(trackGroup);
   }
 
+  // --- 核心校舍群立體造型（依真實建築特徵參數化塑造） ---
   buildBuildings() {
     BUILDINGS.forEach(b => {
-      if (b.category === "gate" || b.id === "track_field" || b.id === "courtyard") return;
+      if (b.category === "gate" || b.id === "track_field" || b.id === "courtyard" || b.id === "circular_pavilion" || b.id.startsWith("parking")) return;
 
       const group = new THREE.Group();
       group.position.set(b.x, 0, b.z);
+      if (b.rotationY) {
+        group.rotation.y = b.rotationY;
+      }
 
+      // 主體量體
       const bodyGeo = new THREE.BoxGeometry(b.w, b.h, b.d);
       const bodyMat = this.materials[b.id] || this.materials.wallCream;
       const body = new THREE.Mesh(bodyGeo, bodyMat);
@@ -163,41 +287,102 @@ export class CampusBuilder {
       group.add(body);
       this.interactiveObjects.push(body);
 
-      const edgeGeo = new THREE.BoxGeometry(b.w + 0.9, 0.65, b.d + 0.9);
+      // 女兒牆石材收邊
+      const edgeGeo = new THREE.BoxGeometry(b.w + 0.8, 0.6, b.d + 0.8);
       const edge = new THREE.Mesh(edgeGeo, this.materials.roofDark);
-      edge.position.y = b.h + 0.32;
+      edge.position.y = b.h + 0.3;
       edge.castShadow = true;
       group.add(edge);
 
-      if (b.id === "xiaoyou") {
-        const roofGeo = new THREE.ConeGeometry(b.w * 0.65, 4.2, 4);
+      // --- 各棟特色屋頂架構 ---
+      if (b.id === "bailing_wave") {
+        // 🏛️ 百齡樓波浪綠大樓：6 連棟雙色交替圓拱拱頂（空照圖正中心最醒目特徵！）
+        const archCount = 6;
+        const archWidth = b.w / archCount;
+        const archRadius = archWidth * 0.55;
+
+        for (let i = 0; i < archCount; i++) {
+          const ax = -b.w / 2 + (i + 0.5) * archWidth;
+          const archGeo = new THREE.CylinderGeometry(archRadius, archRadius, b.d, 24, 1, false, 0, Math.PI);
+          const mat = (i % 2 === 0) ? this.materials.roofWaveGreen : this.materials.roofWaveBeige;
+          const archMesh = new THREE.Mesh(archGeo, mat);
+          archMesh.rotation.x = Math.PI / 2;
+          archMesh.position.set(ax, b.h + 0.6, 0);
+          archMesh.castShadow = true;
+          group.add(archMesh);
+        }
+      } else if (b.id === "xiaoyou") {
+        // 🏛️ 校友館：古典斜坡尖頂與特色鐘樓
+        const roofGeo = new THREE.ConeGeometry(b.w * 0.6, 4.2, 4);
         const roof = new THREE.Mesh(roofGeo, this.materials.roofRed);
         roof.position.y = b.h + 2.1;
         roof.rotation.y = Math.PI / 4;
         roof.castShadow = true;
         group.add(roof);
+
+        const spireGeo = new THREE.CylinderGeometry(0.2, 0.5, 3.2, 8);
+        const spire = new THREE.Mesh(spireGeo, this.materials.wallWhite);
+        spire.position.y = b.h + 5.2;
+        group.add(spire);
       } else if (b.id === "gymnasium") {
-        const arcGeo = new THREE.CylinderGeometry(b.d * 0.53, b.d * 0.53, b.w, 32, 1, false, 0, Math.PI);
-        const arcRoof = new THREE.Mesh(arcGeo, this.materials.roofGreen);
-        arcRoof.rotation.z = Math.PI / 2;
-        arcRoof.rotation.x = Math.PI / 2;
-        arcRoof.position.y = b.h;
-        arcRoof.castShadow = true;
-        group.add(arcRoof);
+        // 🏛️ 體育館（樹人館）：大跨度挑高雙斜坡鋼構屋頂（北坡光電板、南坡紅瓦邊）
+        const roofHeight = 4.2;
+        const roofGeo = new THREE.BoxGeometry(b.w + 1.2, roofHeight, b.d + 1.2);
+        const roofGroup = new THREE.Group();
+        roofGroup.position.set(0, b.h + roofHeight / 2, 0);
+
+        // 北坡大面積深色太陽能板陣列
+        const solarGeo = new THREE.PlaneGeometry(b.w * 0.92, b.d * 0.44);
+        const solar = new THREE.Mesh(solarGeo, this.materials.solarPanel);
+        solar.rotation.x = -Math.PI / 3.2;
+        solar.position.set(0, 1.2, -b.d * 0.22);
+        roofGroup.add(solar);
+
+        // 南坡紅瓦斜面
+        const tileGeo = new THREE.PlaneGeometry(b.w * 0.95, b.d * 0.48);
+        const tile = new THREE.Mesh(tileGeo, this.materials.roofRed);
+        tile.rotation.x = Math.PI / 3.2;
+        tile.position.set(0, 1.0, b.d * 0.22);
+        roofGroup.add(tile);
+
+        group.add(roofGroup);
+      } else if (b.id === "science") {
+        // 🏛️ 科學館：頂樓天文台圓頂
+        const domeGeo = new THREE.SphereGeometry(3.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const dome = new THREE.Mesh(domeGeo, this.materials.wallWhite);
+        dome.position.set(0, b.h + 0.6, 0);
+        dome.castShadow = true;
+        group.add(dome);
+
+        const ringGeo = new THREE.TorusGeometry(3.6, 0.25, 8, 24);
+        const ring = new THREE.Mesh(ringGeo, this.materials.metal);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(0, b.h + 0.6, 0);
+        group.add(ring);
       } else {
-        const hutGeo = new THREE.BoxGeometry(Math.min(7, b.w * 0.28), 2.8, Math.min(6, b.d * 0.28));
+        // 一般校舍：頂樓電梯機房與太陽能棚架
+        const hutGeo = new THREE.BoxGeometry(Math.min(7, b.w * 0.3), 2.8, Math.min(6, b.d * 0.3));
         const hut = new THREE.Mesh(hutGeo, this.materials.wallWhite);
-        hut.position.set(-b.w * 0.24, b.h + 1.7, -b.d * 0.2);
+        hut.position.set(-b.w * 0.22, b.h + 1.7, -b.d * 0.18);
         hut.castShadow = true;
         group.add(hut);
+
+        if (b.w >= 20) {
+          const solarPanelGeo = new THREE.BoxGeometry(b.w * 0.5, 0.2, b.d * 0.45);
+          const solarPanel = new THREE.Mesh(solarPanelGeo, this.materials.solarPanel);
+          solarPanel.position.set(b.w * 0.15, b.h + 1.0, 0);
+          solarPanel.rotation.x = 0.1;
+          group.add(solarPanel);
+        }
       }
 
+      // 立面窗格（每層樓帶金屬反光鍍膜窗）
       const floors = b.floors || 3;
       const floorH = b.h / floors;
       for (let f = 1; f <= floors; f++) {
         const wy = (f - 0.5) * floorH;
 
-        const winGeo = new THREE.BoxGeometry(b.w * 0.86, floorH * 0.42, 0.25);
+        const winGeo = new THREE.BoxGeometry(b.w * 0.85, floorH * 0.42, 0.25);
         const winFront = new THREE.Mesh(winGeo, this.materials.window);
         winFront.position.set(0, wy, b.d / 2 + 0.1);
         group.add(winFront);
@@ -206,8 +391,8 @@ export class CampusBuilder {
         winBack.position.set(0, wy, -b.d / 2 - 0.1);
         group.add(winBack);
 
-        if (b.d >= 20) {
-          const sideGeo = new THREE.BoxGeometry(0.25, floorH * 0.42, b.d * 0.7);
+        if (b.d >= 18) {
+          const sideGeo = new THREE.BoxGeometry(0.25, floorH * 0.42, b.d * 0.65);
           const winSideL = new THREE.Mesh(sideGeo, this.materials.window);
           winSideL.position.set(-b.w / 2 - 0.1, wy, 0);
           group.add(winSideL);
@@ -224,14 +409,20 @@ export class CampusBuilder {
     this.buildCoveredWalkways();
   }
 
+  // --- 校舍間紅瓦風雨走廊連通系統 ---
   buildCoveredWalkways() {
     const corridorMat = this.materials.roofRed;
     const pillarMat = this.materials.metal;
 
     const corridors = [
-      { x1: -56, z1: -60, x2: -56, z2: -56, w: 3.2 },
-      { x1: -56, z1: -56, x2: -16, z2: -56, w: 3.2 },
-      { x1: -16, z1: -60, x2: -16, z2: -56, w: 3.2 }
+      // 涵育樓至百齡樓綠波浪綜合棟
+      { x1: -4, z1: -58, x2: -15, z2: -15, w: 3.2 },
+      // 百齡樓至迎曦樓中庭走廊
+      { x1: -23, z1: -5, x2: -52, z2: -18, w: 3.2 },
+      // 涵育樓至校友館
+      { x1: -16, z1: -66, x2: -24, z2: -70, w: 2.8 },
+      // 百齡樓至幼兒園
+      { x1: -23, z1: 5, x2: -28, z2: 36, w: 3.0 }
     ];
 
     corridors.forEach(c => {
@@ -265,26 +456,67 @@ export class CampusBuilder {
     });
   }
 
+  // --- 周邊四面環繞真實道路網絡 ---
   buildRoads() {
     const roadMat = this.materials.road;
-    const roads = [
-      { x: -98, z: 0, w: 16, d: 260 },   // 民族路與清潭路西段
-      { x: 0, z: -110, w: 270, d: 16 },  // 清潭路北段
-      { x: 108, z: 0, w: 16, d: 260 },   // 開羅街與南昌街東段
-      { x: 0, z: 102, w: 270, d: 16 }    // 南昌街南段
+
+    // 1. 北側清潭路（斜向貫穿，寬 16 米，連接開羅街與新大門）
+    const northRoadGeo = new THREE.PlaneGeometry(16, 175);
+    const northRoad = new THREE.Mesh(northRoadGeo, roadMat);
+    northRoad.rotation.x = -Math.PI / 2;
+    northRoad.rotation.z = -0.56;
+    northRoad.position.set(10, 0.03, -78);
+    northRoad.receiveShadow = true;
+    this.scene.add(northRoad);
+
+    // 2. 東側開羅街／清潭路南段（操場東緣，長 180 米）
+    const eastRoadGeo = new THREE.PlaneGeometry(16, 210);
+    const eastRoad = new THREE.Mesh(eastRoadGeo, roadMat);
+    eastRoad.rotation.x = -Math.PI / 2;
+    eastRoad.position.set(96, 0.03, 35);
+    eastRoad.receiveShadow = true;
+    this.scene.add(eastRoad);
+
+    // 3. 南側南昌街（體育館南緣，長 240 米）
+    const southRoadGeo = new THREE.PlaneGeometry(240, 16);
+    const southRoad = new THREE.Mesh(southRoadGeo, roadMat);
+    southRoad.rotation.x = -Math.PI / 2;
+    southRoad.position.set(10, 0.03, 96);
+    southRoad.receiveShadow = true;
+    this.scene.add(southRoad);
+
+    // 4. 西側民族路／清潭路西段（沿西界弧形分段道路）
+    const westRoads = [
+      { x: -95, z: 25, len: 90, rotZ: 0 },
+      { x: -90, z: -35, len: 65, rotZ: 0.28 },
+      { x: -70, z: -75, len: 60, rotZ: 0.65 }
     ];
 
-    roads.forEach(r => {
-      const roadGeo = new THREE.PlaneGeometry(r.w, r.d);
-      const road = new THREE.Mesh(roadGeo, roadMat);
-      road.rotation.x = -Math.PI / 2;
-      road.position.set(r.x, 0.03, r.z);
-      road.receiveShadow = true;
-      this.scene.add(road);
+    westRoads.forEach(wr => {
+      const wGeo = new THREE.PlaneGeometry(16, wr.len);
+      const wMesh = new THREE.Mesh(wGeo, roadMat);
+      wMesh.rotation.x = -Math.PI / 2;
+      wMesh.rotation.z = wr.rotZ;
+      wMesh.position.set(wr.x, 0.03, wr.z);
+      wMesh.receiveShadow = true;
+      this.scene.add(wMesh);
     });
+
+    // 5. 新大門前行人斑馬線
+    const zebraGroup = new THREE.Group();
+    zebraGroup.position.set(22, 0.038, -66);
+    zebraGroup.rotation.y = -0.56;
+    for (let i = -4; i <= 4; i++) {
+      const stripeGeo = new THREE.PlaneGeometry(0.8, 4.8);
+      const stripe = new THREE.Mesh(stripeGeo, this.materials.lineWhite);
+      stripe.rotation.x = -Math.PI / 2;
+      stripe.position.set(i * 1.4, 0, 0);
+      zebraGroup.add(stripe);
+    }
+    this.scene.add(zebraGroup);
   }
 
-  // --- 校園立體圍籬 ---
+  // --- 校園真實多邊形立體圍籬（依空照外廓全封閉＋留設校門開口） ---
   buildPerimeterFences() {
     const fenceRailMat = new THREE.MeshStandardMaterial({
       color: '#f8fafc',
@@ -293,31 +525,51 @@ export class CampusBuilder {
     });
     const wallBaseMat = this.materials.wallBrick;
 
+    // 精確多邊形圍籬段（已依 9 座校門扣除開口寬度）
     const fenceSegments = [
-      // 北界（清潭路）：西北角到新大門西側、新大門東側到白兔門、白兔門到無尾熊門
-      { x1: -88, z1: -100, x2: -68, z2: -100 },
-      { x1: -48, z1: -100, x2: -42, z2: -100 },
-      { x1: -30, z1: -100, x2: -10, z2: -100 },
-      { x1: 2, z1: -100, x2: 96, z2: -100 },
+      // 北界清潭路斜向段
+      { x1: -39, z1: -84, x2: -25, z2: -88 },
+      { x1: -25, z1: -88, x2: -19, z2: -82 },
+      // [留設白兔門開口: -19,-82 至 -11,-77]
+      { x1: -11, z1: -77, x2: 14, z2: -66 },
+      // [留設清潭路新大門開口: 14,-66 至 28,-58]
+      { x1: 28, z1: -58, x2: 41, z2: -29 },
+      // [留設無尾熊門開口: 41,-29 至 48,-21]
+      { x1: 48, z1: -21, x2: 61, z2: -20 },
+      { x1: 61, z1: -20, x2: 81, z2: -14 },
 
-      // 西界（民族路）：西北角到民族路門、民族路門到孔雀門、孔雀門到開元市場門、開元市場門到西南角
-      { x1: -88, z1: -100, x2: -88, z2: -78 },
-      { x1: -88, z1: -62, x2: -88, z2: -58 },
-      { x1: -88, z1: -46, x2: -88, z2: 42 },
-      { x1: -88, z1: 54, x2: -88, z2: 92 },
+      // 東界開羅街段（操場東圍籬）
+      { x1: 81, z1: -14, x2: 83, z2: 15 },
+      // [留設海豚門開口: 83,15 至 83,25]
+      { x1: 83, z1: 25, x2: 84, z2: 63 },
+      // [留設恐龍門開口: 84,63 至 84,73]
+      { x1: 84, z1: 73, x2: 86, z2: 79 },
+      { x1: 86, z1: 79, x2: 82, z2: 86 },
 
-      // 東界（開羅街/南昌街）：東北角到海豚門、海豚門到恐龍門、恐龍門到東南角
-      { x1: 96, z1: -100, x2: 96, z2: -74 },
-      { x1: 96, z1: -62, x2: 96, z2: 30 },
-      { x1: 96, z1: 42, x2: 96, z2: 92 },
+      // 南界南昌街段（體育館南緣）
+      { x1: 82, z1: 86, x2: -5, z2: 86 },
+      // [留設企鵝門開口: -5,86 至 -15,86]
+      { x1: -15, z1: 86, x2: -54, z2: 86 },
+      { x1: -54, z1: 86, x2: -65, z2: 79 },
 
-      // 南界（南昌街）：西南角到企鵝門、企鵝門到東南角（無恐龍門開口）
-      { x1: -88, z1: 92, x2: -18, z2: 92 },
-      { x1: -6, z1: 92, x2: 96, z2: 92 }
+      // 西南界開元市場段
+      { x1: -65, z1: 79, x2: -71, z2: 60 },
+      // [留設開元市場門開口: -71,60 至 -78,49]
+      { x1: -78, z1: 49, x2: -82, z2: 39 },
+      { x1: -82, z1: 39, x2: -85, z2: 10 },
+
+      // 西界民族路／清潭路西段
+      // [留設孔雀門開口: -85,10 至 -83,0]
+      { x1: -83, z1: 0, x2: -82, z2: -25 },
+      { x1: -82, z1: -25, x2: -74, z2: -50 },
+      // [留設民族路1號大門開口: -74,-50 至 -65,-59]
+      { x1: -65, z1: -59, x2: -57, z2: -72 },
+      { x1: -57, z1: -72, x2: -39, z2: -84 }
     ];
 
     fenceSegments.forEach(seg => {
       const len = Math.hypot(seg.x2 - seg.x1, seg.z2 - seg.z1);
+      if (len < 0.5) return;
       const angle = Math.atan2(seg.x2 - seg.x1, seg.z2 - seg.z1);
       const mx = (seg.x1 + seg.x2) / 2;
       const mz = (seg.z1 + seg.z2) / 2;
@@ -369,16 +621,14 @@ export class CampusBuilder {
     });
   }
 
-  // --- 校門建造：放大體積 2.5 倍，色彩鮮明極度搶眼 ---
+  // --- 校門建造：放大體積 2.5 倍，色彩鮮明極度搶眼，精確貼合圍籬走向 ---
   buildFencesAndGates() {
     const gates = BUILDINGS.filter(b => b.category === "gate");
     gates.forEach(g => {
       const gateGroup = new THREE.Group();
       gateGroup.position.set(g.x, 0, g.z);
-
-      const isNorthSouthBorder = Math.abs(g.z - (-100)) < 2 || Math.abs(g.z - 92) < 2;
-      if (!isNorthSouthBorder) {
-        gateGroup.rotation.y = Math.PI / 2;
+      if (g.rotationY !== undefined) {
+        gateGroup.rotation.y = g.rotationY;
       }
 
       // 兩側磚柱（加大加寬，威嚴醒目）
@@ -425,7 +675,6 @@ export class CampusBuilder {
   // --- 超醒目、大體積 3D 動物雕塑產生器 ---
   createAnimalSculpture(gateId) {
     const group = new THREE.Group();
-    // 使用高飽和度活潑色彩，讓動物在遠處鳥瞰時一眼就看見！
     const whiteMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25 });
     const darkMat = new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.3 });
     const blueMat = new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.2, metalness: 0.3 });
@@ -436,7 +685,7 @@ export class CampusBuilder {
     const pinkMat = new THREE.MeshStandardMaterial({ color: '#f472b6', roughness: 0.25 });
 
     if (gateId === 'gate_rabbit') {
-      // 🐰 白兔門：巨大萌萌立體大白兔（高約 6 米，圓圓胖胖、長長粉耳）
+      // 🐰 白兔門：巨大萌萌立體大白兔
       const body = new THREE.Mesh(new THREE.SphereGeometry(2.0, 20, 20), whiteMat);
       body.position.y = 1.8;
       body.castShadow = true;
@@ -447,7 +696,6 @@ export class CampusBuilder {
       head.castShadow = true;
       group.add(head);
 
-      // 巨大白兔長耳 + 粉紅耳心
       for (let ox of [-0.65, 0.65]) {
         const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 2.6, 16), whiteMat);
         ear.position.set(ox, 5.6, 0);
@@ -461,14 +709,12 @@ export class CampusBuilder {
         group.add(innerEar);
       }
 
-      // 紅眼睛
       for (let ox of [-0.45, 0.45]) {
         const eye = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), pinkMat);
         eye.position.set(ox, 4.0, 1.4);
         group.add(eye);
       }
 
-      // 手抱大胡蘿蔔
       const carrot = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.8, 12), orangeMat);
       carrot.rotation.z = 0.6;
       carrot.position.set(0.6, 2.2, 1.4);
@@ -478,7 +724,7 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_peacock') {
-      // 🦚 孔雀門：華麗翠綠開屏孔雀（扇形高達 7 米，宛如璀璨翡翠屏風）
+      // 🦚 孔雀門：華麗翠綠開屏孔雀
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 3.2, 16), blueMat);
       body.position.y = 1.8;
       body.castShadow = true;
@@ -493,7 +739,6 @@ export class CampusBuilder {
       crown.position.set(0, 4.7, 0.5);
       group.add(crown);
 
-      // 巨大開屏扇形羽毛（9 片層疊）
       for (let a = -Math.PI * 0.45; a <= Math.PI * 0.45; a += Math.PI * 0.11) {
         const feather = new THREE.Mesh(new THREE.ConeGeometry(0.55, 4.2, 8), greenMat);
         feather.position.set(Math.sin(a) * 2.2, 3.2 + Math.cos(a) * 1.8, -0.6);
@@ -501,7 +746,6 @@ export class CampusBuilder {
         feather.castShadow = true;
         group.add(feather);
 
-        // 羽翎金眼
         const eye = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), yellowMat);
         eye.position.set(Math.sin(a) * 3.4, 3.8 + Math.cos(a) * 2.6, -0.4);
         group.add(eye);
@@ -510,7 +754,7 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_koala') {
-      // 🐨 無尾熊門：巨大呆萌無尾熊（大耳朵、大黑鼻、超有存在感）
+      // 🐨 無尾熊門：巨大呆萌無尾熊
       const body = new THREE.Mesh(new THREE.SphereGeometry(2.0, 20, 20), grayMat);
       body.position.y = 1.8;
       body.castShadow = true;
@@ -521,7 +765,6 @@ export class CampusBuilder {
       head.castShadow = true;
       group.add(head);
 
-      // 超大招牌圓耳朵
       for (let ox of [-1.4, 1.4]) {
         const ear = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), grayMat);
         ear.position.set(ox, 4.6, 0);
@@ -533,7 +776,6 @@ export class CampusBuilder {
         group.add(innerEar);
       }
 
-      // 巨大黑色橢圓鼻
       const nose = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), darkMat);
       nose.scale.set(0.9, 1.3, 0.8);
       nose.position.set(0, 3.6, 1.45);
@@ -543,7 +785,7 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_dolphin') {
-      // 🐬 海豚門：巨大蔚藍躍水海豚（長 5 米，流線型破浪而起）
+      // 🐬 海豚門：巨大蔚藍躍水海豚
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.5, 4.8, 20), blueMat);
       body.rotation.z = Math.PI * 0.38;
       body.position.set(0, 2.6, 0);
@@ -555,13 +797,11 @@ export class CampusBuilder {
       belly.position.set(0.2, 2.2, 0);
       group.add(belly);
 
-      // 挺拔背鰭
       const fin = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.8, 6), blueMat);
       fin.position.set(-0.4, 3.8, 0);
       fin.rotation.z = -0.4;
       group.add(fin);
 
-      // 尾鰭
       const tailFin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.8), blueMat);
       tailFin.position.set(-1.8, 1.1, 0);
       tailFin.rotation.z = 0.4;
@@ -571,7 +811,7 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_dinosaur') {
-      // 🦖 恐龍門：霸氣亮綠暴龍（高 5.5 米，威武可愛守護南昌街）
+      // 🦖 恐龍門：霸氣亮綠暴龍
       const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 3.6), greenMat);
       body.position.y = 2.0;
       body.castShadow = true;
@@ -582,7 +822,6 @@ export class CampusBuilder {
       head.castShadow = true;
       group.add(head);
 
-      // 暴龍長長金黃背刺骨板
       for (let z of [-1.2, -0.4, 0.4, 1.2]) {
         const spine = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 4), yellowMat);
         spine.position.set(0, 3.9, z);
@@ -590,7 +829,6 @@ export class CampusBuilder {
         group.add(spine);
       }
 
-      // 萌萌大眼
       for (let ox of [-0.95, 0.95]) {
         const eye = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), yellowMat);
         eye.position.set(ox, 4.2, 1.8);
@@ -601,7 +839,7 @@ export class CampusBuilder {
     }
 
     if (gateId === 'gate_penguin') {
-      // 🐧 企鵝門：圓滾滾大企鵝（高 4.8 米，白肚肚、亮橘大嘴巴）
+      // 🐧 企鵝門：圓滾滾大企鵝
       const body = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.5, 3.6, 20), darkMat);
       body.position.y = 1.8;
       body.castShadow = true;
@@ -611,13 +849,11 @@ export class CampusBuilder {
       belly.position.set(0, 1.7, 0.6);
       group.add(belly);
 
-      // 鮮黃尖尖企鵝嘴
       const beak = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 8), orangeMat);
       beak.rotation.x = Math.PI / 2;
       beak.position.set(0, 3.0, 1.35);
       group.add(beak);
 
-      // 企鵝雙翅
       for (let ox of [-1.4, 1.4]) {
         const wing = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.2, 0.8), darkMat);
         wing.position.set(ox, 2.2, 0);
@@ -641,34 +877,51 @@ export class CampusBuilder {
     return null;
   }
 
+  // --- 依空照植被分佈佈設層次綠樹（中庭花園、操場四周、西界林蔭道） ---
   buildTrees() {
     const treePositions = [];
 
-    for (let x = -22; x <= 68; x += 9) {
-      treePositions.push({ x, z: -98, scale: 1.15 + (x % 3) * 0.1 });
-    }
-    for (let z = -94; z <= -42; z += 9) {
-      treePositions.push({ x: 72, z, scale: 1.2 + (z % 2) * 0.1 });
+    // 1. 操場西側與中庭綠帶樹群
+    for (let z = -2; z <= 65; z += 11) {
+      treePositions.push({ x: 26, z, scale: 1.25 + (z % 2) * 0.1 });
     }
 
-    for (let z = -70; z <= 20; z += 10) {
-      treePositions.push({ x: -82, z, scale: 1.1 });
+    // 2. 操場東緣開羅街圍籬林蔭
+    for (let z = 0; z <= 70; z += 14) {
+      treePositions.push({ x: 80, z, scale: 1.15 });
     }
 
-    treePositions.push({ x: -42, z: -30, scale: 1.3 });
-    treePositions.push({ x: -42, z: -10, scale: 1.4 });
-    treePositions.push({ x: -42, z: 10, scale: 1.35 });
-    treePositions.push({ x: -42, z: 25, scale: 1.2 });
+    // 3. 操場北側綠草坪樹群
+    for (let x = 40; x <= 75; x += 10) {
+      treePositions.push({ x, z: -18, scale: 1.2 });
+    }
 
-    for (let z = -40; z <= 50; z += 15) {
-      treePositions.push({ x: 88, z, scale: 1.15 });
+    // 4. 西界清潭路西段與迎曦樓西側林蔭道
+    for (let z = -50; z <= 35; z += 12) {
+      treePositions.push({ x: -75, z, scale: 1.2 + (z % 3) * 0.08 });
+    }
+
+    // 5. 百齡樓與迎曦樓迎風中庭花園造景樹
+    treePositions.push({ x: -36, z: -35, scale: 1.35 });
+    treePositions.push({ x: -36, z: -20, scale: 1.4 });
+    treePositions.push({ x: -36, z: -5, scale: 1.3 });
+    treePositions.push({ x: -36, z: 12, scale: 1.25 });
+
+    // 6. 圓形展演涼亭周邊造景樹
+    treePositions.push({ x: 29, z: 46, scale: 1.2 });
+    treePositions.push({ x: 16, z: 44, scale: 1.15 });
+    treePositions.push({ x: 28, z: 30, scale: 1.2 });
+
+    // 7. 南界南昌街圍籬綠帶
+    for (let x = -40; x <= 0; x += 12) {
+      treePositions.push({ x, z: 82, scale: 1.1 });
     }
 
     treePositions.forEach((pos, idx) => {
       const tree = new THREE.Group();
       tree.position.set(pos.x, 0, pos.z);
 
-      const trunkGeo = new THREE.CylinderGeometry(0.4 * pos.scale, 0.55 * pos.scale, 3.2 * pos.scale, 8);
+      const trunkGeo = new THREE.CylinderGeometry(0.38 * pos.scale, 0.52 * pos.scale, 3.2 * pos.scale, 8);
       const trunk = new THREE.Mesh(trunkGeo, this.materials.trunk);
       trunk.position.y = 1.6 * pos.scale;
       trunk.castShadow = true;

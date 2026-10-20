@@ -43,9 +43,9 @@ export class CampusScene {
 
   initCamera() {
     this.camera = new THREE.PerspectiveCamera(40, this.width / this.height, 1, 1000);
-    // 預設經典視角：西南方斜側眺望
-    this.defaultCameraPos = new THREE.Vector3(-115, 62, 100);
-    this.defaultTarget = new THREE.Vector3(5, 4, -8);
+    // 預設經典視角：西南方斜側眺望全校真實輪廓
+    this.defaultCameraPos = new THREE.Vector3(-110, 85, 125);
+    this.defaultTarget = new THREE.Vector3(5, 5, 8);
     this.camera.position.copy(this.defaultCameraPos);
   }
 
@@ -83,10 +83,14 @@ export class CampusScene {
       // 濃郁大地草皮（鮮翠深草綠，托起整座校園）
       grass: createMat('#327838', 0.7, 0),         // 鮮翠校園草皮
       field: createMat('#225e26', 0.65, 0),        // 足球場深蔥綠
-      track: createMat('#b5271a', 0.45, 0.05),     // 鮮豔紅赭色 200M PU 跑道
+      track: createMat('#1f4d8c', 0.45, 0.05),     // 空照真實湛藍色 200M PU 跑道
+      court: createMat('#d89b53', 0.55, 0.05),     // 內圈排球/籃球場暖褐橙地坪
+      courtInner: createMat('#307a3c', 0.65, 0.05),// 內圈綠茵球場
+      solarPanel: createMat('#121b26', 0.3, 0.8),  // 現代化太陽能光電板
       road: createMat('#22282e', 0.6, 0.1),        // 沉穩深黑灰瀝青路面
       roadLine: new THREE.LineBasicMaterial({ color: '#f5c518', linewidth: 3 }),
       pave: createMat('#ba9f72', 0.55, 0.05),      // 中庭溫潤黃褐石磚鋪面
+      parkingPave: createMat('#2c353d', 0.65, 0.05),// 停車場柏油鋪面
       lineWhite: new THREE.LineBasicMaterial({ color: '#ffffff', linewidth: 2 }),
 
       // 校舍立面：色彩飽滿、厚實，不再灰白
@@ -94,6 +98,7 @@ export class CampusScene {
       xiaoyou: createMat('#cc9847', 0.45),         // 校友館：溫潤亮金麥色石
       yingxi_north: createMat('#aa8c61', 0.45),    // 迎曦樓：厚實深奶茶棕
       yingxi_south: createMat('#aa8c61', 0.45),
+      bailing_wave: createMat('#876d54', 0.45),    // 百齡樓綠波浪綜合棟
       bailing_main: createMat('#876d54', 0.45),    // 百齡樓：大氣赭紅灰褐
       bailing_kindergarten: createMat('#e69a24', 0.45), // 幼兒園：活潑亮金橙
       gymnasium: createMat('#4f8562', 0.45),       // 樹人館：蒼翠鋼構
@@ -104,6 +109,8 @@ export class CampusScene {
       wallBrick: createMat('#8f2a1b', 0.55),       // 濃郁磚紅大門柱
       roofRed: createMat('#7d1d12', 0.35),         // 鮮濃深紅瓦
       roofGreen: createMat('#134226', 0.35),       // 濃郁墨綠圓拱頂
+      roofWaveGreen: createMat('#287042', 0.35),   // 翠綠波浪圓拱屋頂
+      roofWaveBeige: createMat('#dfd3ba', 0.45),   // 米黃波浪圓拱飾條
       roofDark: createMat('#1b2126', 0.45),        // 俐落深色女兒牆壓頂
 
       // 深邃反光鍍膜窗格（高反差金屬反光）
@@ -160,7 +167,7 @@ export class CampusScene {
 
   setTopView() {
     this.controls.target.copy(this.defaultTarget);
-    this.camera.position.set(5, 175, -8);
+    this.camera.position.set(5, 210, 8);
   }
 
   onWindowResize() {

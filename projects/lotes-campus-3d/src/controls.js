@@ -33,9 +33,9 @@ export class ViewController {
       this.campus.setTopView();
     } else if (mode === 'walk') {
       this.controls.enabled = false;
-      // 將相機置放於民族路新大門入口處開始漫遊
-      this.camera.position.set(-68, this.walkHeight, -60);
-      this.yaw = Math.PI * 0.25; // 面向校園中庭東北方
+      // 將相機置放於清潭路新大門入口迎賓廣場處開始漫遊
+      this.camera.position.set(18, this.walkHeight, -52);
+      this.yaw = Math.PI * 0.75; // 面向校園西南核心區
       this.pitch = 0;
       this.updateWalkRotation();
     }
