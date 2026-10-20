@@ -5,12 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>羅東國民小學 3D 校園導覽地圖 ｜ LOTES Campus 3D</title>
   
-  <!-- 優雅霞鶩文楷手寫字體與 Inter 英文英數 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-  
-  <!-- Lucide 圖示庫 -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
@@ -21,9 +18,9 @@
       --primary: #2d6a4f;
       --primary-light: #40916c;
       --accent: #d4a373;
-      --panel-bg: rgba(255, 255, 255, 0.88);
-      --panel-border: rgba(45, 106, 79, 0.14);
-      --panel-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+      --panel-bg: rgba(255, 255, 255, 0.92);
+      --panel-border: rgba(45, 106, 79, 0.18);
+      --panel-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
       --radius: 14px;
       --font-family: "LXGW WenKai TC", "Noto Sans TC", sans-serif;
     }
@@ -59,13 +56,13 @@
       outline: none;
     }
 
-    /* 頂部導覽列 */
+    /* 頂部列 */
     .topbar {
       position: absolute;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      height: 60px;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      height: 56px;
       background: var(--panel-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--panel-border);
@@ -74,33 +71,33 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 16px;
       z-index: 20;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       text-decoration: none;
       color: var(--text-main);
     }
 
     .brand-logo {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       background: var(--primary);
       color: #fff;
-      border-radius: 10px;
+      border-radius: 9px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 19px;
+      font-size: 18px;
     }
 
     .brand-title strong {
-      font-size: 18px;
+      font-size: 17px;
       letter-spacing: 0.5px;
       display: block;
     }
@@ -108,22 +105,22 @@
     .brand-title small {
       font-size: 11px;
       color: var(--text-muted);
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
 
     .nav-links {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
 
     .nav-btn {
       background: none;
       border: none;
-      padding: 8px 14px;
+      padding: 7px 12px;
       border-radius: 8px;
       cursor: pointer;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--text-main);
       display: flex;
       align-items: center;
@@ -136,13 +133,13 @@
       color: var(--primary);
     }
 
-    /* 左側校園探索邊欄 */
+    /* 左側邊欄（支援一鍵收合） */
     .sidebar {
       position: absolute;
-      top: 92px;
-      left: 16px;
-      bottom: 24px;
-      width: 320px;
+      top: 82px;
+      left: 14px;
+      bottom: 20px;
+      width: 310px;
       background: var(--panel-bg);
       backdrop-filter: blur(14px);
       border: 1px solid var(--panel-border);
@@ -152,13 +149,49 @@
       flex-direction: column;
       z-index: 20;
       padding: 16px;
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-340px);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
     }
 
     .sidebar-header h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
+      font-size: 17px;
       color: var(--primary);
+    }
+
+    /* 邊欄浮動收合／展開按鈕 */
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 82px;
+      left: 14px;
+      width: 42px;
+      height: 42px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      box-shadow: var(--panel-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 19;
+      color: var(--primary);
+      transition: all 0.2s;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: #ffffff;
+      transform: scale(1.05);
     }
 
     .searchbox {
@@ -177,7 +210,7 @@
       outline: none;
       width: 100%;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13.5px;
       background: transparent;
     }
 
@@ -220,7 +253,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 9px 12px;
+      padding: 8px 11px;
       background: #ffffff;
       border: 1px solid #e3ebe5;
       border-radius: 8px;
@@ -245,12 +278,12 @@
       align-items: center;
       justify-content: center;
       color: var(--primary);
-      margin-right: 10px;
+      margin-right: 8px;
     }
 
     .place-name {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
       display: block;
     }
 
@@ -262,22 +295,22 @@
     /* 右上視角與工具列 */
     .view-switch {
       position: absolute;
-      top: 92px;
-      right: 16px;
+      top: 82px;
+      right: 14px;
       background: var(--panel-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--panel-border);
       border-radius: var(--radius);
-      padding: 6px;
+      padding: 5px;
       display: flex;
-      gap: 6px;
+      gap: 5px;
       z-index: 20;
     }
 
     .view-switch button {
       background: none;
       border: none;
-      padding: 8px 12px;
+      padding: 7px 11px;
       border-radius: 8px;
       cursor: pointer;
       font-family: inherit;
@@ -295,22 +328,22 @@
 
     .map-toolbar {
       position: absolute;
-      top: 154px;
-      right: 16px;
+      top: 142px;
+      right: 14px;
       background: var(--panel-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--panel-border);
       border-radius: var(--radius);
-      padding: 6px;
+      padding: 5px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
       z-index: 20;
     }
 
     .tool-btn {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       border: none;
       background: none;
       border-radius: 8px;
@@ -332,18 +365,18 @@
       color: var(--primary);
     }
 
-    /* 地點介紹滑出卡片 */
+    /* 詳細卡片 */
     .detail-card {
       position: absolute;
-      bottom: 24px;
-      right: 16px;
-      width: 360px;
+      bottom: 20px;
+      right: 14px;
+      width: 350px;
       background: var(--panel-bg);
       backdrop-filter: blur(14px);
       border: 1px solid var(--panel-border);
       box-shadow: var(--panel-shadow);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 18px;
       z-index: 20;
       transform: translateY(120%);
       opacity: 0;
@@ -359,32 +392,32 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .detail-card h3 {
-      font-size: 20px;
+      font-size: 19px;
       color: var(--primary);
     }
 
     .detail-category {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-muted);
       margin-bottom: 10px;
       display: block;
     }
 
     .detail-card p {
-      font-size: 14px;
+      font-size: 13.5px;
       line-height: 1.6;
-      color: #3b4d41;
-      margin-bottom: 14px;
+      color: #38493d;
+      margin-bottom: 12px;
     }
 
     .tag-container {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
       margin-bottom: 12px;
     }
 
@@ -403,28 +436,33 @@
       color: var(--text-muted);
     }
 
-    /* 底部操作與巡航 Bar */
+    /* 底部操作 */
     .bottom-bar {
       position: absolute;
-      bottom: 24px;
-      left: 356px;
+      bottom: 20px;
+      left: 340px;
       display: flex;
       gap: 10px;
       z-index: 20;
+      transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed ~ .bottom-bar {
+      left: 70px;
     }
 
     .pill-btn {
       background: var(--panel-bg);
       backdrop-filter: blur(10px);
       border: 1px solid var(--panel-border);
-      padding: 10px 18px;
+      padding: 9px 16px;
       border-radius: 30px;
       cursor: pointer;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13.5px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       box-shadow: var(--panel-shadow);
       transition: all 0.2s;
     }
@@ -436,8 +474,8 @@
 
     .tourbar {
       position: absolute;
-      bottom: 74px;
-      left: 356px;
+      bottom: 68px;
+      left: 340px;
       background: var(--panel-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--panel-border);
@@ -445,13 +483,18 @@
       padding: 8px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       box-shadow: var(--panel-shadow);
       z-index: 20;
+      transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed ~ .tourbar {
+      left: 70px;
     }
 
     .tour-progress {
-      width: 100px;
+      width: 90px;
       height: 4px;
       background: #dce5de;
       border-radius: 2px;
@@ -466,7 +509,6 @@
       transition: width 0.3s;
     }
 
-    /* 第一人稱漫遊提示 */
     .walk-controls {
       position: absolute;
       bottom: 24px;
@@ -481,10 +523,9 @@
       z-index: 25;
     }
 
-    /* 彈出對話框 */
     dialog {
       margin: auto;
-      padding: 24px;
+      padding: 22px;
       border: 1px solid var(--panel-border);
       border-radius: var(--radius);
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
@@ -506,22 +547,22 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       border-bottom: 1px solid #edf2ee;
-      padding-bottom: 12px;
+      padding-bottom: 10px;
     }
 
     .dialog-header h2 {
       color: var(--primary);
-      font-size: 22px;
+      font-size: 21px;
     }
 
     .office-group {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .office-group h3 {
-      font-size: 16px;
+      font-size: 15.5px;
       color: var(--text-main);
       display: flex;
       align-items: center;
@@ -531,14 +572,14 @@
 
     .office-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
       gap: 8px;
     }
 
     .office-item {
       background: #f7faf8;
       border: 1px solid #e2ede5;
-      padding: 10px 12px;
+      padding: 9px 12px;
       border-radius: 8px;
       display: flex;
       gap: 10px;
@@ -557,12 +598,12 @@
     .grade-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
+      font-size: 13.5px;
     }
 
     .grade-table th, .grade-table td {
       border: 1px solid #e2ece5;
-      padding: 10px 14px;
+      padding: 9px 12px;
       text-align: left;
     }
 
@@ -571,11 +612,10 @@
       color: var(--primary);
     }
 
-    /* 載入中動畫 */
     #loading {
       position: absolute;
       inset: 0;
-      background: #eaf2ec;
+      background: #dbe7df;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -602,7 +642,6 @@
 </head>
 <body>
   <div id="app">
-    <!-- 頂部列 -->
     <header class="topbar">
       <a class="brand" href="#">
         <div class="brand-logo">羅</div>
@@ -627,7 +666,6 @@
       </nav>
     </header>
 
-    <!-- 3D 畫布容器 -->
     <main id="scene" tabindex="0">
       <div id="loading">
         <div class="spinner"></div>
@@ -635,10 +673,16 @@
       </div>
     </main>
 
-    <!-- 左側探索邊欄 -->
-    <aside class="sidebar">
+    <!-- 展開側欄的小按鈕 -->
+    <button class="sidebar-toggle-btn" id="sidebar-open-btn" title="展開校園清單" style="display: none;">
+      <i data-lucide="menu"></i>
+    </button>
+
+    <!-- 左側邊欄 -->
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <h2>漫遊羅東國小</h2>
+        <button class="close-btn" id="sidebar-close-btn" title="收合面板"><i data-lucide="chevron-left"></i></button>
       </div>
       <div class="searchbox">
         <i data-lucide="search"></i>
@@ -655,14 +699,12 @@
       <div class="place-list" id="place-list"></div>
     </aside>
 
-    <!-- 右上視角切換器 -->
     <div class="view-switch">
       <button class="active" data-mode="orbit"><i data-lucide="box"></i>3D 鳥瞰</button>
       <button data-mode="top"><i data-lucide="map"></i>俯視</button>
       <button data-mode="walk"><i data-lucide="footprints"></i>地面漫遊</button>
     </div>
 
-    <!-- 右側地圖工具列 -->
     <div class="map-toolbar">
       <button class="tool-btn" id="compass" title="指北針">
         <i data-lucide="compass"></i>
@@ -681,7 +723,6 @@
       </button>
     </div>
 
-    <!-- 地點詳細卡片 -->
     <section class="detail-card" id="detail-card">
       <div class="detail-header">
         <h3 id="detail-title">校舍名稱</h3>
@@ -692,14 +733,12 @@
       <div class="tag-container" id="detail-tags"></div>
     </section>
 
-    <!-- 底部功能與巡航列 -->
     <div class="bottom-bar">
       <button class="pill-btn" id="tour-btn">
         <i data-lucide="play"></i>精選校園巡航（12 站）
       </button>
     </div>
 
-    <!-- 巡航播放器 -->
     <div class="tourbar" id="tourbar" hidden>
       <button class="close-btn" id="tour-prev"><i data-lucide="skip-back"></i></button>
       <span id="tour-counter" style="font-size: 13px; font-weight: 700;">01 / 12</span>
@@ -709,12 +748,10 @@
       <button class="close-btn" id="tour-close"><i data-lucide="x"></i></button>
     </div>
 
-    <!-- 第一人稱行走提示 -->
     <div class="walk-controls" id="walk-controls" hidden>
       按鍵盤 WASD 或方向鍵行走 · 滑鼠拖曳環顧四周 · 按 Esc 返回鳥瞰
     </div>
 
-    <!-- 處室總覽彈窗 -->
     <dialog id="offices-dialog">
       <div class="dialog-header">
         <h2>行政處室與專科教室配置表</h2>
@@ -723,7 +760,6 @@
       <div id="offices-content"></div>
     </dialog>
 
-    <!-- 年級教室彈窗 -->
     <dialog id="grades-dialog">
       <div class="dialog-header">
         <h2>115 學年度全校年級教室配置</h2>
@@ -732,7 +768,6 @@
       <div id="grades-content"></div>
     </dialog>
 
-    <!-- 2D 平面地圖彈窗 -->
     <dialog id="map-dialog" style="max-width: 880px;">
       <div class="dialog-header">
         <h2>羅東國小校園平面與防災避難地圖</h2>
@@ -742,7 +777,6 @@
     </dialog>
   </div>
 
-  <!-- 主邏輯程式碼載入 -->
   <script type="module" src="src/app.js"></script>
 </body>
 </html>

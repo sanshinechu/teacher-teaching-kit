@@ -113,6 +113,21 @@ class App {
   }
 
   setupEvents() {
+    // 側邊欄收合與展開
+    const sidebar = document.getElementById('sidebar');
+    const openBtn = document.getElementById('sidebar-open-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+
+    closeBtn?.addEventListener('click', () => {
+      sidebar?.classList.add('collapsed');
+      if (openBtn) openBtn.style.display = 'flex';
+    });
+
+    openBtn?.addEventListener('click', () => {
+      sidebar?.classList.remove('collapsed');
+      if (openBtn) openBtn.style.display = 'none';
+    });
+
     // 點選清單項目
     document.getElementById('place-list')?.addEventListener('click', (e) => {
       const btn = e.target.closest('.place-item');
@@ -218,7 +233,7 @@ class App {
       this.prevTourStation();
     });
 
-    // 彈出對話框（處室總覽、年級教室、校園平面圖）
+    // 彈出對話框
     document.getElementById('offices-btn')?.addEventListener('click', () => {
       document.getElementById('offices-dialog')?.showModal();
     });
@@ -345,7 +360,7 @@ class App {
     this.viewController.update(deltaTime);
     this.sceneManager.render();
 
-    // 更新指北針動態旋轉
+    // 指北針旋轉
     const compassSvg = document.querySelector('#compass svg');
     if (compassSvg && this.sceneManager.camera) {
       const dir = new THREE.Vector3();
