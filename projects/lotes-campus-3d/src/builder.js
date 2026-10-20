@@ -58,12 +58,12 @@ export class CampusBuilder {
 
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
-    // 操場跑道中心：X=40（東側開闊帶）、Z=8（南北向長軸中點）
-    trackGroup.position.set(40, 0.12, 8);
+    // 操場跑道中心：X=32（東側操場帶，與東側體育館/科學館隔開 14 米）、Z=6（南北向長軸中點）
+    trackGroup.position.set(32, 0.12, 6);
 
     // 南北向標準 200M 跑道幾何形狀（直線跑道沿 Z 軸長 38 米，兩端半圓沿 X 軸半徑 24 米）
     const slen = 19; // 直線段半長 (Z 軸向從 -19 到 +19，全長 38 米)
-    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米)
+    const r = 24;    // 彎道外半徑 (X 軸向從 -24 到 +24，跑道全寬 48 米，範圍 X: 8 到 56)
 
     const trackShape = new THREE.Shape();
     // 從北端彎道起點出發 (順時針繪製)
