@@ -155,7 +155,7 @@ export const BUILDINGS = [
     name: "清潭路新大門警衛室",
     category: "service",
     categoryName: "門禁安全",
-    x: -62,
+    x: -74,
     z: -92,
     y: 0,
     w: 10,
@@ -204,8 +204,8 @@ export const BUILDINGS = [
     name: "清潭路新大門（正門）",
     category: "gate",
     categoryName: "校園大門",
-    x: -72,
-    z: -100, // 準確嵌在北界清潭路圍籬線上
+    x: -58,
+    z: -100, // 準確嵌在北界清潭路圍籬線上（位於警衛室東側）
     y: 0,
     w: 16,
     d: 3,
