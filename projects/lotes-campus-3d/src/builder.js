@@ -1231,8 +1231,8 @@ export class CampusBuilder {
   buildTrees() {
     const treePositions = [];
 
-    // 1. 操場西側與中庭綠帶樹群
-    for (let z = -2; z <= 65; z += 11) {
+    // 1. 操場西側與中庭綠帶樹群（避開司令台 X:22~30, Z:24~44 與圓形涼亭）
+    for (let z of [-2, 9, 20, 52, 64]) {
       treePositions.push({ x: 26, z, scale: 1.25 + (z % 2) * 0.1 });
     }
 
@@ -1255,12 +1255,10 @@ export class CampusBuilder {
     treePositions.push({ x: -36, z: -35, scale: 1.35 });
     treePositions.push({ x: -36, z: -20, scale: 1.4 });
     treePositions.push({ x: -36, z: -5, scale: 1.3 });
-    treePositions.push({ x: -36, z: 12, scale: 1.25 });
+    treePositions.push({ x: -34, z: 8, scale: 1.25 });
 
-    // 6. 圓形展演涼亭周邊造景樹
-    treePositions.push({ x: 29, z: 46, scale: 1.2 });
-    treePositions.push({ x: 16, z: 44, scale: 1.15 });
-    treePositions.push({ x: 28, z: 30, scale: 1.2 });
+    // 6. 圓形展演涼亭周邊造景樹（置於涼亭外圍西南花圃，不壓建築）
+    treePositions.push({ x: 14, z: 46, scale: 1.15 });
 
     // 7. 南界南昌街圍籬綠帶
     for (let x = -40; x <= 0; x += 12) {
