@@ -345,52 +345,52 @@ export class CampusBuilder {
 
       // 主體量體
       if (b.id === "bailing") {
-        // 🏛️ 百齡樓雙翼複合建築群（依空照紅框兩道箭頭精確構建雙翼連通大樓）
+        // 🏛️ 百齡樓雙翼複合建築群（依空照紅框兩道箭頭精確構建雙翼連通大樓，適度縮小量體退縮）
         // 北翼：高年級教學棟
-        const w1Geo = new THREE.BoxGeometry(22, b.h, 32);
+        const w1Geo = new THREE.BoxGeometry(18, b.h, 26);
         const w1 = new THREE.Mesh(w1Geo, this.materials.wallCream);
-        w1.position.set(-11, b.h / 2, -7);
+        w1.position.set(-9, b.h / 2, -6);
         w1.castShadow = true;
         w1.receiveShadow = true;
         w1.userData = { ...b };
         group.add(w1);
         this.interactiveObjects.push(w1);
 
-        const edge1 = new THREE.Mesh(new THREE.BoxGeometry(22.8, 0.6, 32.8), this.materials.roofDark);
-        edge1.position.set(-11, b.h + 0.3, -7);
+        const edge1 = new THREE.Mesh(new THREE.BoxGeometry(18.6, 0.5, 26.6), this.materials.roofDark);
+        edge1.position.set(-9, b.h + 0.25, -6);
         edge1.castShadow = true;
         group.add(edge1);
 
-        const solar1 = new THREE.Mesh(new THREE.BoxGeometry(16, 0.2, 24), this.materials.solarPanel);
-        solar1.position.set(-11, b.h + 0.9, -7);
+        const solar1 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.15, 20), this.materials.solarPanel);
+        solar1.position.set(-9, b.h + 0.7, -6);
         solar1.rotation.x = 0.08;
         group.add(solar1);
 
         // 南翼：生活、幼兒園與中央廚房棟
-        const h2 = 13.5;
-        const w2Geo = new THREE.BoxGeometry(32, h2, 22);
+        const h2 = 12.0;
+        const w2Geo = new THREE.BoxGeometry(26, h2, 17);
         const w2 = new THREE.Mesh(w2Geo, this.materials.wallCream);
-        w2.position.set(15, h2 / 2, 14);
+        w2.position.set(12, h2 / 2, 11);
         w2.castShadow = true;
         w2.receiveShadow = true;
         w2.userData = { ...b };
         group.add(w2);
         this.interactiveObjects.push(w2);
 
-        const edge2 = new THREE.Mesh(new THREE.BoxGeometry(32.8, 0.6, 22.8), this.materials.roofDark);
-        edge2.position.set(15, h2 + 0.3, 14);
+        const edge2 = new THREE.Mesh(new THREE.BoxGeometry(26.6, 0.5, 17.6), this.materials.roofDark);
+        edge2.position.set(12, h2 + 0.25, 11);
         edge2.castShadow = true;
         group.add(edge2);
 
-        const solar2 = new THREE.Mesh(new THREE.BoxGeometry(24, 0.2, 15), this.materials.solarPanel);
-        solar2.position.set(15, h2 + 0.9, 14);
+        const solar2 = new THREE.Mesh(new THREE.BoxGeometry(20, 0.15, 12), this.materials.solarPanel);
+        solar2.position.set(12, h2 + 0.7, 11);
         solar2.rotation.z = -0.06;
         group.add(solar2);
 
         // 轉角連通穿堂
-        const cornerGeo = new THREE.BoxGeometry(14, 15, 14);
+        const cornerGeo = new THREE.BoxGeometry(11, 13, 11);
         const corner = new THREE.Mesh(cornerGeo, this.materials.wallCream);
-        corner.position.set(-2, 7.5, 6);
+        corner.position.set(-1, 6.5, 4);
         corner.castShadow = true;
         corner.userData = { ...b };
         group.add(corner);
@@ -439,16 +439,16 @@ export class CampusBuilder {
         group.add(roofGroup);
       } else if (b.id === "science") {
         // 🏛️ 科學館：頂樓天文台圓頂
-        const domeGeo = new THREE.SphereGeometry(3.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        const domeGeo = new THREE.SphereGeometry(2.4, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
         const dome = new THREE.Mesh(domeGeo, this.materials.wallWhite);
-        dome.position.set(0, b.h + 0.6, 0);
+        dome.position.set(0, b.h + 0.4, 0);
         dome.castShadow = true;
         group.add(dome);
 
-        const ringGeo = new THREE.TorusGeometry(3.6, 0.25, 8, 24);
+        const ringGeo = new THREE.TorusGeometry(2.5, 0.18, 8, 24);
         const ring = new THREE.Mesh(ringGeo, this.materials.metal);
         ring.rotation.x = Math.PI / 2;
-        ring.position.set(0, b.h + 0.6, 0);
+        ring.position.set(0, b.h + 0.4, 0);
         group.add(ring);
       } else if (b.id === "xiaoyou") {
         // 🏛️ 校友館：二層挑高，屋頂滿鋪太陽能光電板陣列
@@ -542,7 +542,7 @@ export class CampusBuilder {
       [
         { x: -56, z: -11 },
         { x: -54, z: 2 },
-        { x: -46, z: 17 }
+        { x: -53, z: 19 }
       ],
       // 3. 校友館 ↔ 體育館（樹人館）南北向行人通廊（依紅線由校友館南端直通體育館北門）
       [
@@ -1260,8 +1260,8 @@ export class CampusBuilder {
     // 6. 圓形展演涼亭周邊造景樹（置於涼亭外圍西南花圃，不壓建築）
     treePositions.push({ x: 14, z: 46, scale: 1.15 });
 
-    // 7. 南界南昌街圍籬綠帶
-    for (let x = -40; x <= 0; x += 12) {
+    // 7. 南界南昌街圍籬綠帶（避開科學館 X:-31~-19 與企鵝門 X:-15~-5）
+    for (let x of [-48, -38, -17, 2]) {
       treePositions.push({ x, z: 82, scale: 1.1 });
     }
 
