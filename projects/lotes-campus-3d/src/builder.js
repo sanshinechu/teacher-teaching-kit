@@ -1262,10 +1262,7 @@ export class CampusBuilder {
     treePositions.push({ x: -36, z: -5, scale: 1.3 });
     treePositions.push({ x: -34, z: 8, scale: 1.25 });
 
-    // 6. 圓形展演涼亭周邊造景樹（置於涼亭外圍西南花圃，不壓建築）
-    treePositions.push({ x: 14, z: 46, scale: 1.15 });
-
-    // 7. 南界南昌街圍籬綠帶（避開科學館 X:-31~-19 與企鵝門 X:-15~-5）
+    // 6. 南界南昌街圍籬綠帶（避開科學館 X:-31~-19 與企鵝門 X:-15~-5）
     for (let x of [-48, -38, -17, 2]) {
       treePositions.push({ x, z: 82, scale: 1.1 });
     }
