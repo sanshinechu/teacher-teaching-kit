@@ -78,19 +78,19 @@ export class CampusBuilder {
       this.scene.add(lineMesh);
     }
 
-    // 4. 西南教職員停車場
-    const swPlazaGeo = new THREE.PlaneGeometry(26, 24);
+    // 4. 西南教職員停車場（收納於圍牆內側，完全不超出圍籬）
+    const swPlazaGeo = new THREE.PlaneGeometry(21, 18);
     const swPlaza = new THREE.Mesh(swPlazaGeo, this.materials.parkingPave);
     swPlaza.rotation.x = -Math.PI / 2;
-    swPlaza.position.set(-62, 0.08, 52);
+    swPlaza.position.set(-56, 0.08, 49);
     swPlaza.receiveShadow = true;
     this.scene.add(swPlaza);
 
-    for (let i = -3; i <= 3; i++) {
-      const lineGeo = new THREE.PlaneGeometry(0.18, 5.2);
+    for (let i = -2.5; i <= 2.5; i++) {
+      const lineGeo = new THREE.PlaneGeometry(0.18, 5.0);
       const lineMesh = new THREE.Mesh(lineGeo, this.materials.lineWhite);
       lineMesh.rotation.x = -Math.PI / 2;
-      lineMesh.position.set(-62 + i * 2.8, 0.09, 52);
+      lineMesh.position.set(-56 + i * 2.8, 0.09, 49);
       this.scene.add(lineMesh);
     }
 
