@@ -608,7 +608,6 @@ export class CampusBuilder {
       }
     });
   }
-  }
 
   // --- 開放式風雨操場（挑高鋼構柱列、無封閉牆面，內設標準多功能球場） ---
   buildWindRainCourt(group, b) {
