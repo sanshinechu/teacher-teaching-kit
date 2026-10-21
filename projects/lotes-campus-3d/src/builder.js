@@ -574,12 +574,12 @@ export class CampusBuilder {
         { x: -24, z: -68 },
         { x: -12, z: -58 }
       ],
-      // 2. 迎曦樓 ↔ 百齡樓（依實景紅線：由迎曦樓東南側向東延伸，南折後再向東連入百齡樓）
+      // 2. 迎曦樓 ↔ 百齡樓（嚴格依實景紅線：迎曦樓東南側向東延伸，南折直貫中庭，向東直角連入百齡樓）
       [
-        { x: -46, z: -11 },
-        { x: -38, z: -11 },
-        { x: -38, z: 15 },
-        { x: -32, z: 15 }
+        { x: -44, z: -12 },
+        { x: -35, z: -12 },
+        { x: -35, z: 19 },
+        { x: -28, z: 19 }
       ],
       // 3. 校友館 ↔ 體育館（樹人館）南北向行人通廊（依紅線由校友館南端直通體育館北門）
       [
@@ -591,6 +591,7 @@ export class CampusBuilder {
     ];
 
     corridors.forEach(path => {
+      // 1. 各節段走廊本體
       for (let i = 0; i < path.length - 1; i++) {
         const p1 = path[i];
         const p2 = path[i + 1];
@@ -600,49 +601,77 @@ export class CampusBuilder {
         const angle = Math.atan2(dx, dz);
         const mx = (p1.x + p2.x) / 2;
         const mz = (p1.z + p2.z) / 2;
-        const w = 2.4;
+        const w = 2.8;
 
-        // 地坪水泥步道
-        const pathGeo = new THREE.BoxGeometry(w, 0.12, len);
+        // 地坪水泥步道（微抬升 0.08m，防止地面 z-fighting）
+        const pathGeo = new THREE.BoxGeometry(w, 0.15, len);
         const pathMesh = new THREE.Mesh(pathGeo, paveMat);
-        pathMesh.position.set(mx, 0.06, mz);
+        pathMesh.position.set(mx, 0.08, mz);
         pathMesh.rotation.y = angle;
         pathMesh.receiveShadow = true;
         this.scene.add(pathMesh);
 
-        // 遮雨棚頂（高雅淺暖色波浪頂棚）
-        const roofGeo = new THREE.BoxGeometry(w + 0.3, 0.18, len + 0.2);
+        // 遮雨棚頂（高雅淺暖米色波浪頂棚，微弧拱頂增加立體層次）
+        const roofGeo = new THREE.BoxGeometry(w + 0.35, 0.22, len + 0.15);
         const roofMesh = new THREE.Mesh(roofGeo, roofMat);
-        roofMesh.position.set(mx, 3.1, mz);
+        roofMesh.position.set(mx, 3.25, mz);
         roofMesh.rotation.y = angle;
         roofMesh.castShadow = true;
         this.scene.add(roofMesh);
 
-        // 金屬結構支撐縱樑（設置於頂棚下方兩側，避免頂部整條黑化）
-        const edgeGeo = new THREE.BoxGeometry(w + 0.15, 0.08, len + 0.15);
+        // 棚頂中央高光脊樑
+        const ridgeGeo = new THREE.BoxGeometry(0.3, 0.1, len + 0.15);
+        const ridge = new THREE.Mesh(ridgeGeo, pillarMat);
+        ridge.position.set(mx, 3.38, mz);
+        ridge.rotation.y = angle;
+        this.scene.add(ridge);
+
+        // 金屬結構支撐縱樑（設置於頂棚下方兩側）
+        const edgeGeo = new THREE.BoxGeometry(w + 0.1, 0.08, len + 0.1);
         const edgeMesh = new THREE.Mesh(edgeGeo, pillarMat);
-        edgeMesh.position.set(mx, 2.98, mz);
+        edgeMesh.position.set(mx, 3.12, mz);
         edgeMesh.rotation.y = angle;
         this.scene.add(edgeMesh);
 
-        // 兩側金屬圓柱
-        const pillarCount = Math.max(2, Math.floor(len / 4.0));
+        // 兩側金屬圓柱（間距約 3.5~4 米一根）
+        const pillarCount = Math.max(2, Math.floor(len / 3.8));
         for (let k = 0; k <= pillarCount; k++) {
           const t = k / pillarCount;
           const px = p1.x + dx * t;
           const pz = p1.z + dz * t;
-          for (let side of [-w / 2 + 0.18, w / 2 - 0.18]) {
+          for (let side of [-w / 2 + 0.2, w / 2 - 0.2]) {
             const pillar = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.09, 0.09, 3.0, 10),
+              new THREE.CylinderGeometry(0.09, 0.09, 3.15, 12),
               pillarMat
             );
             const sx = px + Math.cos(angle) * side;
             const sz = pz - Math.sin(angle) * side;
-            pillar.position.set(sx, 1.5, sz);
+            pillar.position.set(sx, 1.58, sz);
             pillar.castShadow = true;
             this.scene.add(pillar);
           }
         }
+      }
+
+      // 2. 轉角節點平滑覆蓋（防止折角處留有縫隙）
+      for (let i = 1; i < path.length - 1; i++) {
+        const pt = path[i];
+        const cornerRoof = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.65, 1.65, 0.24, 16),
+          roofMat
+        );
+        cornerRoof.position.set(pt.x, 3.26, pt.z);
+        cornerRoof.castShadow = true;
+        this.scene.add(cornerRoof);
+
+        const cornerFloor = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.5, 1.5, 0.16, 16),
+          paveMat
+        );
+        cornerFloor.position.set(pt.x, 0.08, pt.z);
+        cornerFloor.receiveShadow = true;
+        this.scene.add(cornerFloor);
+      }
       }
     });
   }
@@ -1306,9 +1335,9 @@ export class CampusBuilder {
       [{ x: -46, z: -60 }, { x: -34, z: -68 }],
       [{ x: -34, z: -68 }, { x: -24, z: -68 }],
       [{ x: -24, z: -68 }, { x: -12, z: -58 }],
-      [{ x: -46, z: -11 }, { x: -38, z: -11 }],
-      [{ x: -38, z: -11 }, { x: -38, z: 15 }],
-      [{ x: -38, z: 15 }, { x: -32, z: 15 }],
+      [{ x: -44, z: -12 }, { x: -35, z: -12 }],
+      [{ x: -35, z: -12 }, { x: -35, z: 19 }],
+      [{ x: -35, z: 19 }, { x: -28, z: 19 }],
       [{ x: 11, z: 10 }, { x: 11, z: 22 }],
       [{ x: 11, z: 22 }, { x: 13, z: 40 }],
       [{ x: 13, z: 40 }, { x: 14, z: 58 }]
