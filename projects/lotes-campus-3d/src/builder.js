@@ -55,23 +55,23 @@ export class CampusBuilder {
     campusGround.receiveShadow = true;
     this.scene.add(campusGround);
 
-    // 3. 北側清潭路新大門迎賓停車廣場（順著箭頭移至東南側，斜向 -32 度）
-    const northPlazaGeo = new THREE.PlaneGeometry(26, 20);
+    // 3. 北側清潭路新大門迎賓停車廣場（依紅框向東拓寬拉長，長度 38 米，斜向 -32 度）
+    const northPlazaGeo = new THREE.PlaneGeometry(38, 20);
     const northPlaza = new THREE.Mesh(northPlazaGeo, this.materials.parkingPave);
     northPlaza.rotation.x = -Math.PI / 2;
     northPlaza.rotation.z = -0.56;
-    northPlaza.position.set(22, 0.08, -48);
+    northPlaza.position.set(28, 0.08, -48);
     northPlaza.receiveShadow = true;
     this.scene.add(northPlaza);
 
-    // 迎賓停車格標線
-    for (let i = -3; i <= 3; i++) {
+    // 迎賓停車格標線（依拓寬面積設置 13 個標準迎賓停車位）
+    for (let i = -6; i <= 6; i++) {
       const lineGeo = new THREE.PlaneGeometry(0.18, 5.0);
       const lineMesh = new THREE.Mesh(lineGeo, this.materials.lineWhite);
       lineMesh.rotation.x = -Math.PI / 2;
       lineMesh.rotation.z = -0.56;
-      const lx = 22 + Math.cos(-0.56) * (i * 2.8);
-      const lz = -48 - Math.sin(-0.56) * (i * 2.8);
+      const lx = 28 + Math.cos(-0.56) * (i * 2.6);
+      const lz = -48 - Math.sin(-0.56) * (i * 2.6);
       lineMesh.position.set(lx, 0.09, lz);
       this.scene.add(lineMesh);
     }
@@ -543,22 +543,21 @@ export class CampusBuilder {
     const paveMat = this.materials.pave;
 
     const corridors = [
-      // 1. 涵育樓 ↔ 迎曦樓（依實景紅線：由涵育樓南牆直連迎曦樓北牆，南北向貫穿中庭）
+      // 1. 涵育樓 ↔ 迎曦樓（依最新實景紅線：西側直通，由涵育樓西南端直連迎曦樓西北端）
       [
-        { x: -24, z: -55 },
-        { x: -30, z: -38 }
+        { x: -31, z: -56 },
+        { x: -33, z: -36 }
       ],
-      // 2. 迎曦樓 ↔ 百齡樓（依實景紅線：由迎曦樓南端西側出發，沿西側中庭平滑直連百齡樓北端）
+      // 2. 迎曦樓 ↔ 百齡樓（依最新實景紅線：北端無縫接合迎曦樓南牆，沿西側中庭平滑直連百齡樓北端）
       [
-        { x: -58, z: -16 },
+        { x: -58, z: -21 },
         { x: -59, z: 0 },
         { x: -54, z: 19 }
       ],
-      // 3. 百齡樓 ↔ 圓形司令台／體育館主通廊（依實景紅線：由百齡樓東牆向東直連司令台與主通廊）
+      // 3. 百齡樓 ↔ 體育館（樹人館）（依最新實景紅線：由百齡樓東南角橫向直連體育館西北側）
       [
-        { x: -19, z: 46 },
-        { x: 0, z: 43 },
-        { x: 14, z: 40 }
+        { x: -19, z: 56 },
+        { x: -5, z: 58 }
       ],
       // 4. 校友館 ↔ 體育館（樹人館）南北向主通廊（串連校友館、圓形司令台與體育館北門）
       [
@@ -1307,11 +1306,10 @@ export class CampusBuilder {
     // 校門與遮雨走廊淨空防護（校門口半徑內與走廊通道嚴格禁止長樹）
     const gates = BUILDINGS.filter(b => b.category === "gate");
     const walkwaySegments = [
-      [{ x: -24, z: -55 }, { x: -30, z: -38 }],
-      [{ x: -58, z: -16 }, { x: -59, z: 0 }],
+      [{ x: -31, z: -56 }, { x: -33, z: -36 }],
+      [{ x: -58, z: -21 }, { x: -59, z: 0 }],
       [{ x: -59, z: 0 }, { x: -54, z: 19 }],
-      [{ x: -19, z: 46 }, { x: 0, z: 43 }],
-      [{ x: 0, z: 43 }, { x: 14, z: 40 }],
+      [{ x: -19, z: 56 }, { x: -5, z: 58 }],
       [{ x: 11, z: 10 }, { x: 11, z: 22 }],
       [{ x: 11, z: 22 }, { x: 13, z: 40 }],
       [{ x: 13, z: 40 }, { x: 14, z: 58 }]
