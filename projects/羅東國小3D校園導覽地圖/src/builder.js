@@ -450,6 +450,29 @@ export class CampusBuilder {
         ring.rotation.x = Math.PI / 2;
         ring.position.set(0, b.h + 0.6, 0);
         group.add(ring);
+      } else if (b.id === "xiaoyou") {
+        // 🏛️ 校友館：二層挑高，屋頂滿鋪太陽能光電板陣列
+        const solarGroup = new THREE.Group();
+        solarGroup.position.set(0, b.h + 0.25, 0);
+
+        // 鋁合金鋼構框架基座
+        const frameGeo = new THREE.BoxGeometry(b.w * 0.94, 0.15, b.d * 0.94);
+        const frame = new THREE.Mesh(frameGeo, this.materials.metal);
+        solarGroup.add(frame);
+
+        // 太陽能板模組（整面矩陣排列）
+        const panelCount = 7;
+        const pLen = (b.d * 0.90) / panelCount;
+        for (let pi = 0; pi < panelCount; pi++) {
+          const pz = -b.d * 0.45 + (pi + 0.5) * pLen;
+          const pvGeo = new THREE.BoxGeometry(b.w * 0.88, 0.1, pLen * 0.88);
+          const pv = new THREE.Mesh(pvGeo, this.materials.solarPanel);
+          pv.position.set(0, 0.12, pz);
+          pv.rotation.x = 0.05;
+          pv.castShadow = true;
+          solarGroup.add(pv);
+        }
+        group.add(solarGroup);
       } else {
         // 一般校舍：頂樓電梯機房與太陽能棚架
         const hutGeo = new THREE.BoxGeometry(Math.min(7, b.w * 0.3), 2.8, Math.min(6, b.d * 0.3));
@@ -496,6 +519,95 @@ export class CampusBuilder {
 
       this.scene.add(group);
     });
+
+    // 依空照圖與實景紅線建立棟際遮雨走廊連通系統
+    this.buildCoveredWalkways();
+  }
+
+  // --- 校舍棟際遮雨走廊系統（迎曦↔涵育、迎曦↔百齡、百齡↔校友館） ---
+  buildCoveredWalkways() {
+    const roofMat = this.materials.roofWaveBeige;
+    const pillarMat = this.materials.metal;
+    const paveMat = this.materials.pave;
+
+    const corridors = [
+      // 1. 迎曦樓 ↔ 涵育樓（北側外圍弧形走道，依空照繞過花圃）
+      [
+        { x: -48, z: -48 },
+        { x: -46, z: -60 },
+        { x: -34, z: -66 },
+        { x: -19, z: -54 }
+      ],
+      // 2. 迎曦樓 ↔ 百齡樓（西側棟際走道）
+      [
+        { x: -56, z: -11 },
+        { x: -54, z: 2 },
+        { x: -46, z: 17 }
+      ],
+      // 3. 百齡樓 ↔ 校友館（南側棟際走道）
+      [
+        { x: -21, z: 20 },
+        { x: -5, z: 20 },
+        { x: 10, z: 18 }
+      ]
+    ];
+
+    corridors.forEach(path => {
+      for (let i = 0; i < path.length - 1; i++) {
+        const p1 = path[i];
+        const p2 = path[i + 1];
+        const dx = p2.x - p1.x;
+        const dz = p2.z - p1.z;
+        const len = Math.hypot(dx, dz);
+        const angle = Math.atan2(dx, dz);
+        const mx = (p1.x + p2.x) / 2;
+        const mz = (p1.z + p2.z) / 2;
+        const w = 2.4;
+
+        // 地坪水泥步道
+        const pathGeo = new THREE.BoxGeometry(w, 0.12, len);
+        const pathMesh = new THREE.Mesh(pathGeo, paveMat);
+        pathMesh.position.set(mx, 0.06, mz);
+        pathMesh.rotation.y = angle;
+        pathMesh.receiveShadow = true;
+        this.scene.add(pathMesh);
+
+        // 遮雨棚頂
+        const roofGeo = new THREE.BoxGeometry(w + 0.3, 0.2, len + 0.2);
+        const roofMesh = new THREE.Mesh(roofGeo, roofMat);
+        roofMesh.position.set(mx, 3.1, mz);
+        roofMesh.rotation.y = angle;
+        roofMesh.castShadow = true;
+        this.scene.add(roofMesh);
+
+        // 金屬邊框收邊
+        const edgeGeo = new THREE.BoxGeometry(w + 0.35, 0.06, len + 0.25);
+        const edgeMesh = new THREE.Mesh(edgeGeo, pillarMat);
+        edgeMesh.position.set(mx, 3.22, mz);
+        edgeMesh.rotation.y = angle;
+        this.scene.add(edgeMesh);
+
+        // 兩側金屬圓柱
+        const pillarCount = Math.max(2, Math.floor(len / 4.0));
+        for (let k = 0; k <= pillarCount; k++) {
+          const t = k / pillarCount;
+          const px = p1.x + dx * t;
+          const pz = p1.z + dz * t;
+          for (let side of [-w / 2 + 0.18, w / 2 - 0.18]) {
+            const pillar = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.09, 0.09, 3.0, 10),
+              pillarMat
+            );
+            const sx = px + Math.cos(angle) * side;
+            const sz = pz - Math.sin(angle) * side;
+            pillar.position.set(sx, 1.5, sz);
+            pillar.castShadow = true;
+            this.scene.add(pillar);
+          }
+        }
+      }
+    });
+  }
   }
 
   // --- 開放式風雨操場（挑高鋼構柱列、無封閉牆面，內設標準多功能球場） ---
@@ -625,13 +737,14 @@ export class CampusBuilder {
     }
 
     // 4. 頂部 6 連棟翠綠圓拱波浪頂棚（架於挑高鋼構大樑之上）
-    const archRadius = archWidth * 0.55;
+    const archRadius = archWidth * 0.52;
     for (let i = 0; i < archCount; i++) {
       const ax = -b.w / 2 + (i + 0.5) * archWidth;
-      const archGeo = new THREE.CylinderGeometry(archRadius, archRadius, b.d + 1.2, 24, 1, false, 0, Math.PI);
+      // 真正的橫跨對稱半圓拱形：角度範圍 [-PI/2, PI/2]，繞 X 軸轉 -PI/2 形成跨寬向上凸起的頂棚
+      const archGeo = new THREE.CylinderGeometry(archRadius, archRadius, b.d + 1.2, 24, 1, false, -Math.PI / 2, Math.PI);
       const mat = (i % 2 === 0) ? this.materials.roofWaveGreen : this.materials.roofWaveBeige;
       const archMesh = new THREE.Mesh(archGeo, mat);
-      archMesh.rotation.x = Math.PI / 2;
+      archMesh.rotation.x = -Math.PI / 2;
       archMesh.position.set(ax, pillarH + 0.5, 0);
       archMesh.castShadow = true;
       group.add(archMesh);

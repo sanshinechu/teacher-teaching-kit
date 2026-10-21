@@ -72,6 +72,24 @@ export const BUILDINGS = [
     tags: ["風雨操場", "太陽能板", "光電風雨球場", "開放式球場", "多功能球場", "籃球場"]
   },
   {
+    id: "xiaoyou",
+    name: "校友館",
+    category: "facility",
+    categoryName: "校史與校友交流",
+    x: 13,
+    z: 5,
+    y: 0,
+    w: 11,
+    d: 26,
+    h: 7.5,
+    floors: 2,
+    rotationY: -0.12,
+    color: "#e6ede9",
+    roofColor: "#141c26",
+    description: "羅東國小校友館，坐落於中庭東側（風雨操場與操場跑道之間）。館舍二層樓挑高設計，屋頂全面架設太陽能光電發電板系統。南端設有專屬連通風雨走廊直達百齡樓，鄰近圓形涼亭生態花園與 200M 湛藍操場，為校友聯誼、校史文創特展及多元教學研習的優質交流場域。",
+    tags: ["校友館", "太陽能板", "校友聯誼", "連通道", "綠能建築", "校史展覽"]
+  },
+  {
     id: "bailing",
     name: "百齡樓",
     category: "teaching",
@@ -360,11 +378,12 @@ export const TOUR_STATIONS = [
   "hanyu",                // 3. 涵育樓 (教學行政核心/教務/學務/校長室/圖書館/電腦教室)
   "yingxi",               // 4. 迎曦樓 (二三年級教室/光電屋頂)
   "wind_rain_court",      // 5. 風雨操場 (6連棟波浪綠屋頂半戶外球場)
-  "bailing",              // 6. 百齡樓 (總務/健康中心/高年級教室/音樂/幼兒園/中央廚房)
-  "science",              // 7. 科學館 (視聽/自然實驗/天文台)
-  "gymnasium",            // 8. 體育館（樹人館）
-  "track_field",          // 9. 200M 湛藍 PU 操場
-  "circular_pavilion",    // 10. 迎風圓形展演涼亭
-  "gate_rabbit",          // 11. 清潭路白兔門
-  "gate_peacock"          // 12. 孔雀門
+  "xiaoyou",              // 6. 校友館 (校史校友中心/全棟太陽能光電)
+  "bailing",              // 7. 百齡樓 (總務/健康中心/高年級教室/音樂/幼兒園/中央廚房)
+  "science",              // 8. 科學館 (視聽/自然實驗/天文台)
+  "gymnasium",            // 9. 體育館（樹人館）
+  "track_field",          // 10. 200M 湛藍 PU 操場
+  "circular_pavilion",    // 11. 迎風圓形展演涼亭
+  "gate_rabbit",          // 12. 清潭路白兔門
+  "gate_peacock"          // 13. 孔雀門
 ];
