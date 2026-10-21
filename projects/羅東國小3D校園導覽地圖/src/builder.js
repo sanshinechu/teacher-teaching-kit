@@ -545,10 +545,10 @@ export class CampusBuilder {
     const paveMat = this.materials.pave;
 
     const corridors = [
-      // 1. 涵育樓 ↔ 迎曦樓（依最新實景紅線：直連涵育樓南牆與迎曦樓東北端）
+      // 1. 涵育樓 ↔ 迎曦樓（90度垂直正交直線直連兩棟大樓，完全平行建物軸線，絕無斜角）
       [
-        { x: -28, z: -56 },
-        { x: -36, z: -32 }
+        { x: -23.0, z: -53.7 },
+        { x: -37.7, z: -30.3 }
       ],
       // 2. 迎曦樓 ↔ 百齡樓（依最新實景紅線：北端無縫接合迎曦樓南牆，沿西側中庭平滑直連百齡樓北端）
       [
@@ -1307,7 +1307,7 @@ export class CampusBuilder {
     // 校門、遮雨走廊與圍牆淨空防護（嚴格禁止長樹與穿透結構）
     const gates = BUILDINGS.filter(b => b.category === "gate");
     const walkwaySegments = [
-      [{ x: -28, z: -56 }, { x: -36, z: -32 }],
+      [{ x: -23.0, z: -53.7 }, { x: -37.7, z: -30.3 }],
       [{ x: -58, z: -21 }, { x: -59, z: 0 }],
       [{ x: -59, z: 0 }, { x: -54, z: 19 }],
       [{ x: -19, z: 56 }, { x: -5, z: 58 }],
