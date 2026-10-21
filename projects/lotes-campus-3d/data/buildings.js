@@ -179,17 +179,17 @@ export const BUILDINGS = [
   },
   {
     id: "circular_pavilion",
-    name: "迎風圓形展演涼亭",
-    category: "landscape",
-    categoryName: "景觀綠帶",
+    name: "迎風圓形司令台（展演涼亭）",
+    category: "sports",
+    categoryName: "運動展演地標",
     x: 13.5,
     z: 38,
     y: 0.1,
     w: 13,
     d: 13,
     h: 5.5,
-    description: "位於操場與中央綠帶間的圓形遮陽涼亭與戶外展演台，空照可見醒目的紅白同心環條紋屋頂，是學童課後休閒與表演的最佳去處。",
-    tags: ["圓形展演亭", "戶外舞台", "景觀地標"]
+    description: "羅東國小操場西側標誌性圓形司令台與展演涼亭，空照可見醒目的紅白同心環條紋圓頂，為全校集會升旗、戶外運動會與表演的最佳展演場域。",
+    tags: ["司令台", "圓形展演亭", "戶外舞台", "操場地標", "升旗台"]
   },
   {
     id: "courtyard",

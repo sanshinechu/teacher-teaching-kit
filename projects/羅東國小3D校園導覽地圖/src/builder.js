@@ -299,30 +299,6 @@ export class CampusBuilder {
       trackGroup.add(goalGroup);
     }
 
-    // 司令台（位於操場西側直道外緣，坐西朝東，中心 Z 精確對準圓形展演涼亭 Z=38）
-    const stageZ = 2.62; // 對齊世界座標 Z=38 (涼亭中軸)
-    const stageGeo = new THREE.BoxGeometry(7, 2.2, 14);
-    const stage = new THREE.Mesh(stageGeo, this.materials.wallCream);
-    stage.position.set(-r - 3.8, 1.1, stageZ);
-    stage.castShadow = true;
-    stage.receiveShadow = true;
-    trackGroup.add(stage);
-
-    const roofGeo = new THREE.BoxGeometry(9, 0.6, 16);
-    const roof = new THREE.Mesh(roofGeo, this.materials.roofRed);
-    roof.position.set(-r - 3.8, 4.4, stageZ);
-    roof.castShadow = true;
-    trackGroup.add(roof);
-
-    for (let px of [-r - 6.8, -r - 0.8]) {
-      for (let pz of [stageZ - 6.5, stageZ + 6.5]) {
-        const pillarGeo = new THREE.CylinderGeometry(0.22, 0.22, 2.8);
-        const pillar = new THREE.Mesh(pillarGeo, this.materials.metal);
-        pillar.position.set(px, 2.9, pz);
-        trackGroup.add(pillar);
-      }
-    }
-
     this.scene.add(trackGroup);
   }
 
