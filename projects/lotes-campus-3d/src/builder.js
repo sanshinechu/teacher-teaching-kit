@@ -387,14 +387,46 @@ export class CampusBuilder {
         solar2.rotation.z = -0.06;
         group.add(solar2);
 
-        // 轉角連通穿堂（灰色外觀）
-        const cornerGeo = new THREE.BoxGeometry(11, 13, 11);
-        const corner = new THREE.Mesh(cornerGeo, this.materials.bailing_main);
-        corner.position.set(-1, 6.5, 4);
-        corner.castShadow = true;
-        corner.userData = { ...b };
-        group.add(corner);
-        this.interactiveObjects.push(corner);
+        // 🏛️ 百齡樓 1 樓中間挑高通透大穿堂與 2~4 樓連通大樓（灰色外觀）
+        const passH = 4.2; // 1 樓挑空穿堂高度
+        const upperH = 13.0 - passH; // 2~4 樓高度 8.8m
+        const cx = -1, cz = 4;
+
+        // 1. 2~4 樓上層實體建築量體
+        const upperGeo = new THREE.BoxGeometry(11, upperH, 11);
+        const upper = new THREE.Mesh(upperGeo, this.materials.bailing_main);
+        upper.position.set(cx, passH + upperH / 2, cz);
+        upper.castShadow = true;
+        upper.receiveShadow = true;
+        upper.userData = { ...b };
+        group.add(upper);
+        this.interactiveObjects.push(upper);
+
+        // 頂部深色女兒牆壓頂
+        const upperEdgeGeo = new THREE.BoxGeometry(11.6, 0.5, 11.6);
+        const upperEdge = new THREE.Mesh(upperEdgeGeo, this.materials.roofDark);
+        upperEdge.position.set(cx, 13.0 + 0.25, cz);
+        upperEdge.castShadow = true;
+        group.add(upperEdge);
+
+        // 2. 1 樓穿堂石材地坪鋪面（通往後側西南教職員停車場）
+        const passFloorGeo = new THREE.BoxGeometry(9.4, 0.1, 11.2);
+        const passFloor = new THREE.Mesh(passFloorGeo, this.materials.pave);
+        passFloor.position.set(cx, 0.05, cz);
+        passFloor.receiveShadow = true;
+        group.add(passFloor);
+
+        // 3. 1 樓穿堂兩側四角支撐立柱（中間完全挑空通透，視線穿透前後中庭與停車場）
+        for (let px of [cx - 4.8, cx + 4.8]) {
+          for (let pz of [cz - 4.8, cz + 4.8]) {
+            const pillarGeo = new THREE.BoxGeometry(1.2, passH, 1.2);
+            const pillar = new THREE.Mesh(pillarGeo, this.materials.bailing_main);
+            pillar.position.set(px, passH / 2, pz);
+            pillar.castShadow = true;
+            pillar.receiveShadow = true;
+            group.add(pillar);
+          }
+        }
       } else {
         const bodyGeo = new THREE.BoxGeometry(b.w, b.h, b.d);
         const bodyMat = this.materials[b.id] || this.materials.wallCream;
