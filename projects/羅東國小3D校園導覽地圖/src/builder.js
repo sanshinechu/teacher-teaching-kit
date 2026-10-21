@@ -543,10 +543,10 @@ export class CampusBuilder {
     const paveMat = this.materials.pave;
 
     const corridors = [
-      // 1. 涵育樓 ↔ 迎曦樓（依最新實景紅線：移至樹木西側直通，由涵育樓西南端直連迎曦樓西北端）
+      // 1. 涵育樓 ↔ 迎曦樓（依最新實景紅線：直連涵育樓南牆與迎曦樓東北端）
       [
-        { x: -36, z: -61 },
-        { x: -40, z: -34 }
+        { x: -28, z: -56 },
+        { x: -36, z: -32 }
       ],
       // 2. 迎曦樓 ↔ 百齡樓（依最新實景紅線：北端無縫接合迎曦樓南牆，沿西側中庭平滑直連百齡樓北端）
       [
@@ -1292,8 +1292,7 @@ export class CampusBuilder {
       treePositions.push({ x: -75, z, scale: 1.2 + (z % 3) * 0.08 });
     }
 
-    // 5. 百齡樓與迎曦樓迎風中庭花園造景樹
-    treePositions.push({ x: -36, z: -35, scale: 1.35 });
+    // 5. 百齡樓與迎曦樓迎風中庭花園造景樹（移除原穿透走廊之 Z:-35 樹木）
     treePositions.push({ x: -36, z: -20, scale: 1.4 });
     treePositions.push({ x: -36, z: -5, scale: 1.3 });
     treePositions.push({ x: -34, z: 8, scale: 1.25 });
@@ -1306,7 +1305,7 @@ export class CampusBuilder {
     // 校門、遮雨走廊與圍牆淨空防護（嚴格禁止長樹與穿透結構）
     const gates = BUILDINGS.filter(b => b.category === "gate");
     const walkwaySegments = [
-      [{ x: -36, z: -61 }, { x: -40, z: -34 }],
+      [{ x: -28, z: -56 }, { x: -36, z: -32 }],
       [{ x: -58, z: -21 }, { x: -59, z: 0 }],
       [{ x: -59, z: 0 }, { x: -54, z: 19 }],
       [{ x: -19, z: 56 }, { x: -5, z: 58 }],
