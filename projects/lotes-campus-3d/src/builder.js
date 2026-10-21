@@ -635,12 +635,58 @@ export class CampusBuilder {
       archMesh.position.set(ax, pillarH + 0.5, 0);
       archMesh.castShadow = true;
       group.add(archMesh);
+
+      // ☀️ 5. 圓拱頂部現代化太陽能光電板陣列（光電風雨球場綠能棚架）
+      const archTopY = pillarH + 0.5 + archRadius;
+      
+      // (1) 縱向鋁合金導軌支架（每道拱脊兩側各一條）
+      for (let railX of [-archWidth * 0.22, archWidth * 0.22]) {
+        const railGeo = new THREE.BoxGeometry(0.12, 0.18, b.d + 0.6);
+        const rail = new THREE.Mesh(railGeo, this.materials.metal);
+        rail.position.set(ax + railX, archTopY + 0.08, 0);
+        group.add(rail);
+      }
+
+      // (2) 太陽能光電模組板（沿南北向均勻鋪設 8 組，微幅迎光傾角）
+      const panelCountZ = 8;
+      const panelLenZ = (b.d - 1.2) / panelCountZ;
+      const panelW = archWidth * 0.42;
+
+      for (let pzIdx = 0; pzIdx < panelCountZ; pzIdx++) {
+        const pz = -b.d / 2 + 1.0 + (pzIdx + 0.5) * panelLenZ;
+
+        // 東西兩側各一片模組，貼合拱弧微傾約 6 度 (0.1 弧度)
+        for (let side of [-1, 1]) {
+          const px = ax + side * (panelW * 0.54);
+          const py = archTopY + 0.16;
+
+          // 太陽能板本體（深藍黑色光電矽晶面）
+          const panelMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(panelW * 0.94, 0.08, panelLenZ * 0.90),
+            this.materials.solarPanel
+          );
+          panelMesh.position.set(px, py, pz);
+          panelMesh.rotation.z = side * -0.11; // 東西微傾洩水角
+          panelMesh.castShadow = true;
+          group.add(panelMesh);
+
+          // 模組鋁合金邊框外緣
+          const frameMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(panelW * 0.98, 0.04, panelLenZ * 0.94),
+            this.materials.metal
+          );
+          frameMesh.position.set(px, py - 0.03, pz);
+          frameMesh.rotation.z = side * -0.11;
+          group.add(frameMesh);
+        }
+      }
     }
 
-    // 5. 點選判定包覆盒
-    const hitBoxGeo = new THREE.BoxGeometry(b.w, pillarH + 3.0, b.d);
+    // 6. 點選判定包覆盒
+    const courtTotalH = pillarH + archRadius + 1.8;
+    const hitBoxGeo = new THREE.BoxGeometry(b.w, courtTotalH, b.d);
     const hitBox = new THREE.Mesh(hitBoxGeo, new THREE.MeshBasicMaterial({ visible: false }));
-    hitBox.position.y = (pillarH + 3.0) / 2;
+    hitBox.position.y = courtTotalH / 2;
     hitBox.userData = { ...b };
     group.add(hitBox);
     this.interactiveObjects.push(hitBox);
