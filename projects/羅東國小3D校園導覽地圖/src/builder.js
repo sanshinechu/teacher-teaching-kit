@@ -496,8 +496,6 @@ export class CampusBuilder {
 
       this.scene.add(group);
     });
-
-    this.buildCoveredWalkways();
   }
 
   // --- 開放式風雨操場（挑高鋼構柱列、無封閉牆面，內設標準多功能球場） ---
@@ -646,51 +644,6 @@ export class CampusBuilder {
     hitBox.userData = { ...b };
     group.add(hitBox);
     this.interactiveObjects.push(hitBox);
-  }
-
-  // --- 校舍間紅瓦風雨走廊連通系統 ---
-  buildCoveredWalkways() {
-    const corridorMat = this.materials.roofRed;
-    const pillarMat = this.materials.metal;
-
-    const corridors = [
-      // 涵育樓至風雨操場
-      { x1: -3, z1: -47, x2: -18, z2: -15, w: 3.2 },
-      // 風雨操場至迎曦樓中庭走廊
-      { x1: -36, z1: -9, x2: -48, z2: -25, w: 3.2 },
-      // 風雨操場至百齡樓
-      { x1: -25, z1: 2, x2: -35, z2: 22, w: 3.0 }
-    ];
-
-    corridors.forEach(c => {
-      const len = Math.hypot(c.x2 - c.x1, c.z2 - c.z1);
-      const angle = Math.atan2(c.x2 - c.x1, c.z2 - c.z1);
-      const mx = (c.x1 + c.x2) / 2;
-      const mz = (c.z1 + c.z2) / 2;
-
-      const roofGeo = new THREE.BoxGeometry(c.w, 0.35, len);
-      const roof = new THREE.Mesh(roofGeo, corridorMat);
-      roof.position.set(mx, 3.8, mz);
-      roof.rotation.y = angle;
-      roof.castShadow = true;
-      this.scene.add(roof);
-
-      const count = Math.max(2, Math.floor(len / 4.5));
-      for (let i = 0; i <= count; i++) {
-        const t = i / count;
-        const px = c.x1 + (c.x2 - c.x1) * t;
-        const pz = c.z1 + (c.z2 - c.z1) * t;
-        for (let side of [-c.w / 2 + 0.25, c.w / 2 - 0.25]) {
-          const pGeo = new THREE.CylinderGeometry(0.12, 0.12, 3.8);
-          const p = new THREE.Mesh(pGeo, pillarMat);
-          const sx = px + Math.cos(angle) * side;
-          const sz = pz - Math.sin(angle) * side;
-          p.position.set(sx, 1.9, sz);
-          p.castShadow = true;
-          this.scene.add(p);
-        }
-      }
-    });
   }
 
   // --- 周邊四面環繞真實道路網絡 ---
