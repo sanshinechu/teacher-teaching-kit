@@ -1,4 +1,4 @@
-﻿// 羅東國小 3D 校園主應用程式：介面互動、搜尋、點選校舍、導覽巡航與彈窗綁定
+// 羅東國小 3D 校園主應用程式：介面互動、搜尋、點選校舍、導覽巡航與彈窗綁定
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 import { BUILDINGS, TOUR_STATIONS } from '../data/buildings.js';
 import { SCHOOL_INFO, DEPARTMENTS, GRADE_DISTRIBUTION } from '../data/offices.js';
@@ -390,6 +390,18 @@ class App {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  new App();
+  try {
+    new App();
+  } catch (err) {
+    console.error('App init error:', err);
+    const loader = document.getElementById('loading');
+    if (loader) {
+      loader.innerHTML = `
+        <div class="spinner" style="border-top-color:#e63946;"></div>
+        <p style="color:#e63946;font-weight:700;margin-top:12px;">載入發生問題，請按 Ctrl + F5 強制重新整理</p>
+        <p style="color:#888;font-size:12px;margin-top:6px;">${err.message}</p>
+      `;
+    }
+  }
 });
 

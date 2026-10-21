@@ -673,7 +673,6 @@ export class CampusBuilder {
         cornerFloor.receiveShadow = true;
         this.scene.add(cornerFloor);
       }
-      }
     });
   }
 
