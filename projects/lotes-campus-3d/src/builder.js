@@ -346,9 +346,9 @@ export class CampusBuilder {
       // 主體量體
       if (b.id === "bailing") {
         // 🏛️ 百齡樓雙翼複合建築群（依空照紅框兩道箭頭精確構建雙翼連通大樓，適度縮小量體退縮）
-        // 北翼：高年級教學棟
+        // 北翼：高年級教學棟（灰色外觀）
         const w1Geo = new THREE.BoxGeometry(18, b.h, 26);
-        const w1 = new THREE.Mesh(w1Geo, this.materials.wallCream);
+        const w1 = new THREE.Mesh(w1Geo, this.materials.bailing_main);
         w1.position.set(-9, b.h / 2, -6);
         w1.castShadow = true;
         w1.receiveShadow = true;
@@ -366,10 +366,10 @@ export class CampusBuilder {
         solar1.rotation.x = 0.08;
         group.add(solar1);
 
-        // 南翼：生活、幼兒園與中央廚房棟
+        // 南翼：生活、幼兒園與中央廚房棟（灰色外觀）
         const h2 = 12.0;
         const w2Geo = new THREE.BoxGeometry(26, h2, 17);
-        const w2 = new THREE.Mesh(w2Geo, this.materials.wallCream);
+        const w2 = new THREE.Mesh(w2Geo, this.materials.bailing_main);
         w2.position.set(12, h2 / 2, 11);
         w2.castShadow = true;
         w2.receiveShadow = true;
@@ -387,9 +387,9 @@ export class CampusBuilder {
         solar2.rotation.z = -0.06;
         group.add(solar2);
 
-        // 轉角連通穿堂
+        // 轉角連通穿堂（灰色外觀）
         const cornerGeo = new THREE.BoxGeometry(11, 13, 11);
-        const corner = new THREE.Mesh(cornerGeo, this.materials.wallCream);
+        const corner = new THREE.Mesh(cornerGeo, this.materials.bailing_main);
         corner.position.set(-1, 6.5, 4);
         corner.castShadow = true;
         corner.userData = { ...b };

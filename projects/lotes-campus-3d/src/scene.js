@@ -100,12 +100,13 @@ export class CampusScene {
       xiaoyou: createMat('#cc9847', 0.45),         // 校友館：溫潤亮金麥色石
       yingxi_north: createMat('#aa8c61', 0.45),    // 迎曦樓：厚實深奶茶棕
       yingxi_south: createMat('#aa8c61', 0.45),
-      bailing_wave: createMat('#876d54', 0.45),    // 百齡樓綠波浪綜合棟
-      bailing_main: createMat('#876d54', 0.45),    // 百齡樓：大氣赭紅灰褐
+      bailing_wave: createMat('#88929e', 0.45),    // 百齡樓：現代洗石子雅灰
+      bailing_main: createMat('#88929e', 0.45),    // 百齡樓主體外牆：典雅質感灰
       bailing_kindergarten: createMat('#e69a24', 0.45), // 幼兒園：活潑亮金橙
       gymnasium: createMat('#4f8562', 0.45),       // 樹人館：蒼翠鋼構
       science: createMat('#416d8a', 0.45),         // 科學館：海軍深科技藍
 
+      wallGray: createMat('#88929e', 0.45),        // 現代建築高雅灰
       wallCream: createMat('#b8a37f', 0.5),
       wallWhite: createMat('#e3e6ea', 0.4),
       wallBrick: createMat('#8f2a1b', 0.55),       // 濃郁磚紅大門柱
