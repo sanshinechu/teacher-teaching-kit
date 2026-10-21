@@ -55,23 +55,23 @@ export class CampusBuilder {
     campusGround.receiveShadow = true;
     this.scene.add(campusGround);
 
-    // 3. 北側清潭路新大門迎賓停車廣場（順著箭頭移至東南側，斜向 -32 度）
-    const northPlazaGeo = new THREE.PlaneGeometry(26, 20);
+    // 3. 北側清潭路新大門迎賓停車廣場（依紅框向東拓寬拉長，長度 38 米，斜向 -32 度）
+    const northPlazaGeo = new THREE.PlaneGeometry(38, 20);
     const northPlaza = new THREE.Mesh(northPlazaGeo, this.materials.parkingPave);
     northPlaza.rotation.x = -Math.PI / 2;
     northPlaza.rotation.z = -0.56;
-    northPlaza.position.set(22, 0.08, -48);
+    northPlaza.position.set(28, 0.08, -48);
     northPlaza.receiveShadow = true;
     this.scene.add(northPlaza);
 
-    // 迎賓停車格標線
-    for (let i = -3; i <= 3; i++) {
+    // 迎賓停車格標線（依拓寬面積設置 13 個標準迎賓停車位）
+    for (let i = -6; i <= 6; i++) {
       const lineGeo = new THREE.PlaneGeometry(0.18, 5.0);
       const lineMesh = new THREE.Mesh(lineGeo, this.materials.lineWhite);
       lineMesh.rotation.x = -Math.PI / 2;
       lineMesh.rotation.z = -0.56;
-      const lx = 22 + Math.cos(-0.56) * (i * 2.8);
-      const lz = -48 - Math.sin(-0.56) * (i * 2.8);
+      const lx = 28 + Math.cos(-0.56) * (i * 2.6);
+      const lz = -48 - Math.sin(-0.56) * (i * 2.6);
       lineMesh.position.set(lx, 0.09, lz);
       this.scene.add(lineMesh);
     }
