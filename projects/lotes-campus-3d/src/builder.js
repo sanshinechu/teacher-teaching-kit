@@ -490,33 +490,6 @@ export class CampusBuilder {
         }
       }
 
-      // 立面窗格（每層樓帶金屬反光鍍膜窗）
-      const floors = b.floors || 3;
-      const floorH = b.h / floors;
-      for (let f = 1; f <= floors; f++) {
-        const wy = (f - 0.5) * floorH;
-
-        const winGeo = new THREE.BoxGeometry(b.w * 0.85, floorH * 0.42, 0.25);
-        const winFront = new THREE.Mesh(winGeo, this.materials.window);
-        winFront.position.set(0, wy, b.d / 2 + 0.1);
-        group.add(winFront);
-
-        const winBack = new THREE.Mesh(winGeo, this.materials.window);
-        winBack.position.set(0, wy, -b.d / 2 - 0.1);
-        group.add(winBack);
-
-        if (b.d >= 18) {
-          const sideGeo = new THREE.BoxGeometry(0.25, floorH * 0.42, b.d * 0.65);
-          const winSideL = new THREE.Mesh(sideGeo, this.materials.window);
-          winSideL.position.set(-b.w / 2 - 0.1, wy, 0);
-          group.add(winSideL);
-
-          const winSideR = new THREE.Mesh(sideGeo, this.materials.window);
-          winSideR.position.set(b.w / 2 + 0.1, wy, 0);
-          group.add(winSideR);
-        }
-      }
-
       this.scene.add(group);
     });
 
