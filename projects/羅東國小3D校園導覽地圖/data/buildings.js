@@ -246,7 +246,7 @@ export const BUILDINGS = [
     w: 16,
     d: 3,
     h: 5.5,
-    rotationY: -0.56,
+    rotationY: 2.58,
     description: "羅東國小主要車輛與師生進出之新正門，面臨清潭路，緊鄰警衛室與迎賓停車廣場。",
     tags: ["新大門", "正門", "清潭路"]
   },
@@ -261,7 +261,7 @@ export const BUILDINGS = [
     w: 8,
     d: 3,
     h: 4.5,
-    rotationY: -0.56,
+    rotationY: 2.58,
     description: "位於北側清潭路上，直通涵育樓後方，門頂雕刻可愛小白兔立體塑像。",
     tags: ["白兔門", "清潭路"]
   },
@@ -276,7 +276,7 @@ export const BUILDINGS = [
     w: 8,
     d: 3,
     h: 4.5,
-    rotationY: -1.0,
+    rotationY: 2.29,
     description: "位於清潭路東轉向操場北緣轉角處，門頂設有可愛無尾熊立體雕塑。",
     tags: ["無尾熊門", "開羅街"]
   },
@@ -336,7 +336,7 @@ export const BUILDINGS = [
     w: 8,
     d: 3,
     h: 4.0,
-    rotationY: -0.6,
+    rotationY: -1.00,
     description: "鄰近開元市場與民族路南側生活圈，方便周邊學童與家長穿梭接送。",
     tags: ["開元市場側門", "民族路南端"]
   },
@@ -351,7 +351,7 @@ export const BUILDINGS = [
     w: 8,
     d: 3,
     h: 4.5,
-    rotationY: -1.57,
+    rotationY: -1.77,
     description: "位於西側弧形圍籬上的動物意象校門，門頂有開屏孔雀立體造型。",
     tags: ["孔雀門", "清潭路西段"]
   },
@@ -366,7 +366,7 @@ export const BUILDINGS = [
     w: 12,
     d: 3,
     h: 5.0,
-    rotationY: -1.1,
+    rotationY: -2.36,
     description: "羅東國小建校百年歷史正門（民族路 1 號），現為學童步行與歷史紀念側門。",
     tags: ["民族路大門", "民族路1號", "百年門牌"]
   }
