@@ -543,10 +543,10 @@ export class CampusBuilder {
     const paveMat = this.materials.pave;
 
     const corridors = [
-      // 1. 涵育樓 ↔ 迎曦樓（依最新實景紅線：西側直通，由涵育樓西南端直連迎曦樓西北端）
+      // 1. 涵育樓 ↔ 迎曦樓（依最新實景紅線：移至樹木西側直通，由涵育樓西南端直連迎曦樓西北端）
       [
-        { x: -31, z: -56 },
-        { x: -33, z: -36 }
+        { x: -36, z: -61 },
+        { x: -40, z: -34 }
       ],
       // 2. 迎曦樓 ↔ 百齡樓（依最新實景紅線：北端無縫接合迎曦樓南牆，沿西側中庭平滑直連百齡樓北端）
       [
@@ -1282,9 +1282,9 @@ export class CampusBuilder {
       treePositions.push({ x: 80, z, scale: 1.15 });
     }
 
-    // 3. 操場北側綠草坪樹群
-    for (let x = 40; x <= 75; x += 10) {
-      treePositions.push({ x, z: -18, scale: 1.2 });
+    // 3. 操場北側綠草坪樹群（置於草坪內側，避開北側圍牆與轉角，絕不穿透圍欄）
+    for (let x of [38, 48]) {
+      treePositions.push({ x, z: -12, scale: 1.15 });
     }
 
     // 4. 西界清潭路西段與迎曦樓西側林蔭道
@@ -1303,16 +1303,24 @@ export class CampusBuilder {
       treePositions.push({ x, z: 82, scale: 1.1 });
     }
 
-    // 校門與遮雨走廊淨空防護（校門口半徑內與走廊通道嚴格禁止長樹）
+    // 校門、遮雨走廊與圍牆淨空防護（嚴格禁止長樹與穿透結構）
     const gates = BUILDINGS.filter(b => b.category === "gate");
     const walkwaySegments = [
-      [{ x: -31, z: -56 }, { x: -33, z: -36 }],
+      [{ x: -36, z: -61 }, { x: -40, z: -34 }],
       [{ x: -58, z: -21 }, { x: -59, z: 0 }],
       [{ x: -59, z: 0 }, { x: -54, z: 19 }],
       [{ x: -19, z: 56 }, { x: -5, z: 58 }],
       [{ x: 11, z: 10 }, { x: 11, z: 22 }],
       [{ x: 11, z: 22 }, { x: 13, z: 40 }],
       [{ x: 13, z: 40 }, { x: 14, z: 58 }]
+    ];
+
+    const fenceAvoidance = [
+      { x1: 15, z1: -66, x2: 61, z2: -20 },
+      { x1: 61, z1: -20, x2: 81, z2: -14 },
+      { x1: 81, z1: -14, x2: 86, z2: 79 },
+      { x1: -74, z1: -54, x2: -39, z2: -84 },
+      { x1: -39, z1: -84, x2: 15, z2: -66 }
     ];
 
     function distToSegment(px, pz, ax, az, bx, bz) {
@@ -1332,6 +1340,12 @@ export class CampusBuilder {
       // 2. 避開所有棟際走廊路段（寬度 2.4 米，保留 2.8 米淨空距離）
       for (let seg of walkwaySegments) {
         if (distToSegment(pos.x, pos.z, seg[0].x, seg[0].z, seg[1].x, seg[1].z) < 2.8) {
+          return false;
+        }
+      }
+      // 3. 避開外圍圍牆（圍牆 3.2 米內嚴格禁止長樹，杜絕穿透圍欄）
+      for (let f of fenceAvoidance) {
+        if (distToSegment(pos.x, pos.z, f.x1, f.z1, f.x2, f.z2) < 3.2) {
           return false;
         }
       }
