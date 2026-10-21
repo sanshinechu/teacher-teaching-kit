@@ -102,7 +102,7 @@ export class CampusBuilder {
 
     // 6. 迎風圓形展演涼亭（空照圖操場西側醒目圓形紅白同心條紋頂棚）
     const pavilionGroup = new THREE.Group();
-    pavilionGroup.position.set(23, 0, 38);
+    pavilionGroup.position.set(16, 0, 38);
 
     // 同心圓階梯基座
     const step1Geo = new THREE.CylinderGeometry(7.2, 7.5, 0.35, 32);
@@ -505,19 +505,49 @@ export class CampusBuilder {
           solarGroup.add(pv);
         }
         group.add(solarGroup);
+      } else if (b.id === "hanyu") {
+        // 🏛️ 涵育樓：屋頂完全置中對稱設計（中央白色採光通風天窗＋前後對稱太陽能板）
+        const roofCenterGroup = new THREE.Group();
+        roofCenterGroup.position.set(0, b.h, 0);
+
+        // 中央置中電梯機房與採光天窗 (X=0, Z=0 完全置中)
+        const skylightGeo = new THREE.BoxGeometry(b.w * 0.36, 1.8, b.d * 0.38);
+        const skylight = new THREE.Mesh(skylightGeo, this.materials.wallWhite);
+        skylight.position.set(0, 0.9, 0);
+        skylight.castShadow = true;
+        roofCenterGroup.add(skylight);
+
+        // 採光拱頂天幕
+        const archGeo = new THREE.CylinderGeometry(b.d * 0.18, b.d * 0.18, b.w * 0.34, 16, 1, false, 0, Math.PI);
+        const arch = new THREE.Mesh(archGeo, this.materials.wallCream);
+        arch.rotation.z = Math.PI / 2;
+        arch.position.set(0, 1.8, 0);
+        roofCenterGroup.add(arch);
+
+        // 前後置中對稱鋪設太陽能光電模組板 (X=0 置中)
+        for (let side of [-1, 1]) {
+          const pvGeo = new THREE.BoxGeometry(b.w * 0.65, 0.15, b.d * 0.22);
+          const pv = new THREE.Mesh(pvGeo, this.materials.solarPanel);
+          pv.position.set(0, 0.6, side * (b.d * 0.32));
+          pv.rotation.x = side * 0.08;
+          pv.castShadow = true;
+          roofCenterGroup.add(pv);
+        }
+
+        group.add(roofCenterGroup);
       } else {
-        // 一般校舍：頂樓電梯機房與太陽能棚架
-        const hutGeo = new THREE.BoxGeometry(Math.min(7, b.w * 0.3), 2.8, Math.min(6, b.d * 0.3));
+        // 一般校舍（如迎曦樓等）：頂樓電梯機房與太陽能棚架全面 X=0 軸線置中對稱
+        const hutGeo = new THREE.BoxGeometry(Math.min(7, b.w * 0.28), 2.2, Math.min(6, b.d * 0.28));
         const hut = new THREE.Mesh(hutGeo, this.materials.wallWhite);
-        hut.position.set(-b.w * 0.22, b.h + 1.7, -b.d * 0.18);
+        hut.position.set(0, b.h + 1.2, -b.d * 0.18); // X=0 置中
         hut.castShadow = true;
         group.add(hut);
 
         if (b.w >= 20) {
-          const solarPanelGeo = new THREE.BoxGeometry(b.w * 0.5, 0.2, b.d * 0.45);
+          const solarPanelGeo = new THREE.BoxGeometry(b.w * 0.58, 0.18, b.d * 0.42);
           const solarPanel = new THREE.Mesh(solarPanelGeo, this.materials.solarPanel);
-          solarPanel.position.set(b.w * 0.15, b.h + 1.0, 0);
-          solarPanel.rotation.x = 0.1;
+          solarPanel.position.set(0, b.h + 0.9, b.d * 0.15); // X=0 置中
+          solarPanel.rotation.x = 0.08;
           group.add(solarPanel);
         }
       }
@@ -529,25 +559,27 @@ export class CampusBuilder {
     this.buildCoveredWalkways();
   }
 
-  // --- 校舍棟際遮雨走廊系統（迎曦↔涵育、迎曦↔百齡、百齡↔校友館） ---
+  // --- 校舍棟際遮雨走廊系統（迎曦↔涵育、迎曦↔百齡、校友館↔體育館） ---
   buildCoveredWalkways() {
     const roofMat = this.materials.roofWaveBeige;
     const pillarMat = this.materials.metal;
     const paveMat = this.materials.pave;
 
     const corridors = [
-      // 1. 迎曦樓 ↔ 涵育樓（北側外圍弧形走道，依空照繞過花圃）
+      // 1. 迎曦樓 ↔ 涵育樓（依實景紅線：沿西側圍牆繞過花圃，向東轉折連進涵育樓西側，移除南側切入斜段）
       [
         { x: -48, z: -48 },
         { x: -46, z: -60 },
-        { x: -34, z: -66 },
-        { x: -14, z: -52 }
+        { x: -34, z: -68 },
+        { x: -24, z: -68 },
+        { x: -12, z: -58 }
       ],
-      // 2. 迎曦樓 ↔ 百齡樓（西側棟際走道）
+      // 2. 迎曦樓 ↔ 百齡樓（依實景紅線：由迎曦樓東南側向東延伸，南折後再向東連入百齡樓）
       [
-        { x: -56, z: -11 },
-        { x: -54, z: 2 },
-        { x: -53, z: 19 }
+        { x: -46, z: -11 },
+        { x: -38, z: -11 },
+        { x: -38, z: 15 },
+        { x: -32, z: 15 }
       ],
       // 3. 校友館 ↔ 體育館（樹人館）南北向行人通廊（依紅線由校友館南端直通體育館北門）
       [
@@ -578,18 +610,18 @@ export class CampusBuilder {
         pathMesh.receiveShadow = true;
         this.scene.add(pathMesh);
 
-        // 遮雨棚頂
-        const roofGeo = new THREE.BoxGeometry(w + 0.3, 0.2, len + 0.2);
+        // 遮雨棚頂（高雅淺暖色波浪頂棚）
+        const roofGeo = new THREE.BoxGeometry(w + 0.3, 0.18, len + 0.2);
         const roofMesh = new THREE.Mesh(roofGeo, roofMat);
         roofMesh.position.set(mx, 3.1, mz);
         roofMesh.rotation.y = angle;
         roofMesh.castShadow = true;
         this.scene.add(roofMesh);
 
-        // 金屬邊框收邊
-        const edgeGeo = new THREE.BoxGeometry(w + 0.35, 0.06, len + 0.25);
+        // 金屬結構支撐縱樑（設置於頂棚下方兩側，避免頂部整條黑化）
+        const edgeGeo = new THREE.BoxGeometry(w + 0.15, 0.08, len + 0.15);
         const edgeMesh = new THREE.Mesh(edgeGeo, pillarMat);
-        edgeMesh.position.set(mx, 3.22, mz);
+        edgeMesh.position.set(mx, 2.98, mz);
         edgeMesh.rotation.y = angle;
         this.scene.add(edgeMesh);
 
@@ -1267,13 +1299,40 @@ export class CampusBuilder {
       treePositions.push({ x, z: 82, scale: 1.1 });
     }
 
-    // 校門淨空防護（所有 9 座校門之門洞通道、門柱與出入口半徑內嚴禁長樹）
+    // 校門與遮雨走廊淨空防護（校門口半徑內與走廊通道嚴格禁止長樹）
     const gates = BUILDINGS.filter(b => b.category === "gate");
+    const walkwaySegments = [
+      [{ x: -48, z: -48 }, { x: -46, z: -60 }],
+      [{ x: -46, z: -60 }, { x: -34, z: -68 }],
+      [{ x: -34, z: -68 }, { x: -24, z: -68 }],
+      [{ x: -24, z: -68 }, { x: -12, z: -58 }],
+      [{ x: -46, z: -11 }, { x: -38, z: -11 }],
+      [{ x: -38, z: -11 }, { x: -38, z: 15 }],
+      [{ x: -38, z: 15 }, { x: -32, z: 15 }],
+      [{ x: 11, z: 10 }, { x: 11, z: 22 }],
+      [{ x: 11, z: 22 }, { x: 13, z: 40 }],
+      [{ x: 13, z: 40 }, { x: 14, z: 58 }]
+    ];
+
+    function distToSegment(px, pz, ax, az, bx, bz) {
+      const l2 = (bx - ax) * (bx - ax) + (bz - az) * (bz - az);
+      if (l2 === 0) return Math.hypot(px - ax, pz - az);
+      let t = ((px - ax) * (bx - ax) + (pz - az) * (bz - az)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (ax + t * (bx - ax)), pz - (az + t * (bz - az)));
+    }
+
     const safeTrees = treePositions.filter(pos => {
+      // 1. 避開所有校門口
       for (let g of gates) {
-        const threshold = (g.w / 2) + 3.0; // 門寬半徑外加 3 米安全淨空區
-        const dist = Math.hypot(pos.x - g.x, pos.z - g.z);
-        if (dist < threshold) return false;
+        const threshold = (g.w / 2) + 3.0;
+        if (Math.hypot(pos.x - g.x, pos.z - g.z) < threshold) return false;
+      }
+      // 2. 避開所有棟際走廊路段（寬度 2.4 米，保留 2.8 米淨空距離）
+      for (let seg of walkwaySegments) {
+        if (distToSegment(pos.x, pos.z, seg[0].x, seg[0].z, seg[1].x, seg[1].z) < 2.8) {
+          return false;
+        }
       }
       return true;
     });
