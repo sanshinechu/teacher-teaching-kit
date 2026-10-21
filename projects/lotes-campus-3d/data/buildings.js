@@ -210,8 +210,8 @@ export const BUILDINGS = [
     name: "清潭路新大門迎賓停車廣場",
     category: "service",
     categoryName: "校園動線",
-    x: 18,
-    z: -54,
+    x: 22,
+    z: -48,
     y: 0.08,
     w: 22,
     d: 18,
@@ -264,21 +264,6 @@ export const BUILDINGS = [
     rotationY: -2.55,
     description: "位於北側清潭路上，直通涵育樓後方，門頂雕刻可愛小白兔立體塑像。",
     tags: ["白兔門", "清潭路"]
-  },
-  {
-    id: "gate_koala",
-    name: "無尾熊門",
-    category: "gate",
-    categoryName: "特色校門",
-    x: 45,
-    z: -25,
-    y: 0,
-    w: 8,
-    d: 3,
-    h: 4.5,
-    rotationY: 2.29,
-    description: "位於清潭路東轉向操場北緣轉角處，門頂設有可愛無尾熊立體雕塑。",
-    tags: ["無尾熊門", "開羅街"]
   },
   {
     id: "gate_dolphin",
