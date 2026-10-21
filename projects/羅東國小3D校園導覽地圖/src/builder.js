@@ -1267,7 +1267,18 @@ export class CampusBuilder {
       treePositions.push({ x, z: 82, scale: 1.1 });
     }
 
-    treePositions.forEach((pos, idx) => {
+    // 校門淨空防護（所有 9 座校門之門洞通道、門柱與出入口半徑內嚴禁長樹）
+    const gates = BUILDINGS.filter(b => b.category === "gate");
+    const safeTrees = treePositions.filter(pos => {
+      for (let g of gates) {
+        const threshold = (g.w / 2) + 3.0; // 門寬半徑外加 3 米安全淨空區
+        const dist = Math.hypot(pos.x - g.x, pos.z - g.z);
+        if (dist < threshold) return false;
+      }
+      return true;
+    });
+
+    safeTrees.forEach((pos, idx) => {
       const tree = new THREE.Group();
       tree.position.set(pos.x, 0, pos.z);
 
