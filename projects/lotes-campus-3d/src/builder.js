@@ -56,11 +56,11 @@ export class CampusBuilder {
     this.scene.add(campusGround);
 
     // 3. 北側清潭路新大門迎賓停車廣場（斜向 -32 度）
-    const northPlazaGeo = new THREE.PlaneGeometry(30, 22);
+    const northPlazaGeo = new THREE.PlaneGeometry(28, 20);
     const northPlaza = new THREE.Mesh(northPlazaGeo, this.materials.parkingPave);
     northPlaza.rotation.x = -Math.PI / 2;
     northPlaza.rotation.z = -0.56;
-    northPlaza.position.set(18, 0.08, -54);
+    northPlaza.position.set(12, 0.08, -60);
     northPlaza.receiveShadow = true;
     this.scene.add(northPlaza);
 
@@ -70,8 +70,8 @@ export class CampusBuilder {
       const lineMesh = new THREE.Mesh(lineGeo, this.materials.lineWhite);
       lineMesh.rotation.x = -Math.PI / 2;
       lineMesh.rotation.z = -0.56;
-      const lx = 18 + Math.cos(-0.56) * (i * 2.8);
-      const lz = -54 - Math.sin(-0.56) * (i * 2.8);
+      const lx = 12 + Math.cos(-0.56) * (i * 2.8);
+      const lz = -60 - Math.sin(-0.56) * (i * 2.8);
       lineMesh.position.set(lx, 0.09, lz);
       this.scene.add(lineMesh);
     }
@@ -536,7 +536,7 @@ export class CampusBuilder {
         { x: -48, z: -48 },
         { x: -46, z: -60 },
         { x: -34, z: -66 },
-        { x: -19, z: -54 }
+        { x: -14, z: -52 }
       ],
       // 2. 迎曦樓 ↔ 百齡樓（西側棟際走道）
       [
@@ -877,12 +877,12 @@ export class CampusBuilder {
     // 精確多邊形圍籬段（已依 9 座校門扣除開口寬度）
     const fenceSegments = [
       // 北界清潭路斜向段
-      { x1: -39, z1: -84, x2: -25, z2: -88 },
-      { x1: -25, z1: -88, x2: -19, z2: -82 },
-      // [留設白兔門開口: -19,-82 至 -11,-77]
-      { x1: -11, z1: -77, x2: 14, z2: -66 },
-      // [留設清潭路新大門開口: 14,-66 至 28,-58]
-      { x1: 28, z1: -58, x2: 41, z2: -29 },
+      { x1: -39, z1: -84, x2: -36, z2: -85 },
+      // [留設白兔門開口: -36,-85 至 -28,-87]
+      { x1: -28, z1: -87, x2: -25, z2: -88 },
+      { x1: -25, z1: -88, x2: 1, z2: -74 },
+      // [留設清潭路新大門開口: 1,-74 至 15,-66]
+      { x1: 15, z1: -66, x2: 41, z2: -29 },
       // [留設無尾熊門開口: 41,-29 至 48,-21]
       { x1: 48, z1: -21, x2: 61, z2: -20 },
       { x1: 61, z1: -20, x2: 81, z2: -14 },
