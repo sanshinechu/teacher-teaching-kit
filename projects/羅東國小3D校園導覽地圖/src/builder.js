@@ -100,9 +100,9 @@ export class CampusBuilder {
     courtMesh.receiveShadow = true;
     this.scene.add(courtMesh);
 
-    // 6. 迎風圓形展演涼亭（空照圖操場西側醒目圓形紅白同心條紋頂棚，與司令台同一中軸對齊）
+    // 6. 迎風圓形司令台展演亭（順著箭頭移至操場西側直道邊緣，中軸 Z=34 完美對齊操場中圈）
     const pavilionGroup = new THREE.Group();
-    pavilionGroup.position.set(13.5, 0, 38);
+    pavilionGroup.position.set(22, 0, 34);
 
     // 同心圓階梯基座
     const step1Geo = new THREE.CylinderGeometry(7.2, 7.5, 0.35, 32);
