@@ -854,16 +854,7 @@ export class CampusBuilder {
   buildRoads() {
     const roadMat = this.materials.road;
 
-    // 1. 北側清潭路（斜向貫穿，寬 16 米，連接開羅街與新大門）
-    const northRoadGeo = new THREE.PlaneGeometry(16, 175);
-    const northRoad = new THREE.Mesh(northRoadGeo, roadMat);
-    northRoad.rotation.x = -Math.PI / 2;
-    northRoad.rotation.z = -0.56;
-    northRoad.position.set(10, 0.03, -78);
-    northRoad.receiveShadow = true;
-    this.scene.add(northRoad);
-
-    // 2. 東側開羅街／清潭路南段（操場東緣，長 180 米）
+    // 1. 東側開羅街／清潭路南段（操場東緣，長 210 米）
     const eastRoadGeo = new THREE.PlaneGeometry(16, 210);
     const eastRoad = new THREE.Mesh(eastRoadGeo, roadMat);
     eastRoad.rotation.x = -Math.PI / 2;
@@ -871,7 +862,7 @@ export class CampusBuilder {
     eastRoad.receiveShadow = true;
     this.scene.add(eastRoad);
 
-    // 3. 南側南昌街（體育館南緣，長 240 米）
+    // 2. 南側南昌街（體育館南緣，長 240 米）
     const southRoadGeo = new THREE.PlaneGeometry(240, 16);
     const southRoad = new THREE.Mesh(southRoadGeo, roadMat);
     southRoad.rotation.x = -Math.PI / 2;
@@ -879,35 +870,13 @@ export class CampusBuilder {
     southRoad.receiveShadow = true;
     this.scene.add(southRoad);
 
-    // 4. 西側民族路／清潭路西段（沿西界弧形分段道路）
-    const westRoads = [
-      { x: -95, z: 25, len: 90, rotZ: 0 },
-      { x: -90, z: -35, len: 65, rotZ: 0.28 },
-      { x: -70, z: -75, len: 60, rotZ: 0.65 }
-    ];
-
-    westRoads.forEach(wr => {
-      const wGeo = new THREE.PlaneGeometry(16, wr.len);
-      const wMesh = new THREE.Mesh(wGeo, roadMat);
-      wMesh.rotation.x = -Math.PI / 2;
-      wMesh.rotation.z = wr.rotZ;
-      wMesh.position.set(wr.x, 0.03, wr.z);
-      wMesh.receiveShadow = true;
-      this.scene.add(wMesh);
-    });
-
-    // 5. 新大門前行人斑馬線
-    const zebraGroup = new THREE.Group();
-    zebraGroup.position.set(22, 0.038, -66);
-    zebraGroup.rotation.y = -0.56;
-    for (let i = -4; i <= 4; i++) {
-      const stripeGeo = new THREE.PlaneGeometry(0.8, 4.8);
-      const stripe = new THREE.Mesh(stripeGeo, this.materials.lineWhite);
-      stripe.rotation.x = -Math.PI / 2;
-      stripe.position.set(i * 1.4, 0, 0);
-      zebraGroup.add(stripe);
-    }
-    this.scene.add(zebraGroup);
+    // 3. 西側民族路段（長 90 米，筆直貼齊西側校界）
+    const westRoadGeo = new THREE.PlaneGeometry(16, 90);
+    const westRoad = new THREE.Mesh(westRoadGeo, roadMat);
+    westRoad.rotation.x = -Math.PI / 2;
+    westRoad.position.set(-95, 0.03, 25);
+    westRoad.receiveShadow = true;
+    this.scene.add(westRoad);
   }
 
   // --- 校園真實多邊形立體圍籬（依空照外廓全封閉＋留設校門開口） ---
