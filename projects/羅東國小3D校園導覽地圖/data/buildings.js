@@ -182,7 +182,7 @@ export const BUILDINGS = [
     name: "迎風圓形展演涼亭",
     category: "landscape",
     categoryName: "景觀綠帶",
-    x: 16,
+    x: 13.5,
     z: 38,
     y: 0.1,
     w: 13,
