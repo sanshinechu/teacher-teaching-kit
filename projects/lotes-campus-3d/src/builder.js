@@ -336,6 +336,13 @@ export class CampusBuilder {
         group.rotation.y = b.rotationY;
       }
 
+      // 開放式風雨操場專屬建造（開放式挑高鋼構柱列＋內部多功能球場）
+      if (b.id === "wind_rain_court") {
+        this.buildWindRainCourt(group, b);
+        this.scene.add(group);
+        return;
+      }
+
       // 主體量體
       if (b.id === "bailing") {
         // 🏛️ 百齡樓雙翼複合建築群（依空照紅框兩道箭頭精確構建雙翼連通大樓）
@@ -408,23 +415,7 @@ export class CampusBuilder {
       }
 
       // --- 各棟特色屋頂架構 ---
-      if (b.id === "wind_rain_court") {
-        // 🏛️ 風雨操場：6 連棟雙色交替圓拱拱頂（空照圖正中心最醒目的綠色圓拱屋頂！）
-        const archCount = 6;
-        const archWidth = b.w / archCount;
-        const archRadius = archWidth * 0.55;
-
-        for (let i = 0; i < archCount; i++) {
-          const ax = -b.w / 2 + (i + 0.5) * archWidth;
-          const archGeo = new THREE.CylinderGeometry(archRadius, archRadius, b.d, 24, 1, false, 0, Math.PI);
-          const mat = (i % 2 === 0) ? this.materials.roofWaveGreen : this.materials.roofWaveBeige;
-          const archMesh = new THREE.Mesh(archGeo, mat);
-          archMesh.rotation.x = Math.PI / 2;
-          archMesh.position.set(ax, b.h + 0.6, 0);
-          archMesh.castShadow = true;
-          group.add(archMesh);
-        }
-      } else if (b.id === "gymnasium") {
+      if (b.id === "gymnasium") {
         // 🏛️ 體育館（樹人館）：大跨度挑高雙斜坡鋼構屋頂（北坡光電板、南坡紅瓦邊）
         const roofHeight = 4.2;
         const roofGeo = new THREE.BoxGeometry(b.w + 1.2, roofHeight, b.d + 1.2);
@@ -507,6 +498,154 @@ export class CampusBuilder {
     });
 
     this.buildCoveredWalkways();
+  }
+
+  // --- 開放式風雨操場（挑高鋼構柱列、無封閉牆面，內設標準多功能球場） ---
+  buildWindRainCourt(group, b) {
+    // 1. 多功能球場基座（外緣綠色、中央湛藍壓克力地坪）
+    const courtOuterGeo = new THREE.PlaneGeometry(b.w, b.d);
+    const courtOuter = new THREE.Mesh(courtOuterGeo, this.materials.courtInner);
+    courtOuter.rotation.x = -Math.PI / 2;
+    courtOuter.position.y = 0.08;
+    courtOuter.receiveShadow = true;
+    courtOuter.userData = { ...b };
+    group.add(courtOuter);
+    this.interactiveObjects.push(courtOuter);
+
+    // 內圈湛藍球場面
+    const cw = b.w * 0.88;
+    const cd = b.d * 0.84;
+    const courtInnerGeo = new THREE.PlaneGeometry(cw, cd);
+    const courtInner = new THREE.Mesh(courtInnerGeo, this.materials.track);
+    courtInner.rotation.x = -Math.PI / 2;
+    courtInner.position.y = 0.085;
+    courtInner.receiveShadow = true;
+    group.add(courtInner);
+
+    // 2. 白色多功能球場標線（籃球場/排球場）
+    const hx = cw / 2;
+    const hz = cd / 2;
+    const borderPts = [
+      new THREE.Vector3(-hx, 0.09, -hz),
+      new THREE.Vector3(hx, 0.09, -hz),
+      new THREE.Vector3(hx, 0.09, hz),
+      new THREE.Vector3(-hx, 0.09, hz),
+      new THREE.Vector3(-hx, 0.09, -hz)
+    ];
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(borderPts), this.materials.lineWhite));
+
+    // 中線
+    const midPts = [new THREE.Vector3(0, 0.09, -hz), new THREE.Vector3(0, 0.09, hz)];
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(midPts), this.materials.lineWhite));
+
+    // 中央跳球圈
+    const centerCirclePts = [];
+    for (let a = 0; a <= Math.PI * 2; a += Math.PI / 16) {
+      centerCirclePts.push(new THREE.Vector3(Math.cos(a) * 2.2, 0.09, Math.sin(a) * 2.2));
+    }
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(centerCirclePts), this.materials.lineWhite));
+
+    // 東西兩端籃球禁區、罰球圈與立體籃球架
+    for (let sx of [-1, 1]) {
+      const keyPts = [
+        new THREE.Vector3(sx * hx, 0.09, -3.0),
+        new THREE.Vector3(sx * (hx - 5.5), 0.09, -2.4),
+        new THREE.Vector3(sx * (hx - 5.5), 0.09, 2.4),
+        new THREE.Vector3(sx * hx, 0.09, 3.0)
+      ];
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(keyPts), this.materials.lineWhite));
+
+      const ftCirclePts = [];
+      for (let a = -Math.PI / 2; a <= Math.PI / 2; a += Math.PI / 12) {
+        ftCirclePts.push(new THREE.Vector3(sx * (hx - 5.5) - sx * Math.cos(a) * 2.2, 0.09, Math.sin(a) * 2.2));
+      }
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ftCirclePts), this.materials.lineWhite));
+
+      // 🏀 3D 立體籃球架（立體基座、伸展臂、紅白籃板、橘色籃框）
+      const hoopGroup = new THREE.Group();
+      hoopGroup.position.set(sx * (hx - 0.6), 0, 0);
+      hoopGroup.rotation.y = sx === 1 ? -Math.PI / 2 : Math.PI / 2;
+
+      const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.9), this.materials.metal);
+      baseMesh.position.set(0, 0.35, -1.2);
+      hoopGroup.add(baseMesh);
+
+      const postArm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4.2, 8), this.materials.metal);
+      postArm.position.set(0, 1.9, -0.6);
+      postArm.rotation.x = -0.32;
+      hoopGroup.add(postArm);
+
+      const board = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 0.08), this.materials.wallWhite);
+      board.position.set(0, 3.1, 0);
+      hoopGroup.add(board);
+
+      const innerBox = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.09), this.materials.roofRed);
+      innerBox.position.set(0, 3.0, 0.01);
+      hoopGroup.add(innerBox);
+
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.04, 8, 16), this.materials.bailing_kindergarten);
+      rim.rotation.x = Math.PI / 2;
+      rim.position.set(0, 2.75, 0.4);
+      hoopGroup.add(rim);
+
+      group.add(hoopGroup);
+    }
+
+    // 3. 開放式鋼構立柱列（四周完全無牆，視覺通透無阻）
+    const pillarH = 8.5; // 開放式挑高淨空
+    const archCount = 6;
+    const archWidth = b.w / archCount;
+
+    for (let i = 0; i <= archCount; i++) {
+      const px = -b.w / 2 + i * archWidth;
+      for (let pz of [-b.d / 2 + 0.5, b.d / 2 - 0.5]) {
+        const pillarGeo = new THREE.CylinderGeometry(0.24, 0.28, pillarH, 12);
+        const pillar = new THREE.Mesh(pillarGeo, this.materials.wallCream);
+        pillar.position.set(px, pillarH / 2, pz);
+        pillar.castShadow = true;
+        group.add(pillar);
+
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.7), this.materials.metal);
+        cap.position.set(px, pillarH + 0.15, pz);
+        group.add(cap);
+      }
+
+      // 橫向鋼桁架（北至南跨越）
+      const trussGeo = new THREE.BoxGeometry(0.25, 0.5, b.d - 0.6);
+      const truss = new THREE.Mesh(trussGeo, this.materials.metal);
+      truss.position.set(px, pillarH + 0.25, 0);
+      truss.castShadow = true;
+      group.add(truss);
+    }
+
+    // 縱向鋼構大樑
+    for (let pz of [-b.d / 2 + 0.5, b.d / 2 - 0.5]) {
+      const beamGeo = new THREE.BoxGeometry(b.w + 0.8, 0.5, 0.5);
+      const beam = new THREE.Mesh(beamGeo, this.materials.metal);
+      beam.position.set(0, pillarH + 0.25, pz);
+      group.add(beam);
+    }
+
+    // 4. 頂部 6 連棟翠綠圓拱波浪頂棚（架於挑高鋼構大樑之上）
+    const archRadius = archWidth * 0.55;
+    for (let i = 0; i < archCount; i++) {
+      const ax = -b.w / 2 + (i + 0.5) * archWidth;
+      const archGeo = new THREE.CylinderGeometry(archRadius, archRadius, b.d + 1.2, 24, 1, false, 0, Math.PI);
+      const mat = (i % 2 === 0) ? this.materials.roofWaveGreen : this.materials.roofWaveBeige;
+      const archMesh = new THREE.Mesh(archGeo, mat);
+      archMesh.rotation.x = Math.PI / 2;
+      archMesh.position.set(ax, pillarH + 0.5, 0);
+      archMesh.castShadow = true;
+      group.add(archMesh);
+    }
+
+    // 5. 點選判定包覆盒
+    const hitBoxGeo = new THREE.BoxGeometry(b.w, pillarH + 3.0, b.d);
+    const hitBox = new THREE.Mesh(hitBoxGeo, new THREE.MeshBasicMaterial({ visible: false }));
+    hitBox.position.y = (pillarH + 3.0) / 2;
+    hitBox.userData = { ...b };
+    group.add(hitBox);
+    this.interactiveObjects.push(hitBox);
   }
 
   // --- 校舍間紅瓦風雨走廊連通系統 ---
