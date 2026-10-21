@@ -175,7 +175,7 @@ export class CampusBuilder {
     trackGroup.add(trackMesh);
     this.interactiveObjects.push(trackMesh);
 
-    // 內圈球場基座（暖黃橙色排球/籃球場地坪，空照圖真實特徵）
+    // 內圈綠茵球場基座（高質感人工草皮，深淺相間割草條紋）
     const ir = 16.5; // 內圈半徑
     const innerShape = new THREE.Shape();
     innerShape.moveTo(-ir, -slen);
@@ -185,18 +185,23 @@ export class CampusBuilder {
     innerShape.lineTo(-ir, -slen);
 
     const innerGeo = new THREE.ShapeGeometry(innerShape);
-    const innerMesh = new THREE.Mesh(innerGeo, this.materials.court);
+    const innerMesh = new THREE.Mesh(innerGeo, this.materials.artificialTurf);
     innerMesh.rotation.x = -Math.PI / 2;
     innerMesh.position.y = 0.02;
     innerMesh.receiveShadow = true;
     trackGroup.add(innerMesh);
 
-    // 內圈中央跳球區與緩衝草坪
-    const centerGrassGeo = new THREE.PlaneGeometry(16, 20);
-    const centerGrass = new THREE.Mesh(centerGrassGeo, this.materials.courtInner);
-    centerGrass.rotation.x = -Math.PI / 2;
-    centerGrass.position.set(0, 0.025, 0);
-    trackGroup.add(centerGrass);
+    // 人工草皮深淺割草斑紋（6 道對比均勻的橫向草皮條帶）
+    const stripeWidth = (slen * 2) / 6; // 約 6.3 米寬
+    for (let i = 0; i < 6; i += 2) {
+      const sz = -slen + (i + 0.5) * stripeWidth;
+      const stripeGeo = new THREE.PlaneGeometry(ir * 1.95, stripeWidth);
+      const stripeMesh = new THREE.Mesh(stripeGeo, this.materials.artificialTurfLight);
+      stripeMesh.rotation.x = -Math.PI / 2;
+      stripeMesh.position.set(0, 0.022, sz);
+      stripeMesh.receiveShadow = true;
+      trackGroup.add(stripeMesh);
+    }
 
     // 6 條白漆跑道分隔線（完美封閉同心圓滑環）
     for (let i = 0; i <= 5; i++) {
@@ -217,26 +222,81 @@ export class CampusBuilder {
       trackGroup.add(line);
     }
 
-    // 內圈球場標線（籃球禁區與中線）
-    for (let sz of [-slen * 0.55, slen * 0.55]) {
-      const courtLinePoints = [
-        new THREE.Vector3(-8, 0.035, sz - 7),
-        new THREE.Vector3(8, 0.035, sz - 7),
-        new THREE.Vector3(8, 0.035, sz + 7),
-        new THREE.Vector3(-8, 0.035, sz + 7),
-        new THREE.Vector3(-8, 0.035, sz - 7)
-      ];
-      const clGeo = new THREE.BufferGeometry().setFromPoints(courtLinePoints);
-      const cl = new THREE.Line(clGeo, this.materials.lineWhite);
-      trackGroup.add(cl);
+    // 人工草皮球場專屬白色標線（足球/多功能球場）
+    // 1. 球場外圍邊界白線
+    const fw = 13.0; // 球場半寬
+    const fl = 25.0; // 球場半長
+    const fieldBorderPts = [
+      new THREE.Vector3(-fw, 0.026, -fl),
+      new THREE.Vector3(fw, 0.026, -fl),
+      new THREE.Vector3(fw, 0.026, fl),
+      new THREE.Vector3(-fw, 0.026, fl),
+      new THREE.Vector3(-fw, 0.026, -fl)
+    ];
+    trackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(fieldBorderPts), this.materials.lineWhite));
 
-      // 三秒區鑰匙圈
-      const hoopPoints = [];
-      for (let a = 0; a <= Math.PI * 2; a += Math.PI / 16) {
-        hoopPoints.push(new THREE.Vector3(Math.cos(a) * 2.8, 0.035, sz + Math.sin(a) * 2.8));
-      }
-      const hoopGeo = new THREE.BufferGeometry().setFromPoints(hoopPoints);
-      trackGroup.add(new THREE.Line(hoopGeo, this.materials.lineWhite));
+    // 2. 中央半場中線
+    const midLinePts = [
+      new THREE.Vector3(-fw, 0.026, 0),
+      new THREE.Vector3(fw, 0.026, 0)
+    ];
+    trackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(midLinePts), this.materials.lineWhite));
+
+    // 3. 中央開球圓圈 (半徑 4.5 米)
+    const centerCirclePts = [];
+    for (let a = 0; a <= Math.PI * 2; a += Math.PI / 20) {
+      centerCirclePts.push(new THREE.Vector3(Math.cos(a) * 4.5, 0.026, Math.sin(a) * 4.5));
+    }
+    trackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(centerCirclePts), this.materials.lineWhite));
+
+    // 4. 南北兩側大禁區、小球門區與 3D 足球門
+    for (let side of [-1, 1]) {
+      const penaltyBoxPts = [
+        new THREE.Vector3(-8.5, 0.026, side * fl),
+        new THREE.Vector3(-8.5, 0.026, side * (fl - 7.5)),
+        new THREE.Vector3(8.5, 0.026, side * (fl - 7.5)),
+        new THREE.Vector3(8.5, 0.026, side * fl)
+      ];
+      trackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(penaltyBoxPts), this.materials.lineWhite));
+
+      const goalAreaPts = [
+        new THREE.Vector3(-4.5, 0.026, side * fl),
+        new THREE.Vector3(-4.5, 0.026, side * (fl - 3.5)),
+        new THREE.Vector3(4.5, 0.026, side * (fl - 3.5)),
+        new THREE.Vector3(4.5, 0.026, side * fl)
+      ];
+      trackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(goalAreaPts), this.materials.lineWhite));
+
+      // 白色 3D 足球門立體架構
+      const goalGroup = new THREE.Group();
+      goalGroup.position.set(0, 0, side * fl);
+      goalGroup.rotation.y = side === 1 ? Math.PI : 0;
+
+      const goalMat = this.materials.wallWhite;
+      const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.2, 8), goalMat);
+      postL.position.set(-2.5, 1.1, 0);
+      goalGroup.add(postL);
+
+      const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.2, 8), goalMat);
+      postR.position.set(2.5, 1.1, 0);
+      goalGroup.add(postR);
+
+      const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5.0, 8), goalMat);
+      crossbar.rotation.z = Math.PI / 2;
+      crossbar.position.set(0, 2.2, 0);
+      goalGroup.add(crossbar);
+
+      const backL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), goalMat);
+      backL.position.set(-2.5, 1.1, -0.6);
+      backL.rotation.x = -0.5;
+      goalGroup.add(backL);
+
+      const backR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 8), goalMat);
+      backR.position.set(2.5, 1.1, -0.6);
+      backR.rotation.x = -0.5;
+      goalGroup.add(backR);
+
+      trackGroup.add(goalGroup);
     }
 
     // 司令台（位於操場西側直道外緣，坐西朝東面向全操場）

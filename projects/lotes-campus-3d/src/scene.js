@@ -84,6 +84,8 @@ export class CampusScene {
       grass: createMat('#327838', 0.7, 0),         // 鮮翠校園草皮
       field: createMat('#225e26', 0.65, 0),        // 足球場深蔥綠
       track: createMat('#1f4d8c', 0.45, 0.05),     // 空照真實湛藍色 200M PU 跑道
+      artificialTurf: createMat('#25853c', 0.65, 0),       // 人工草皮鮮翠基底
+      artificialTurfLight: createMat('#2fa348', 0.65, 0),  // 人工草皮明亮條紋
       court: createMat('#d89b53', 0.55, 0.05),     // 內圈排球/籃球場暖褐橙地坪
       courtInner: createMat('#307a3c', 0.65, 0.05),// 內圈綠茵球場
       solarPanel: createMat('#121b26', 0.3, 0.8),  // 現代化太陽能光電板
