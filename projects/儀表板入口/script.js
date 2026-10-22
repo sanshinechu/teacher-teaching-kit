@@ -23,6 +23,8 @@ const state = {
   unsubscribeCounters: null
 };
 
+const inFlight = new Set();
+
 function hasFirebaseConfig() {
   return firebaseConfig
     && firebaseConfig.apiKey
@@ -78,6 +80,9 @@ function renderCounters() {
     const badge = getCounterBadge(card);
     badge.querySelector("strong").textContent = String(state.counters[moduleId] || 0);
     badge.classList.toggle("is-cloud", state.mode === "firebase");
+    if (!inFlight.has(moduleId)) {
+      badge.querySelector("span").textContent = "使用次數";
+    }
   });
 }
 
@@ -109,6 +114,11 @@ async function countCloudModule(card) {
     return;
   }
 
+  if (inFlight.has(moduleId)) {
+    return;
+  }
+  inFlight.add(moduleId);
+
   const { db, doc, runTransaction, serverTimestamp } = state.firebase;
   const counterRef = doc(db, collectionName, moduleId);
   setBadgeStatus(card, "寫入中");
@@ -126,9 +136,20 @@ async function countCloudModule(card) {
       });
     });
     animateBadge(card);
+    setBadgeStatus(card, "已計入");
+    setTimeout(() => {
+      setBadgeStatus(card, "使用次數");
+    }, 1200);
   } catch (error) {
     console.error(error);
     setBadgeStatus(card, "寫入失敗");
+    setTimeout(() => {
+      setBadgeStatus(card, "使用次數");
+    }, 3000);
+  } finally {
+    setTimeout(() => {
+      inFlight.delete(moduleId);
+    }, 1000);
   }
 }
 
@@ -149,8 +170,9 @@ function bindCounterEvents() {
   document.querySelectorAll(".tool-card").forEach((card) => {
     card.addEventListener("click", (event) => countModuleUse(card, event));
     card.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        countModuleUse(card, event);
+      if (event.key === " ") {
+        event.preventDefault();
+        card.click();
       }
     });
   });
