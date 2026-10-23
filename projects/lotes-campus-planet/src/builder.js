@@ -154,6 +154,7 @@ export class CampusBuilder {
   // --- 200M PU 操場跑道與內圈多功能球場（精確定位於東南開闊區） ---
   buildTrackAndField() {
     const trackGroup = new THREE.Group();
+    trackGroup.userData = { id: "track_field", name: "200M 湛藍 PU 操場" };
     // 操場跑道中心：X=54（東南象限）、Z=34（南依南昌街、東臨開羅街）
     trackGroup.position.set(54, 0.12, 34);
     trackGroup.rotation.y = -0.05; // 微傾斜約 3 度，對齊開照道路走向
@@ -310,6 +311,7 @@ export class CampusBuilder {
       if (b.category === "gate" || b.id === "track_field" || b.id === "courtyard" || b.id === "circular_pavilion" || b.id.startsWith("parking")) return;
 
       const group = new THREE.Group();
+      group.userData = { id: b.id, name: b.name };
       group.position.set(b.x, 0, b.z);
       if (b.rotationY) {
         group.rotation.y = b.rotationY;
@@ -985,6 +987,7 @@ export class CampusBuilder {
     const gates = BUILDINGS.filter(b => b.category === "gate");
     gates.forEach(g => {
       const gateGroup = new THREE.Group();
+      gateGroup.userData = { id: g.id, name: g.name };
       gateGroup.position.set(g.x, 0, g.z);
       if (g.rotationY !== undefined) {
         gateGroup.rotation.y = g.rotationY;

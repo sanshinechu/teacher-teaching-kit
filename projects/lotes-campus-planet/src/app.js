@@ -23,6 +23,7 @@ class App {
     }
 
     this.selectedBuilding = null;
+    this.highlightedMeshes = []; // 記錄當前被點選而發光變色的建築物網格
     this.tourIndex = 0;
     this.isTourRunning = false;
     this.tourTimer = null;
@@ -93,11 +94,60 @@ class App {
     }
   }
 
+  clearHighlight() {
+    if (this.highlightedMeshes.length > 0) {
+      this.highlightedMeshes.forEach(({ mesh, originalMaterial }) => {
+        mesh.material = originalMaterial;
+      });
+      this.highlightedMeshes = [];
+    }
+  }
+
+  highlightBuilding(buildingId) {
+    this.clearHighlight();
+    if (!buildingId) return;
+
+    // 尋找場景中屬於該 buildingId 的群組或網格
+    this.sceneManager.scene.traverse((obj) => {
+      if (obj.isMesh && obj.material && obj.material.visible !== false) {
+        // 向上檢查 parent 是否匹配該建築物 ID
+        let p = obj;
+        let isMatch = false;
+        while (p) {
+          if (p.userData?.id === buildingId) {
+            isMatch = true;
+            break;
+          }
+          p = p.parent;
+        }
+
+        if (isMatch) {
+          const orig = obj.material;
+          // 排除透明輔助碰擊框
+          if (orig.visible === false || orig.opacity === 0) return;
+
+          // 複製材質並施加明亮活潑的金黃暖陽高亮色
+          const hlMat = orig.clone();
+          if (hlMat.emissive) {
+            hlMat.emissive = new THREE.Color('#ffb703'); // 溫暖琥珀金黃光
+            hlMat.emissiveIntensity = 0.55;
+          } else if (hlMat.color) {
+            hlMat.color = new THREE.Color('#ffe066');
+          }
+          obj.material = hlMat;
+          this.highlightedMeshes.push({ mesh: obj, originalMaterial: orig });
+        }
+      }
+    });
+  }
+
   selectBuilding(buildingId, triggerFlight = true) {
     const b = BUILDINGS.find(item => item.id === buildingId);
     if (!b) return;
 
     this.selectedBuilding = b;
+    // 讓被點到的建築物發光變色！
+    this.highlightBuilding(buildingId);
     const card = document.getElementById('detail-card');
     const title = document.getElementById('detail-title');
     const cat = document.getElementById('detail-category');
@@ -190,8 +240,9 @@ class App {
           this.selectBuilding(hit.userData.id, true);
         }
       } else {
-        // 點擊空白處時自動收合右下角解說卡
+        // 點擊空白處時自動收合右下角解說卡並恢復原色
         document.getElementById('detail-card')?.classList.remove('has-selection');
+        this.clearHighlight();
         this.selectedBuilding = null;
         this.renderBuildingList();
       }
@@ -269,6 +320,7 @@ class App {
     // 關閉介紹卡
     document.getElementById('close-detail')?.addEventListener('click', () => {
       document.getElementById('detail-card')?.classList.remove('has-selection');
+      this.clearHighlight();
       this.selectedBuilding = null;
       this.renderBuildingList();
     });
@@ -280,6 +332,7 @@ class App {
 
     document.getElementById('tour-close')?.addEventListener('click', () => {
       this.stopTour();
+      this.clearHighlight();
     });
 
     document.getElementById('tour-next')?.addEventListener('click', () => {
