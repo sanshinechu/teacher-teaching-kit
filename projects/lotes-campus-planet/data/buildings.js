@@ -359,16 +359,15 @@ export const BUILDINGS = [
 
 export const TOUR_STATIONS = [
   "gate_new",             // 1. 清潭路新大門
-  "guard_room",           // 2. 警衛室
-  "hanyu",                // 3. 涵育樓 (教學行政核心/教務/學務/校長室/圖書館/電腦教室)
-  "yingxi",               // 4. 迎曦樓 (二三年級教室/光電屋頂)
-  "wind_rain_court",      // 5. 風雨操場 (6連棟波浪綠屋頂半戶外球場)
-  "xiaoyou",              // 6. 校友館 (校史校友中心/全棟太陽能光電)
-  "bailing",              // 7. 百齡樓 (總務/健康中心/高年級教室/音樂/幼兒園/中央廚房)
-  "science",              // 8. 科學館 (視聽/自然實驗/天文台)
-  "gymnasium",            // 9. 體育館（樹人館）
-  "track_field",          // 10. 200M 湛藍 PU 操場
-  "circular_pavilion",    // 11. 迎風圓形展演涼亭
-  "gate_rabbit",          // 12. 清潭路白兔門
-  "gate_peacock"          // 13. 孔雀門
+  "hanyu",                // 2. 涵育樓 (教學行政核心/教務/學務/校長室/圖書館/電腦教室)
+  "yingxi",               // 3. 迎曦樓 (二三年級教室/光電屋頂)
+  "wind_rain_court",      // 4. 風雨操場 (6連棟波浪綠屋頂半戶外球場)
+  "xiaoyou",              // 5. 校友館 (校史校友中心/全棟太陽能光電)
+  "bailing",              // 6. 百齡樓 (總務/健康中心/高年級教室/音樂/幼兒園/中央廚房)
+  "science",              // 7. 科學館 (視聽/自然實驗/天文台)
+  "gymnasium",            // 8. 體育館（樹人館）
+  "track_field",          // 9. 200M 湛藍 PU 操場
+  "circular_pavilion",    // 10. 迎風圓形展演涼亭
+  "gate_rabbit",          // 11. 清潭路白兔門
+  "gate_peacock"          // 12. 孔雀門
 ];
