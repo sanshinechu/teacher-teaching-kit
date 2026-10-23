@@ -159,9 +159,18 @@ class App {
       this.renderBuildingList();
     });
 
-    // 3D 畫布滑鼠點選建築物
+    // 3D 畫布滑鼠點選建築物（拖曳旋轉畫面時不觸發點選，只有純點擊才觸發）
+    let pointerDownPos = { x: 0, y: 0 };
+    this.sceneManager.renderer.domElement.addEventListener('pointerdown', (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
     this.sceneManager.renderer.domElement.addEventListener('pointerup', (e) => {
       if (this.viewController.mode === 'walk') return;
+      // 若滑鼠移動距離超過 6 像素，代表是旋轉視角而非點擊，不跳出解說
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 6) return;
+
       const rect = this.sceneManager.renderer.domElement.getBoundingClientRect();
       this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -177,6 +186,11 @@ class App {
         if (hit?.userData?.id) {
           this.selectBuilding(hit.userData.id, true);
         }
+      } else {
+        // 點擊空白處時自動收合右下角解說卡
+        document.getElementById('detail-card')?.classList.remove('has-selection');
+        this.selectedBuilding = null;
+        this.renderBuildingList();
       }
     });
 
