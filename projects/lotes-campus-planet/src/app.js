@@ -114,9 +114,9 @@ class App {
     }
 
     if (triggerFlight) {
-      // 縮小視角、拉遠觀看距離，確保整棟建築與周邊環境完整入鏡，絕不放大局部截斷建物
+      // 依組長要求再拉遠為 2 倍視距（最小距離 150 米，建物跨度 5.2 倍），畫面全面縮小，超大廣角看清全貌與周圍環境
       const buildingSpan = Math.max(b.w, b.d, b.h || 15);
-      const viewDistance = Math.max(75, buildingSpan * 2.6);
+      const viewDistance = Math.max(150, buildingSpan * 5.2);
       this.viewController.flyTo(b.x, b.z, viewDistance);
     }
 
