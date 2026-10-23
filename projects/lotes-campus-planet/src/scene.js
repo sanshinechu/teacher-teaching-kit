@@ -43,9 +43,9 @@ export class CampusScene {
 
   initCamera() {
     this.camera = new THREE.PerspectiveCamera(40, this.width / this.height, 1, 1000);
-    // 預設經典視角：西南方斜側眺望全校（操場在左、風雨球場與百齡樓在右中）
-    this.defaultCameraPos = new THREE.Vector3(-110, 85, 125);
-    this.defaultTarget = new THREE.Vector3(5, 5, 8);
+    // 預設經典視角：南側正門迎賓視角（民族路校門在前景中央，操場在左側，全校向北展開）
+    this.defaultCameraPos = new THREE.Vector3(-45, 62, -145);
+    this.defaultTarget = new THREE.Vector3(-15, 6, -10);
     this.camera.position.copy(this.defaultCameraPos);
   }
 
