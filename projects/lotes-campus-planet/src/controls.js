@@ -17,10 +17,10 @@ export class ViewController {
     this.mascot = new MascotPlayer(this.campus.scene, 'luodong');
     // 出生點：清潭路新大門門口前迎賓處 (x: 8, z: -63)
     this.playerPos = new THREE.Vector3(8, 0, -63);
-    // 開場攝影機方位角 (0 代表相機在主角身後北側，面朝南望入校園)
-    this.playerAngle = 0; 
-    // 主角身體朝向角（面向校園南面進入校區）
-    this.mascotHeading = Math.PI; 
+    // 開場攝影機方位角 (Math.PI 代表相機在主角身後北側 -Z 處，面朝南望入校園)
+    this.playerAngle = Math.PI; 
+    // 主角身體朝向角（面向校園南面 +Z 方向進入校區）
+    this.mascotHeading = 0; 
     this.mascot.setPosition(this.playerPos.x, this.playerPos.y, this.playerPos.z);
     this.mascot.setRotationY(this.mascotHeading);
     this.mascot.group.visible = true; // 鳥瞰視角也常駐顯示，清楚看見主角站在大門口迎賓！
