@@ -15,20 +15,20 @@ export class ViewController {
 
     // 實體主角公仔：羅小東 / 蘿絲
     this.mascot = new MascotPlayer(this.campus.scene, 'luodong');
-    // 出生點：清潭路新大門門口前迎賓處 (x: 8, z: -63)
-    this.playerPos = new THREE.Vector3(8, 0, -63);
-    // 開場攝影機方位角 (Math.PI 代表相機在主角身後北側 -Z 處，面朝南望入校園)
-    this.playerAngle = Math.PI; 
-    // 主角身體朝向角（面向校園南面 +Z 方向進入校區）
-    this.mascotHeading = 0; 
+    // 出生點：民族路歷史校門口（門牌1號）迎賓處 (x: -60, z: -46)
+    this.playerPos = new THREE.Vector3(-60, 0, -46);
+    // 開場攝影機方位角 (從校門後方向校內東北核心方向望去)
+    this.playerAngle = -0.78; 
+    // 主角身體朝向角（面向校園內部前進）
+    this.mascotHeading = Math.PI * 0.22; 
     this.mascot.setPosition(this.playerPos.x, this.playerPos.y, this.playerPos.z);
     this.mascot.setRotationY(this.mascotHeading);
-    this.mascot.group.visible = true; // 鳥瞰視角也常駐顯示，清楚看見主角站在大門口迎賓！
+    this.mascot.group.visible = true; // 各視角皆常駐顯示主角
 
-    // 第三人稱攝影機參數
-    this.camDistance = 14;
-    this.camHeight = 7.5;
-    this.camLookHeight = 2.0;
+    // 第三人稱攝影機參數：適當的跟隨距離與高度，主角在畫面正下方偏中，視野開闊
+    this.camDistance = 12;
+    this.camHeight = 5.8;
+    this.camLookHeight = 2.2;
 
     this.setupKeyboardListeners();
     this.setupPointerListeners();
