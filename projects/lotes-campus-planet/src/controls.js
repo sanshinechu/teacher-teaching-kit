@@ -212,8 +212,8 @@ export class ViewController {
     const target = new THREE.Vector3(x, 0, z);
     const startPos = this.camera.position.clone();
     const startTarget = this.controls.target.clone();
-    // 鏡頭維持從南向北的自然俯視眺望角度飛向目標
-    const endPos = new THREE.Vector3(x - distance * 0.45, distance * 0.65, z - distance * 0.65);
+    // 鏡頭維持高空斜俯視眺望角度，視距拉遠，完整收納整棟建物與周遭空地
+    const endPos = new THREE.Vector3(x - distance * 0.55, distance * 0.95, z - distance * 0.75);
 
     const duration = 1200;
     const startTime = performance.now();

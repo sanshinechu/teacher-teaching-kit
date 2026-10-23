@@ -114,7 +114,10 @@ class App {
     }
 
     if (triggerFlight) {
-      this.viewController.flyTo(b.x, b.z, Math.max(35, Math.max(b.w, b.d) * 1.5));
+      // 縮小視角、拉遠觀看距離，確保整棟建築與周邊環境完整入鏡，絕不放大局部截斷建物
+      const buildingSpan = Math.max(b.w, b.d, b.h || 15);
+      const viewDistance = Math.max(75, buildingSpan * 2.6);
+      this.viewController.flyTo(b.x, b.z, viewDistance);
     }
 
     this.renderBuildingList();
