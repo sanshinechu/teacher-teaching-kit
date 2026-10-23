@@ -41,6 +41,7 @@ class App {
   }
 
   initUI() {
+    if (window.lucide) window.lucide.createIcons();
     this.renderBuildingList();
     this.renderOfficesDialog();
     this.renderGradesDialog();
@@ -170,6 +171,14 @@ class App {
       this.viewController.flyTo(b.x, b.z, viewDistance);
     }
 
+    // 行動裝置優化：點選地點後自動收合側欄，呈現清楚無遮擋的 3D 視覺
+    if (window.innerWidth <= 768) {
+      const sidebar = document.getElementById('sidebar');
+      const openBtn = document.getElementById('sidebar-open-btn');
+      sidebar?.classList.add('collapsed');
+      if (openBtn) openBtn.style.display = 'flex';
+    }
+
     this.renderBuildingList();
   }
 
@@ -179,6 +188,14 @@ class App {
     const openBtn = document.getElementById('sidebar-open-btn');
     const closeBtn = document.getElementById('sidebar-close-btn');
 
+    // 行動裝置檢查：寬度 <= 768px 時預設收合側邊欄，還給手機全螢幕 3D 景觀
+    if (window.innerWidth <= 768) {
+      sidebar?.classList.add('collapsed');
+      if (openBtn) openBtn.style.display = 'flex';
+      const mascotSpan = document.getElementById('mascot-name');
+      if (mascotSpan) mascotSpan.textContent = '羅小東';
+    }
+
     closeBtn?.addEventListener('click', () => {
       sidebar?.classList.add('collapsed');
       if (openBtn) openBtn.style.display = 'flex';
@@ -187,6 +204,25 @@ class App {
     openBtn?.addEventListener('click', () => {
       sidebar?.classList.remove('collapsed');
       if (openBtn) openBtn.style.display = 'none';
+    });
+
+    // 手機版頂部更多功能選單
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const navLinks = document.getElementById('top-nav-links');
+
+    mobileNavToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navLinks?.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#top-nav-links') && !e.target.closest('#mobile-nav-toggle')) {
+        navLinks?.classList.remove('open');
+      }
+    });
+
+    navLinks?.addEventListener('click', () => {
+      navLinks.classList.remove('open');
     });
 
     // 點選清單項目
@@ -271,7 +307,12 @@ class App {
       const nextType = this.viewController.toggleMascot();
       const nameSpan = document.getElementById('mascot-name');
       if (nameSpan) {
-        nameSpan.textContent = nextType === 'luodong' ? '主角：羅小東' : '主角：蘿絲';
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+          nameSpan.textContent = nextType === 'luodong' ? '羅小東' : '蘿絲';
+        } else {
+          nameSpan.textContent = nextType === 'luodong' ? '主角：羅小東' : '主角：蘿絲';
+        }
       }
     });
 

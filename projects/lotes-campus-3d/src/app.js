@@ -109,6 +109,13 @@ class App {
       this.viewController.flyTo(b.x, b.z, Math.max(35, Math.max(b.w, b.d) * 1.5));
     }
 
+    if (window.innerWidth <= 768) {
+      const sidebar = document.getElementById('sidebar');
+      const openBtn = document.getElementById('sidebar-open-btn');
+      sidebar?.classList.add('collapsed');
+      if (openBtn) openBtn.style.display = 'flex';
+    }
+
     this.renderBuildingList();
   }
 
@@ -118,6 +125,11 @@ class App {
     const openBtn = document.getElementById('sidebar-open-btn');
     const closeBtn = document.getElementById('sidebar-close-btn');
 
+    if (window.innerWidth <= 768) {
+      sidebar?.classList.add('collapsed');
+      if (openBtn) openBtn.style.display = 'flex';
+    }
+
     closeBtn?.addEventListener('click', () => {
       sidebar?.classList.add('collapsed');
       if (openBtn) openBtn.style.display = 'flex';
@@ -126,6 +138,24 @@ class App {
     openBtn?.addEventListener('click', () => {
       sidebar?.classList.remove('collapsed');
       if (openBtn) openBtn.style.display = 'none';
+    });
+
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const navLinks = document.getElementById('top-nav-links');
+
+    mobileNavToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navLinks?.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#top-nav-links') && !e.target.closest('#mobile-nav-toggle')) {
+        navLinks?.classList.remove('open');
+      }
+    });
+
+    navLinks?.addEventListener('click', () => {
+      navLinks.classList.remove('open');
     });
 
     // 點選清單項目

@@ -639,6 +639,280 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* 手機與平板行動裝置響應式設計（Mobile RWD） */
+    .mobile-nav-toggle {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel-bg);
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--primary);
+      transition: all 0.2s;
+    }
+
+    .mobile-nav-toggle:active {
+      transform: scale(0.95);
+      background: #ffffff;
+    }
+
+    .open-btn-text {
+      display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+      /* 頂部列：精簡高度與邊界，避免遮蔽過多視野 */
+      .topbar {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        height: 48px;
+        padding: 0 10px;
+        border-radius: 11px;
+      }
+
+      .brand {
+        gap: 8px;
+      }
+
+      .brand-logo {
+        width: 30px;
+        height: 30px;
+        font-size: 15px;
+        border-radius: 7px;
+      }
+
+      .brand-title strong {
+        font-size: 13.5px;
+        letter-spacing: 0;
+      }
+
+      .brand-title small {
+        display: none;
+      }
+
+      /* 顯示手機版功能按鈕 */
+      .mobile-nav-toggle {
+        display: flex;
+      }
+
+      /* 頂部導覽列：手機版改為點擊彈出的右上方懸浮選單 */
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 54px;
+        right: 0;
+        background: var(--panel-bg);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--panel-border);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
+        border-radius: 12px;
+        padding: 8px;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 145px;
+        z-index: 60;
+      }
+
+      .nav-links.open {
+        display: flex;
+        animation: navSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes navSlideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-8px) scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .nav-btn {
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 13px;
+        justify-content: flex-start;
+      }
+
+      /* 左側地點邊欄：手機版抽屜式設計 */
+      .sidebar {
+        top: 62px;
+        left: 8px;
+        right: 8px;
+        bottom: 12px;
+        width: auto;
+        max-width: calc(100vw - 16px);
+        padding: 14px;
+        z-index: 50;
+        border-radius: 12px;
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(calc(-100% - 24px));
+      }
+
+      /* 展開清單按鈕：手機版做成舒適的膠囊按鈕 */
+      .sidebar-toggle-btn {
+        top: 62px;
+        left: 8px;
+        width: auto;
+        height: 35px;
+        padding: 0 10px;
+        gap: 5px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        z-index: 25;
+      }
+
+      /* 視角切換列：手機版縮短文字、水平排列不換行 */
+      .view-switch {
+        top: 62px;
+        right: 8px;
+        padding: 3px;
+        gap: 3px;
+        border-radius: 9px;
+        z-index: 25;
+        max-width: calc(100vw - 110px);
+        overflow-x: auto;
+      }
+
+      .view-switch button {
+        padding: 5px 8px;
+        font-size: 11px;
+        gap: 4px;
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+
+      .view-switch button i {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* 右側工具列：直立排列、按鈕適當縮小防遮擋 */
+      .map-toolbar {
+        top: 105px;
+        right: 8px;
+        padding: 3px;
+        gap: 4px;
+        border-radius: 9px;
+        z-index: 25;
+      }
+
+      .tool-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 7px;
+      }
+
+      .tool-btn i {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* 詳細建築資訊卡片：手機版底部抽屜（Bottom Sheet） */
+      .detail-card {
+        bottom: 10px;
+        left: 8px;
+        right: 8px;
+        width: auto;
+        max-height: 48vh;
+        overflow-y: auto;
+        padding: 14px;
+        border-radius: 12px;
+        z-index: 40;
+      }
+
+      .detail-card h3 {
+        font-size: 17px;
+      }
+
+      .detail-card p {
+        font-size: 12.5px;
+        margin-bottom: 8px;
+      }
+
+      /* 底部巡航列：精準水平置中 */
+      .bottom-bar {
+        left: 50% !important;
+        transform: translateX(-50%);
+        bottom: 12px;
+        width: max-content;
+        z-index: 30;
+      }
+
+      .pill-btn {
+        padding: 8px 14px;
+        font-size: 12.5px;
+        border-radius: 20px;
+      }
+
+      /* 開啟建築解說卡時，底部巡航按鈕自動隱藏，避免重疊 */
+      .detail-card.has-selection ~ .bottom-bar {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(20px);
+      }
+
+      .tourbar {
+        left: 50% !important;
+        transform: translateX(-50%);
+        bottom: 12px;
+        width: calc(100vw - 20px);
+        max-width: 360px;
+        padding: 7px 12px;
+        gap: 6px;
+        border-radius: 20px;
+        z-index: 35;
+      }
+
+      .tour-progress {
+        width: 55px;
+      }
+
+      #tour-name {
+        font-size: 12.5px;
+        max-width: 105px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .walk-controls {
+        bottom: 56px;
+        width: 90%;
+        padding: 8px 12px;
+        font-size: 11px;
+      }
+
+      /* 對話框：手機版滿版舒適閱讀 */
+      dialog {
+        width: 94%;
+        padding: 16px;
+        max-height: 85vh;
+      }
+
+      .dialog-header h2 {
+        font-size: 17px;
+      }
+
+      .office-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .grade-table th, .grade-table td {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -651,7 +925,10 @@
           <small>LOTES Campus Planet · 卡通探索版</small>
         </div>
       </a>
-      <nav class="nav-links">
+      <button class="mobile-nav-toggle" id="mobile-nav-toggle" title="功能選單" aria-label="功能選單">
+        <i data-lucide="more-vertical"></i>
+      </button>
+      <nav class="nav-links" id="top-nav-links">
         <button class="nav-btn" id="offices-btn">
           <i data-lucide="building-2"></i><span>處室配置</span>
         </button>
@@ -662,7 +939,7 @@
           <i data-lucide="map"></i><span>2D 平面圖</span>
         </button>
         <a class="nav-btn" href="https://www.lotes.ilc.edu.tw/" target="_blank" rel="noopener noreferrer">
-          <span>學校官網</span><i data-lucide="arrow-up-right"></i>
+          <i data-lucide="globe"></i><span>學校官網</span><i data-lucide="arrow-up-right"></i>
         </a>
       </nav>
     </header>
@@ -675,8 +952,8 @@
     </main>
 
     <!-- 展開側欄的小按鈕 -->
-    <button class="sidebar-toggle-btn" id="sidebar-open-btn" title="展開校園清單" style="display: none;">
-      <i data-lucide="menu"></i>
+    <button class="sidebar-toggle-btn" id="sidebar-open-btn" title="展開校園地點清單" style="display: none;">
+      <i data-lucide="map-pin"></i><span class="open-btn-text">地點清單</span>
     </button>
 
     <!-- 左側邊欄 -->
@@ -701,9 +978,9 @@
     </aside>
 
     <div class="view-switch">
-      <button class="active" data-mode="orbit"><i data-lucide="box"></i>3D 鳥瞰</button>
-      <button data-mode="top"><i data-lucide="map"></i>俯視</button>
-      <button data-mode="walk"><i data-lucide="footprints"></i>地面漫遊</button>
+      <button class="active" data-mode="orbit"><i data-lucide="box"></i><span class="view-label">3D 鳥瞰</span></button>
+      <button data-mode="top"><i data-lucide="map"></i><span class="view-label">俯視</span></button>
+      <button data-mode="walk"><i data-lucide="footprints"></i><span class="view-label">地面漫遊</span></button>
       <button id="switch-mascot-btn" style="background:#eef6f2;color:#2d6a4f;border-left:1px solid rgba(45,106,79,0.2);" title="切換主角造型">
         <i data-lucide="user"></i><span id="mascot-name">主角：羅小東</span>
       </button>
@@ -781,6 +1058,6 @@
     </dialog>
   </div>
 
-  <script type="module" src="src/app.js"></script>
+  <script type="module" src="src/app.js?v=__BUILD__"></script>
 </body>
 </html>
