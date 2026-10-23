@@ -1,5 +1,5 @@
 // 羅東國小 3D 校園主應用程式：介面互動、搜尋、點選校舍、導覽巡航與彈窗綁定
-import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js';
 import { BUILDINGS, TOUR_STATIONS } from '../data/buildings.js';
 import { SCHOOL_INFO, DEPARTMENTS, GRADE_DISTRIBUTION } from '../data/offices.js';
 import { CampusScene } from './scene.js';
