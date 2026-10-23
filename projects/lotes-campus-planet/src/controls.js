@@ -203,14 +203,23 @@ export class ViewController {
   flyTo(x, z, distance = 45) {
     if (this.mode === 'walk') {
       this.setMode('orbit');
+      // 同步更新介面按鈕狀態
+      document.querySelectorAll('.view-switch button').forEach(b => b.classList.remove('active'));
+      document.querySelector('.view-switch button[data-mode="orbit"]')?.classList.add('active');
+      const walkHelp = document.getElementById('walk-controls');
+      if (walkHelp) walkHelp.hidden = true;
     }
     const target = new THREE.Vector3(x, 0, z);
     const startPos = this.camera.position.clone();
     const startTarget = this.controls.target.clone();
-    const endPos = new THREE.Vector3(x - distance * 0.7, distance * 0.75, z + distance * 0.7);
+    // 鏡頭維持從南向北的自然俯視眺望角度飛向目標
+    const endPos = new THREE.Vector3(x - distance * 0.45, distance * 0.65, z - distance * 0.65);
 
-    const duration = 1100;
+    const duration = 1200;
     const startTime = performance.now();
+
+    // 巡航飛行期間暫時鎖定 OrbitControls 使用者手動操作，避免與 lerp 衝突
+    this.controls.enabled = false;
 
     const animateFlight = (currentTime) => {
       const elapsed = currentTime - startTime;
@@ -219,9 +228,12 @@ export class ViewController {
 
       this.camera.position.lerpVectors(startPos, endPos, ease);
       this.controls.target.lerpVectors(startTarget, target, ease);
+      this.camera.lookAt(this.controls.target);
 
       if (t < 1) {
         requestAnimationFrame(animateFlight);
+      } else {
+        this.controls.enabled = true;
       }
     };
 
