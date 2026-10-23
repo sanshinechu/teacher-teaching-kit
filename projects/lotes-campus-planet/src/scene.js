@@ -57,17 +57,20 @@ export class CampusScene {
     // 2. 主陽光（卡通斜射暖陽）
     this.sunLight = new THREE.DirectionalLight('#fff4dc', 1.6);
     this.sunLight.position.set(-140, 160, 85);
+    this.sunLight.target.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
     this.sunLight.shadow.camera.near = 10;
-    this.sunLight.shadow.camera.far = 450;
-    this.sunLight.shadow.camera.left = -160;
-    this.sunLight.shadow.camera.right = 160;
-    this.sunLight.shadow.camera.top = 160;
-    this.sunLight.shadow.camera.bottom = -160;
+    this.sunLight.shadow.camera.far = 600;
+    this.sunLight.shadow.camera.left = -260;
+    this.sunLight.shadow.camera.right = 260;
+    this.sunLight.shadow.camera.top = 260;
+    this.sunLight.shadow.camera.bottom = -260;
+    this.sunLight.shadow.camera.updateProjectionMatrix();
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
+    this.scene.add(this.sunLight.target);
 
     // 3. 補光
     this.fillLight = new THREE.DirectionalLight('#608da8', 0.45);
