@@ -1,5 +1,5 @@
 // 羅東國小 3D 校園建造器：依 Google 衛星空照真實形狀與方位建造高精細校舍、特色動物雕塑校門與周邊道路
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js';
+import * as THREE from '../vendor/three.module.js';
 import { BUILDINGS } from '../data/buildings.js';
 
 export class CampusBuilder {

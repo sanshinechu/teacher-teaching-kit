@@ -1,5 +1,5 @@
 // 羅東國小吉祥物：Q版大頭娃娃（比照基隆小行星 Canvas UV 貼圖臉蛋 + 2.5頭身萌系比例）
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js';
+import * as THREE from '../vendor/three.module.js';
 
 // Canvas 動態繪製 Q 版超萌大眼臉蛋
 function createCuteFaceTexture(type = 'luodong') {

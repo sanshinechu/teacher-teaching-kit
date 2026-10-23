@@ -1,5 +1,5 @@
 // 羅東國小卡通渲染後製器：色階調色 + 法線/深度雙重邊緣檢測（描出黑邊）
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js';
+import * as THREE from '../vendor/three.module.js';
 
 export class ToonPost {
   constructor(renderer, scene, camera) {

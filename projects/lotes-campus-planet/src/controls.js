@@ -1,5 +1,5 @@
 // 羅東國小 3D 視角控制：支援 3D 鳥瞰、2D 俯視與第三人稱主角跟隨漫遊行走
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js';
+import * as THREE from '../vendor/three.module.js';
 import { MascotPlayer } from './mascot.js';
 
 export class ViewController {
