@@ -43,9 +43,9 @@ export class CampusScene {
 
   initCamera() {
     this.camera = new THREE.PerspectiveCamera(40, this.width / this.height, 1, 1000);
-    // 開場視角：3D 鳥瞰全景，斜上方俯瞰全校，同時清楚看見清潭路大門口站著的羅小東
-    this.defaultCameraPos = new THREE.Vector3(45, 95, 125);
-    this.defaultTarget = new THREE.Vector3(5, 0, -5);
+    // 預設經典視角：西南方斜側眺望全校（操場在左、風雨球場與百齡樓在右中）
+    this.defaultCameraPos = new THREE.Vector3(-110, 85, 125);
+    this.defaultTarget = new THREE.Vector3(5, 5, 8);
     this.camera.position.copy(this.defaultCameraPos);
   }
 
