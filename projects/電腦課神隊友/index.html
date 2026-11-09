@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>羅東國小｜115 電腦課神隊友</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <!-- 頂部導航與班級切換列 -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <span class="school-badge">🏫 羅東國小</span>
+        <h1 class="app-title">115 電腦課神隊友</h1>
+        <span class="date-pill" id="todayDatePill">民國115年11月9日 星期一</span>
+      </div>
+
+      <!-- 跨班搜尋框 -->
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="studentSearchInput" placeholder="搜學生姓名 / 座號 / 機台 (如 PC-12)..." autocomplete="off">
+        <div class="search-dropdown hidden" id="searchDropdown"></div>
+      </div>
+
+      <!-- 課堂迷你倒數計時器 -->
+      <div class="mini-timer" id="miniTimerBox">
+        <button type="button" class="timer-preset-btn" data-min="5" title="實作 5 分鐘">5分</button>
+        <button type="button" class="timer-preset-btn" data-min="10" title="實作 10 分鐘">10分</button>
+        <button type="button" class="timer-preset-btn" data-min="15" title="實作 15 分鐘">15分</button>
+        <span class="timer-display" id="timerDisplay">00:00</span>
+        <button type="button" class="timer-ctrl-btn" id="timerToggleBtn" title="開始 / 暫停計時">▶️</button>
+        <button type="button" class="timer-ctrl-btn" id="timerResetBtn" title="重設計時">↺</button>
+      </div>
+
+      <!-- 班級排序與快速切換列 -->
+      <div class="class-nav-scroll">
+        <button type="button" class="sort-mode-btn" id="sortModeBtn" title="切換依年級或依上課時間排序">
+          🏠 依年級
+        </button>
+        <div class="class-tabs" id="classTabsContainer"></div>
+      </div>
+
+      <!-- 右側工具按鈕組 -->
+      <div class="top-actions">
+        <button type="button" class="action-pill-btn" id="gradeOverviewBtn" title="檢視同年級各班進度對照">
+          📊 進度對照
+        </button>
+        <button type="button" class="action-pill-btn" id="rosterManageBtn" title="管理班級、匯入學生名單">
+          👥 班級名單
+        </button>
+        <button type="button" class="action-pill-btn" id="cloudSyncBtn" title="設定 Google 試算表同步與備份匯出入">
+          ☁️ 同步/備份
+        </button>
+      </div>
+    </header>
+
+    <!-- 主工作區：左座位區 + 右側進度與報修欄 -->
+    <div class="workspace-grid">
+      <!-- 左側主面板：座位圖 + 底部 20 項科技能力樹 -->
+      <main class="seat-main-panel">
+        <!-- 座位圖上方控制工具列 -->
+        <div class="seat-toolbar">
+          <div class="toolbar-left">
+            <span class="door-badge">🚪 後門 / 走廊側</span>
+            <span class="hint-badge">⚡ 拖曳換位・點選互動</span>
+            <button type="button" class="view-flip-btn" id="projectionViewBtn" title="切換 180 度學生面向講台視角，並隱藏教師私人備忘">
+              👁️ 切換學生投影視角
+            </button>
+          </div>
+
+          <div class="toolbar-center">
+            <span class="class-live-stats" id="classLiveStats">
+              🟢 完成 0/0 ｜ ⭐ 加分 0 ｜ 🙋 待協助 0 ｜ 😷 請假 0
+            </span>
+            <button type="button" class="micro-reset-btn" id="resetTodayStatusBtn" title="清空本班今日的完成、待協助與請假標記（保留加分）">
+              🧹 重置今日狀態
+            </button>
+          </div>
+
+          <div class="toolbar-right">
+            <button type="button" class="swap-toggle-btn" id="clickSwapToggleBtn">
+              ✋ 點選換位：關
+            </button>
+            <button type="button" class="lottery-btn" id="randomPickBtn">
+              🎲 隨機抽籤
+            </button>
+            <span class="seat-summary-badge" id="seatSummaryBadge">
+              🖥️ 第1排 1~8｜第2排 9~16｜第3排 17~24｜第4排 25~29 (共29台)
+            </span>
+          </div>
+        </div>
+
+        <!-- 講台橫幅（學生投影視角時顯示在上方） -->
+        <div class="podium-banner top-podium hidden" id="topPodiumBanner">
+          🖥️ 講台與投影大螢幕（學生面向講台視角・第 1 排最靠近講台） 🖥️
+        </div>
+
+        <!-- 4 排 × 8 格 電腦教室座位網格 -->
+        <div class="classroom-rows-container" id="classroomRowsContainer">
+          <!-- 由 script.js 動態渲染 4 橫排 × 8 格 -->
+        </div>
+
+        <!-- 講台橫幅（預設電腦老師前視圖顯示在下方） -->
+        <div class="podium-banner bottom-podium" id="bottomPodiumBanner">
+          🖥️ 講台與投影大螢幕（電腦老師前視圖・由右至左為 1～8 號） 🖥️
+        </div>
+
+        <!-- 底部：班級已具備科技能力（20 項） -->
+        <section class="competency-bar">
+          <div class="competency-header">
+            <div class="competency-title">
+              🎓 <strong id="competencyClassLabel">502</strong> 已具備科技能力（點選切換）：
+              <span class="competency-count-pill" id="competencyCountPill">已具備 7 / 20 項</span>
+            </div>
+            <div class="competency-actions">
+              <button type="button" class="comp-ctrl-btn" id="compSelectAllBtn">✓ 全選</button>
+              <button type="button" class="comp-ctrl-btn" id="compClearAllBtn">✕ 清空</button>
+            </div>
+          </div>
+          <div class="competency-grid" id="competencyGrid">
+            <!-- 由 script.js 動態渲染 20 項能力按鈕 -->
+          </div>
+        </section>
+      </main>
+
+      <!-- 右側側邊欄：課堂進度歷程 + 機台設備報修專區 -->
+      <aside class="right-sidebar" id="rightSidebar">
+        <!-- 上半部：教學進度與歷程 -->
+        <section class="progress-card">
+          <div class="class-header-row">
+            <div class="class-badge-group">
+              <span class="label-text">🏫 班級：</span>
+              <span class="active-class-code" id="activeClassCodeBadge">502</span>
+              <span class="active-class-schedule" id="activeClassScheduleText">週一 第7節 (15:00~15:40)</span>
+            </div>
+            <button type="button" class="icon-btn" id="autoLocateClassBtn" title="依現在時間自動切換到正在上課的班級">⚡ 今節</button>
+          </div>
+
+          <div class="sync-status-bar" id="syncStatusBar">
+            <span class="sync-dot"></span>
+            <span id="syncStatusText">已自動儲存於本機 (尚未啟用試算表同步)</span>
+          </div>
+
+          <!-- 今日 / 上次進度 -->
+          <div class="progress-block today-block">
+            <div class="block-header">
+              <label for="todayProgressInput">📖 今日 / 上次進度：</label>
+              <div class="block-btn-group">
+                <select id="quickUnitSelect" class="quick-unit-select" title="快速帶入羅東國小資訊課單元">
+                  <option value="">＋快速帶入單元...</option>
+                  <optgroup label="五年級：Scratch 動畫專題 & 素養">
+                    <option value="數位素養：創用CC與轉發分享規範">五上｜創用CC與數位素養</option>
+                    <option value="Scratch 3 介面認識、角色造型與舞台座標">五上｜Scratch 介面與舞台座標</option>
+                    <option value="Scratch 角色移動、對話氣泡與多幕故事切換">五上｜角色移動與多幕故事動畫</option>
+                    <option value="Scratch 廣播訊息互動與音效配音錄製">五上｜廣播互動與聲音配音</option>
+                    <option value="Scratch 動畫專題整合與 Classroom 繳交作業">五上｜動畫專題整合與交作業</option>
+                  </optgroup>
+                  <optgroup label="六年級上：Scratch 遊戲製作專題">
+                    <option value="Scratch 迴圈控制、鍵盤方向鍵操控與碰撞偵測">六上｜鍵盤操控與碰撞偵測</option>
+                    <option value="Scratch 變數計分器、倒數計時與分身特效">六上｜變數計分與分身射擊遊戲</option>
+                    <option value="Scratch 闖關條件設計与遊戲專案除錯">六上｜遊戲闖關設計與除錯</option>
+                  </optgroup>
+                  <optgroup label="六年級下：Scratch 結合 AI 模組">
+                    <option value="Scratch 結合 AI 影像辨識模組訓練與分類實作">六下｜AI 影像辨識模組實作</option>
+                    <option value="Scratch 結合 AI 聲音辨識語音指令控制">六下｜AI 聲音辨識指令互動</option>
+                    <option value="Scratch 結合 AI 姿勢辨識體感互動專題">六下｜AI 姿勢辨識體感專題</option>
+                  </optgroup>
+                  <optgroup label="特殊狀態">
+                    <option value="放假（國定假日 / 校慶補假）">📅 放假</option>
+                    <option value="學校活動公假（運動會預演 / 戶外教育）">🎪 學校活動暫停一次</option>
+                  </optgroup>
+                </select>
+                <button type="button" class="record-log-btn" id="recordToHistoryBtn">📌 記入歷程</button>
+              </div>
+            </div>
+            <input type="text" id="todayProgressInput" class="progress-input" placeholder="輸入本節課實際教學進度...">
+          </div>
+
+          <!-- 下次預定進度 -->
+          <div class="progress-block next-block">
+            <div class="block-header">
+              <label for="nextProgressInput">🎯 下次預定進度：</label>
+              <button type="button" class="promote-next-btn" id="promoteNextBtn">⬆️ 推為今日</button>
+            </div>
+            <input type="text" id="nextProgressInput" class="progress-input" placeholder="輸入下週預定教學進度...">
+          </div>
+
+          <!-- 課堂備忘錄 -->
+          <div class="progress-block memo-block" id="teacherMemoBlock">
+            <div class="block-header">
+              <label for="classMemoInput">📝 課堂備忘錄：</label>
+              <span class="memo-privacy-hint">（投影視角時自動隱藏）</span>
+            </div>
+            <textarea id="classMemoInput" class="memo-textarea" rows="2" placeholder="提醒學生整合架構與輸出格式、記錄未交名單或調課事項..."></textarea>
+          </div>
+
+          <!-- 歷次課堂進度 -->
+          <div class="history-section">
+            <div class="history-header">
+              <span>🕒 歷次課堂進度：</span>
+              <span class="history-count-pill" id="historyCountPill">0 筆歷程</span>
+            </div>
+            <div class="history-list" id="historyListContainer">
+              <!-- 由 script.js 動態渲染 -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 下半部：機台設備報修專區 -->
+        <section class="repair-card" id="repairSectionCard">
+          <div class="repair-header">
+            <span class="repair-title">🖥️ 機台設備報修專區</span>
+            <span class="repair-summary-pill ok" id="repairSummaryPill">🟢 全機正常 (0/29)</span>
+          </div>
+
+          <!-- 目前待修機台快速列（有故障時顯示） -->
+          <div class="active-fault-list" id="activeFaultList">
+            <div class="all-healthy-banner">🟢 全教室 29 台機台設備運作正常</div>
+          </div>
+
+          <!-- 機台選單 -->
+          <div class="repair-select-row">
+            <label for="repairPcSelect">機台：</label>
+            <select id="repairPcSelect" class="repair-pc-select">
+              <!-- PC-01 ~ PC-29 動態生成 -->
+            </select>
+            <span class="pc-single-status ok" id="selectedPcStatusBadge">🟢 正常運作</span>
+          </div>
+
+          <!-- 故障原因快速標籤 -->
+          <div class="fault-tags-row">
+            <span class="fault-label">故障：</span>
+            <div class="fault-tag-buttons" id="faultTagButtons">
+              <button type="button" class="fault-tag-btn" data-fault="滑鼠">🖱️ 滑鼠</button>
+              <button type="button" class="fault-tag-btn" data-fault="鍵盤">⌨️ 鍵盤</button>
+              <button type="button" class="fault-tag-btn" data-fault="螢幕">🖥️ 螢幕</button>
+              <button type="button" class="fault-tag-btn" data-fault="耳機">🎧 耳機</button>
+              <button type="button" class="fault-tag-btn" data-fault="網路">🌐 網路</button>
+              <button type="button" class="fault-tag-btn" data-fault="主機">🔌 主機</button>
+            </div>
+          </div>
+
+          <input type="text" id="repairReasonInput" class="repair-reason-input" placeholder="點選上方故障按鈕，或直接輸入原因...">
+
+          <div class="repair-action-row">
+            <button type="button" class="btn-report-fault" id="reportFaultBtn">🛠️ 登記此機報修</button>
+            <button type="button" class="btn-mark-fixed" id="markFixedBtn">✅ 完修正常</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 彈窗 1：隨機抽籤與學生詳情互動彈窗 -->
+  <div class="modal-backdrop hidden" id="lotteryModal">
+    <div class="modal-box lottery-modal-box">
+      <div class="modal-header">
+        <h3>🎲 電腦課隨機抽籤</h3>
+        <button type="button" class="modal-close-btn" data-close="lotteryModal">✕</button>
+      </div>
+      <div class="lottery-body">
+        <div class="lottery-pc-tag" id="lotteryPcTag">PC-00</div>
+        <div class="lottery-avatar" id="lotteryAvatar">🧑‍💻</div>
+        <div class="lottery-student-name" id="lotteryStudentName">準備抽籤...</div>
+        <div class="lottery-seat-info" id="lotterySeatInfo">自動略過空席與今日請假學生</div>
+        <div class="lottery-quick-actions" id="lotteryQuickActions">
+          <button type="button" class="lot-act-btn star" id="lotteryAddStarBtn">⭐ 加 1 顆星</button>
+          <button type="button" class="lot-act-btn done" id="lotteryMarkDoneBtn">🟢 標記作業完成</button>
+          <button type="button" class="lot-act-btn again" id="lotteryPickAgainBtn">🎲 再抽一位</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 2：同年級進度對照表 -->
+  <div class="modal-backdrop hidden" id="gradeOverviewModal">
+    <div class="modal-box wide-modal-box">
+      <div class="modal-header">
+        <h3>📊 各班教學進度與完成度總覽</h3>
+        <button type="button" class="modal-close-btn" data-close="gradeOverviewModal">✕</button>
+      </div>
+      <div class="modal-content-scroll" id="gradeOverviewContent">
+        <!-- 由 script.js 渲染跨班對照表 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 3：班級與學生名單管理 -->
+  <div class="modal-backdrop hidden" id="rosterModal">
+    <div class="modal-box wide-modal-box">
+      <div class="modal-header">
+        <h3>👥 班級設定與學生名單匯入（<span id="rosterModalClassTitle">502</span>）</h3>
+        <button type="button" class="modal-close-btn" data-close="rosterModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <div class="roster-form-grid">
+          <div class="roster-col">
+            <h4>1. 本班基本資料與上課節次</h4>
+            <div class="form-row">
+              <label>班級代號／名稱：</label>
+              <input type="text" id="editClassCodeInput" placeholder="例如 502 或 AI應用社">
+            </div>
+            <div class="form-row">
+              <label>上課星期：</label>
+              <select id="editClassDaySelect">
+                <option value="1">星期一</option>
+                <option value="2">星期二</option>
+                <option value="3">星期三</option>
+                <option value="4">星期四</option>
+                <option value="5">星期五</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>第幾節課：</label>
+              <select id="editClassPeriodSelect">
+                <option value="1">第 1 節 (08:40~09:20)</option>
+                <option value="2">第 2 節 (09:30~10:10)</option>
+                <option value="3">第 3 節 (10:30~11:10)</option>
+                <option value="4">第 4 節 (11:20~12:00)</option>
+                <option value="5">第 5 節 (13:20~14:00)</option>
+                <option value="6">第 6 節 (14:10~14:50)</option>
+                <option value="7">第 7 節 (15:00~15:40)</option>
+              </select>
+            </div>
+            <div class="form-actions-inline">
+              <button type="button" class="primary-btn" id="saveClassMetaBtn">💾 儲存班級設定</button>
+              <button type="button" class="secondary-btn" id="addNewClassBtn">➕ 新增一個班級</button>
+              <button type="button" class="danger-btn" id="deleteCurrentClassBtn">🗑️ 刪除此班級</button>
+            </div>
+          </div>
+
+          <div class="roster-col">
+            <h4>2. 批次貼上學生名單（一行一位，自動排入 1～29 號主機）</h4>
+            <p class="form-help">可直接從 Excel 或學務系統複製姓名貼上。格式支援「純姓名」或「座號,姓名」（若某座號缺號請留空行或寫「空席」）。</p>
+            <textarea id="bulkRosterTextarea" class="roster-textarea" rows="10" placeholder="01 王小明&#10;02 林小華&#10;03 陳小美..."></textarea>
+            <div class="form-actions-inline">
+              <button type="button" class="primary-btn" id="applyBulkRosterBtn">📥 套用名單並依座號排入 PC-01~29</button>
+              <button type="button" class="secondary-btn" id="resetDefaultSeatOrderBtn">🔄 依座號重排回預設機台</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 4：Google 試算表雲端同步與 JSON 備份 -->
+  <div class="modal-backdrop hidden" id="cloudSyncModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>☁️ 雙模式儲存：Google 試算表同步 ＆ 檔案備份</h3>
+        <button type="button" class="modal-close-btn" data-close="cloudSyncModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <div class="sync-section">
+          <h4>🔗 模式 A：Google 試算表自動跨機同步（Google Apps Script）</h4>
+          <p class="form-help">
+            將專案資料夾內 <code>gas/Code.gs</code> 貼到你的 Google 試算表「擴充功能 &gt; Apps Script」並部署為「網頁應用程式」後，把網址貼在下方即可在資訊組主機與電腦教室講台電腦間自動同步！
+          </p>
+          <input type="url" id="gasWebAppUrlInput" class="full-input" placeholder="https://script.google.com/macros/s/xxxxxx/exec">
+          <div class="form-actions-inline">
+            <button type="button" class="primary-btn" id="saveGasUrlBtn">💾 儲存網址並立即同步</button>
+            <button type="button" class="secondary-btn" id="pullFromGasBtn">⬇️ 從試算表讀取最新資料</button>
+          </div>
+        </div>
+
+        <hr class="modal-divider">
+
+        <div class="sync-section">
+          <h4>📦 模式 B：本機 JSON 完整備份匯出／匯入</h4>
+          <p class="form-help">所有座位、進度歷程、科技能力與機台報修紀錄皆可打包成單一 JSON 檔案備份。</p>
+          <div class="form-actions-inline">
+            <button type="button" class="primary-btn" id="exportJsonBtn">📤 匯出完整備份 (.json)</button>
+            <label class="secondary-btn file-label-btn">
+              📥 匯入備份檔 (.json)
+              <input type="file" id="importJsonFileInput" accept=".json" hidden>
+            </label>
+            <button type="button" class="danger-btn" id="factoryResetBtn">⚠️ 還原預設範例資料</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

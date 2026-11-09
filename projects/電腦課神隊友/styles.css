@@ -1,0 +1,1528 @@
+:root {
+  --bg-page: #f0f4f9;
+  --bg-panel: #ffffff;
+  --border-light: #dbe3ef;
+  --border-card: #cbd5e1;
+  --primary: #2563eb;
+  --primary-soft: #eff6ff;
+  --primary-border: #93c5fd;
+  --green-ok: #10b981;
+  --green-soft: #ecfdf5;
+  --amber-warn: #f59e0b;
+  --amber-soft: #fffbeb;
+  --red-fault: #ef4444;
+  --red-soft: #fef2f2;
+  --text-main: #1e293b;
+  --text-sub: #475569;
+  --text-muted: #64748b;
+  --podium-bg: linear-gradient(90deg, #1e3a8a 0%, #1d4ed8 50%, #1e3a8a 100%);
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 整體單屏高密度外框 */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+/* ==================== 頂部導航列 ==================== */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 6px 10px;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.school-badge {
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.date-pill {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* 搜尋框 */
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 205px;
+  flex-shrink: 0;
+}
+
+.search-icon {
+  position: absolute;
+  left: 9px;
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+#studentSearchInput {
+  width: 100%;
+  padding: 5px 10px 5px 28px;
+  border: 1px solid var(--border-card);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+#studentSearchInput:focus {
+  background: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 280px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  padding: 4px;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.search-result-item:hover {
+  background: var(--primary-soft);
+}
+
+/* 迷你課堂計時器 */
+.mini-timer {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+.mini-timer.urgent {
+  background: #fef2f2;
+  border-color: #f87171;
+  animation: pulseUrgent 1s infinite alternate;
+}
+
+@keyframes pulseUrgent {
+  from { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+  to { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+.timer-preset-btn,
+.timer-ctrl-btn {
+  border: none;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.timer-preset-btn:hover,
+.timer-ctrl-btn:hover {
+  background: #cbd5e1;
+}
+
+.timer-display {
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 0 4px;
+}
+
+/* 班級切換列 */
+.class-nav-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 240px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.sort-mode-btn {
+  border: 1px solid var(--border-card);
+  background: #f8fafc;
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 4px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.class-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.class-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.class-tab-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.class-tab-btn .slot-prefix {
+  font-size: 0.72rem;
+  color: #0284c7;
+  font-weight: 700;
+}
+
+.class-tab-btn.is-today {
+  border-color: #34d399;
+  background: #f0fdf4;
+}
+
+.class-tab-btn .today-pill {
+  background: #10b981;
+  color: #fff;
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.class-tab-btn.active {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1e40af;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.3);
+}
+
+.class-tab-btn.active .slot-prefix {
+  color: #bae6fd;
+}
+
+.class-tab-btn.active .today-pill {
+  background: #facc15;
+  color: #1e293b;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.action-pill-btn {
+  border: 1px solid var(--border-card);
+  background: #f8fafc;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.action-pill-btn:hover {
+  background: #e2e8f0;
+}
+
+/* ==================== 主工作區雙欄佈局 ==================== */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 370px;
+  gap: 10px;
+  flex: 1;
+  align-items: start;
+}
+
+/* 學生投影視角時可收合或隱藏私密區塊 */
+.app-shell.projection-mode .memo-block {
+  display: none;
+}
+
+/* ==================== 左側：電腦教室座位主面板 ==================== */
+.seat-main-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.door-badge {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 7px;
+}
+
+.hint-badge {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 7px;
+}
+
+.view-flip-btn {
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.view-flip-btn.active {
+  background: #4338ca;
+  color: #fff;
+}
+
+.class-live-stats {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.micro-reset-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.micro-reset-btn:hover {
+  background: #f1f5f9;
+}
+
+.swap-toggle-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.swap-toggle-btn.active {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.lottery-btn {
+  border: 1px solid #f59e0b;
+  background: linear-gradient(180deg, #fef3c7, #fde68a);
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 4px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.lottery-btn:hover {
+  filter: brightness(0.97);
+}
+
+.seat-summary-badge {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+/* ==================== 4 排 × 8 格 座位網格 ==================== */
+.classroom-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.seat-row-wrapper {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.row-side-badge {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 9px;
+  padding: 4px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.row-side-badge small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.row-seats-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 7px;
+}
+
+/* 單張座位卡 */
+.seat-card {
+  position: relative;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 6px 7px;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+  user-select: none;
+  cursor: grab;
+}
+
+.seat-card:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.seat-card.drag-over {
+  border: 2px dashed #2563eb;
+  background: #eff6ff;
+  transform: scale(1.02);
+}
+
+.seat-card.swap-selected {
+  border: 2px solid #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+
+.seat-card.search-highlight,
+.seat-card.lottery-highlight {
+  border: 2.5px solid #f59e0b;
+  background: #fef3c7;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.55);
+  transform: translateY(-2px);
+}
+
+/* 狀態樣式：作業完成 / 待協助 / 請假 / 機台故障 */
+.seat-card.status-done {
+  border-color: #10b981;
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+}
+
+.seat-card.status-help {
+  border-color: #f97316;
+  background: #fff7ed;
+  animation: helpPulse 1.2s infinite alternate;
+}
+
+@keyframes helpPulse {
+  from { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.35); }
+  to { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0); }
+}
+
+.seat-card.status-absent {
+  opacity: 0.58;
+  background: #f1f5f9;
+  border-style: dashed;
+}
+
+/* 機台故障紅框警示（跨班連動） */
+.seat-card.pc-fault {
+  border: 2px solid #ef4444 !important;
+  background: #fef2f2 !important;
+}
+
+/* 空席（有電腦但沒坐學生） */
+.seat-card.empty-student {
+  background: #f8fafc;
+  border-style: dashed;
+  color: #64748b;
+}
+
+/* 教室空間空位格（第 4 排無主機的那 3 格） */
+.seat-slot-void {
+  background: rgba(226, 232, 240, 0.45);
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px;
+}
+
+/* 座位卡頂部列：座號 + PC 編號 */
+.seat-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.student-no-tag {
+  font-size: 0.73rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.pc-id-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  font-size: 0.69rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.seat-card.pc-fault .pc-id-badge {
+  background: #ef4444;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+/* 座位卡中段：頭像 + 姓名 */
+.seat-card-body {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.student-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eff6ff;
+  border: 1.5px solid #93c5fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  flex-shrink: 0;
+}
+
+.student-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-seat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 故障標籤與一鍵移至空席按鈕 */
+.pc-fault-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+}
+
+.evacuate-seat-btn {
+  border: none;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.evacuate-seat-btn:hover {
+  background: #991b1b;
+}
+
+/* 座位卡底部：微型課堂互動按鈕列 */
+.seat-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 3px;
+}
+
+.seat-mini-btn {
+  border: 1px solid transparent;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: all 0.12s;
+}
+
+.seat-mini-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.seat-mini-btn.active-done {
+  background: #10b981;
+  color: #fff;
+}
+
+.seat-mini-btn.active-star {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
+.seat-mini-btn.active-help {
+  background: #f97316;
+  color: #fff;
+}
+
+.seat-mini-btn.active-absent {
+  background: #64748b;
+  color: #fff;
+}
+
+/* 講台與投影大螢幕橫幅 */
+.podium-banner {
+  background: var(--podium-bg);
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+}
+
+/* ==================== 底部：20 項科技能力樹 ==================== */
+.competency-bar {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 11px;
+  padding: 8px 10px;
+}
+
+.competency-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.competency-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.competency-count-pill {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.competency-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.comp-ctrl-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.comp-ctrl-btn:hover {
+  background: #f1f5f9;
+}
+
+.competency-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.comp-item-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 4px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.12s;
+}
+
+.comp-item-btn:hover {
+  border-color: #60a5fa;
+}
+
+.comp-item-btn.achieved {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+}
+
+/* ==================== 右側欄：進度歷程與機台報修 ==================== */
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-card,
+.repair-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.class-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.class-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.label-text {
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.active-class-code {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 2px 9px;
+  border-radius: 7px;
+}
+
+.active-class-schedule {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.icon-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sync-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.progress-block {
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: #f8fafc;
+}
+
+.today-block {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.next-block {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.memo-block {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  gap: 4px;
+}
+
+.block-header label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.block-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quick-unit-select {
+  max-width: 118px;
+  font-size: 0.72rem;
+  padding: 2px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.record-log-btn,
+.promote-next-btn {
+  border: 1px solid #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.promote-next-btn {
+  border-color: #c4b5fd;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.progress-input,
+.memo-textarea,
+.repair-reason-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.memo-privacy-hint {
+  font-size: 0.68rem;
+  color: #b45309;
+}
+
+/* 歷次課堂進度清單 */
+.history-section {
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: #fff;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.history-count-pill {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.history-list {
+  max-height: 195px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-right: 2px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.history-item-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.history-date-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.latest-tag {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.64rem;
+  padding: 0 5px;
+  border-radius: 4px;
+}
+
+.history-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.history-del-btn {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #e11d48;
+  font-size: 0.72rem;
+  padding: 3px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* ==================== 機台設備報修專區 ==================== */
+.repair-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.repair-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.repair-summary-pill {
+  font-size: 0.73rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.repair-summary-pill.ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.repair-summary-pill.fault {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.active-fault-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 85px;
+  overflow-y: auto;
+}
+
+.all-healthy-banner {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 7px;
+  text-align: center;
+}
+
+.fault-chip-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.quick-fix-mini-btn {
+  border: none;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.repair-select-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.repair-pc-select {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pc-single-status {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.pc-single-status.ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pc-single-status.fault {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.fault-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fault-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fault-tag-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.fault-tag-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.fault-tag-btn.selected {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #b91c1c;
+}
+
+.repair-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.btn-report-fault {
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.btn-report-fault:hover {
+  background: #fee2e2;
+}
+
+.btn-mark-fixed {
+  border: 1px solid #6ee7b7;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.btn-mark-fixed:hover {
+  background: #059669;
+}
+
+/* ==================== 彈窗樣式 ==================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.wide-modal-box {
+  width: min(860px, 100%);
+}
+
+.lottery-modal-box {
+  width: min(420px, 100%);
+  text-align: center;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.modal-close-btn {
+  border: none;
+  background: #e2e8f0;
+  color: #334155;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.modal-content-scroll {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* 抽籤彈窗內容 */
+.lottery-body {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.lottery-pc-tag {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
+.lottery-avatar {
+  font-size: 3.2rem;
+  margin: 4px 0;
+}
+
+.lottery-student-name {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.lottery-seat-info {
+  font-size: 0.86rem;
+  color: #64748b;
+}
+
+.lottery-quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.lot-act-btn {
+  border: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.lot-act-btn.star {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.lot-act-btn.done {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lot-act-btn.again {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 表單與表格 */
+.roster-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 16px;
+}
+
+.roster-col h4 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+}
+
+.form-row {
+  display: flex;
+   flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.form-row input,
+.form-row select,
+.full-input,
+.roster-textarea {
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+.form-help {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.form-actions-inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+  border: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: #2563eb;
+  color: #fff;
+}
+
+.secondary-btn {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.danger-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.modal-divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.overview-table th,
+.overview-table td {
+  border: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.overview-table th {
+  background: #f8fafc;
+  font-weight: 800;
+}
+
+/* 響應式微調 */
+@media (max-width: 1360px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .competency-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .row-seats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .roster-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
