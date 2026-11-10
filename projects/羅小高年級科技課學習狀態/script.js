@@ -65,9 +65,10 @@ const PERIOD_TIME_MAP = {
   2: { label: "第2節", time: "09:30~10:10", startMin: 9 * 60 + 26, endMin: 10 * 60 + 15 },
   3: { label: "第3節", time: "10:30~11:10", startMin: 10 * 60 + 20, endMin: 11 * 60 + 15 },
   4: { label: "第4節", time: "11:20~12:00", startMin: 11 * 60 + 16, endMin: 12 * 60 + 5 },
-  5: { label: "第5節", time: "13:20~14:00", startMin: 13 * 60 + 15, endMin: 14 * 60 + 5 },
-  6: { label: "第6節", time: "14:10~14:50", startMin: 14 * 60 + 6, endMin: 14 * 60 + 55 },
-  7: { label: "第7節", time: "15:00~15:40", startMin: 14 * 60 + 56, endMin: 15 * 60 + 50 }
+  // 第 5～7 節照 115 學年課表（13:30／14:20／15:20 開始），2026-11-10 改
+  5: { label: "第5節", time: "13:30~14:10", startMin: 13 * 60 + 20, endMin: 14 * 60 + 15 },
+  6: { label: "第6節", time: "14:20~15:00", startMin: 14 * 60 + 16, endMin: 15 * 60 + 10 },
+  7: { label: "第7節", time: "15:20~16:00", startMin: 15 * 60 + 11, endMin: 16 * 60 + 5 }
 };
 
 const WEEKDAY_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
@@ -1523,7 +1524,126 @@ function normalizeClassCode(gradeVal, classVal) {
   if (m) return m[1] + pad2(m[2]);
   const cNum = c.replace(/班$/, "");
   if (/^\d{1,2}$/.test(cNum) && /^\d$/.test(g)) return g + pad2(cNum);
+  // 羅東國小班名：忠孝仁愛信義＝1～6（老師 2026-11-10 確認）。五年忠班／五忠／5忠班 → 501
+  m = c.match(/^(\d)年?([忠孝仁愛信義])班?$/);
+  if (m) return m[1] + pad2(CLASS_NAME_ORDER.indexOf(m[2]) + 1);
+  if (/^[忠孝仁愛信義]班?$/.test(c) && /^\d$/.test(g)) return g + pad2(CLASS_NAME_ORDER.indexOf(c[0]) + 1);
   return null;
+}
+const CLASS_NAME_ORDER = "忠孝仁愛信義";
+
+// ==================== 套用課表（批次設定各班上課星期與節次） ====================
+// 預設是儲三翔老師 115 學年上學期授課課表；下學期換課表時改這段或直接在彈窗裡改文字
+const DEFAULT_TIMETABLE_TEXT = [
+  "五年忠班 星期一 第3節",
+  "六年仁班 星期一 第6節",
+  "四年信班 星期一 第7節",
+  "五年義班 星期二 第2節",
+  "六年信班 星期二 第3節",
+  "五年信班 星期二 第4節",
+  "六年愛班 星期四 第1節",
+  "五年愛班 星期四 第2節",
+  "五年仁班 星期四 第4節",
+  "五年孝班 星期五 第2節",
+  "六年忠班 星期五 第4節",
+  "六年孝班 星期五 第5節"
+].join("\n");
+
+const WEEKDAY_CHARS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5 };
+
+// 一行：班級 星期 節次。星期接受「星期一／週一／一／1」，節次接受「第3節／3」
+function parseTimetableText(text) {
+  const entries = [];
+  const errors = [];
+  text.split(/\r?\n/).forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    const parts = line.split(/[\s,，\t]+/).filter(Boolean);
+    const where = `第 ${i + 1} 行「${line}」`;
+    if (parts.length < 3) {
+      errors.push(`${where}：要有班級、星期、節次三欄`);
+      return;
+    }
+    const code = normalizeClassCode("", parts[0]);
+    const dayToken = parts[1].replace(/^(星期|週|周)/, "");
+    const day = WEEKDAY_CHARS[dayToken] || (/^[1-5]$/.test(dayToken) ? Number(dayToken) : null);
+    const periodMatch = chineseNumeralsToDigits(parts[2]).match(/^第?(\d)節?$/);
+    const period = periodMatch ? Number(periodMatch[1]) : null;
+    if (!code) errors.push(`${where}：看不出是哪一班`);
+    else if (!day) errors.push(`${where}：星期要是一～五`);
+    else if (!period || !PERIOD_TIME_MAP[period]) errors.push(`${where}：節次要是 1～7`);
+    else entries.push({ code, day, period });
+  });
+  return { entries, errors };
+}
+
+function openTimetableModal() {
+  const ta = document.getElementById("timetableTextarea");
+  if (!ta.value.trim()) ta.value = DEFAULT_TIMETABLE_TEXT;
+  document.getElementById("timetableModal").classList.remove("hidden");
+}
+
+function applyTimetable() {
+  const { entries, errors } = parseTimetableText(document.getElementById("timetableTextarea").value);
+  if (errors.length) {
+    alert(`有 ${errors.length} 行看不懂，先修正再套用：\n\n${errors.slice(0, 8).join("\n")}`);
+    return;
+  }
+  if (!entries.length) {
+    alert("沒有讀到任何一行課表。");
+    return;
+  }
+  const dupCodes = entries.map((e) => e.code).filter((c, i, arr) => arr.indexOf(c) !== i);
+  if (dupCodes.length) {
+    alert(`同一班出現兩次：${[...new Set(dupCodes)].join("、")}\n目前每班只能設一個上課時段，請留一行就好。`);
+    return;
+  }
+
+  const created = entries
+    .filter((e) => !appState.classes.some((c) => String(c.code) === e.code))
+    .map((e) => e.code)
+    .sort();
+  const notInTimetable = appState.classes.filter((c) => !entries.some((e) => e.code === String(c.code))).map((c) => c.code);
+  const lines = entries.map((e) => `${e.code}：星期${WEEKDAY_NAMES[e.day]} 第${e.period}節`).join("\n");
+  if (
+    !confirm(
+      `要設定 ${entries.length} 班的上課時間：\n\n${lines}\n\n` +
+        (created.length ? `新建（名單是空的，之後再匯入）：${created.join("、")}\n` : "") +
+        (notInTimetable.length ? `課表沒有、維持原樣：${notInTimetable.join("、")}\n` : "") +
+        "\n確定套用？"
+    )
+  ) {
+    return;
+  }
+
+  entries.forEach((e, idx) => {
+    let cls = appState.classes.find((c) => String(c.code) === e.code);
+    if (!cls) {
+      const seats = {};
+      ALL_PC_NUMBERS.forEach((pc) => (seats[String(pc)] = null));
+      cls = {
+        id: `cls_${Date.now()}_${idx}`,
+        code: e.code,
+        grade: Math.floor(Number(e.code) / 100),
+        todayProgress: "",
+        nextProgress: "",
+        memo: "",
+        competencies: [],
+        history: [],
+        seats
+      };
+      appState.classes.push(cls);
+    }
+    cls.day = e.day;
+    cls.period = e.period;
+  });
+  saveAppState();
+  renderAll();
+  document.getElementById("timetableModal").classList.add("hidden");
+  alert(
+    `✅ 已套用課表。` +
+      (notInTimetable.length ? `\n\n課表上沒有的班級（${notInTimetable.join("、")}）沒有動，不需要的話可以用「勾選批次刪除班級」清掉。` : "")
+  );
 }
 
 function textToRows(text) {
@@ -2420,6 +2540,16 @@ function initEvents() {
   document.getElementById("bulkImportFileInput")?.addEventListener("change", handleBulkImportFile);
   document.getElementById("bulkImportPreviewBtn")?.addEventListener("click", previewBulkImport);
   document.getElementById("bulkImportApplyBtn")?.addEventListener("click", applyBulkImport);
+
+  // 套用課表
+  document.getElementById("openTimetableBtn")?.addEventListener("click", () => {
+    document.getElementById("rosterModal").classList.add("hidden");
+    openTimetableModal();
+  });
+  document.getElementById("timetableResetBtn")?.addEventListener("click", () => {
+    document.getElementById("timetableTextarea").value = DEFAULT_TIMETABLE_TEXT;
+  });
+  document.getElementById("timetableApplyBtn")?.addEventListener("click", applyTimetable);
 
   // 勾選批次刪除班級
   document.getElementById("openBatchDeleteBtn")?.addEventListener("click", () => {

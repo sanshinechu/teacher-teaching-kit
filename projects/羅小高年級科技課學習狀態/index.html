@@ -132,7 +132,7 @@
             <div class="class-badge-group">
               <span class="label-text">🏫 班級：</span>
               <span class="active-class-code" id="activeClassCodeBadge">502</span>
-              <span class="active-class-schedule" id="activeClassScheduleText">週一 第7節 (15:00~15:40)</span>
+              <span class="active-class-schedule" id="activeClassScheduleText">週一 第7節 (15:20~16:00)</span>
             </div>
             <button type="button" class="icon-btn" id="autoLocateClassBtn" title="依現在時間自動切換到正在上課的班級">⚡ 今節</button>
           </div>
@@ -319,9 +319,9 @@
                 <option value="2">第 2 節 (09:30~10:10)</option>
                 <option value="3">第 3 節 (10:30~11:10)</option>
                 <option value="4">第 4 節 (11:20~12:00)</option>
-                <option value="5">第 5 節 (13:20~14:00)</option>
-                <option value="6">第 6 節 (14:10~14:50)</option>
-                <option value="7">第 7 節 (15:00~15:40)</option>
+                <option value="5">第 5 節 (13:30~14:10)</option>
+                <option value="6">第 6 節 (14:20~15:00)</option>
+                <option value="7">第 7 節 (15:20~16:00)</option>
               </select>
             </div>
             <div class="form-actions-inline">
@@ -333,6 +333,7 @@
             <hr class="modal-divider">
             <h4>3. 多個班級一起處理</h4>
             <div class="form-actions-inline">
+              <button type="button" class="primary-btn" id="openTimetableBtn">📅 套用課表</button>
               <button type="button" class="primary-btn" id="openBulkImportBtn">📚 全年級名單大量匯入</button>
               <button type="button" class="danger-btn" id="openBatchDeleteBtn">🗂️ 勾選批次刪除班級</button>
             </div>
@@ -455,6 +456,27 @@
         </div>
         <p class="form-help" id="classroomLessonsInfo"></p>
         <div id="classroomLessonsList" class="lessons-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 8：套用課表 -->
+  <div class="modal-backdrop hidden" id="timetableModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>📅 套用課表</h3>
+        <button type="button" class="modal-close-btn" data-close="timetableModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <p class="form-help">
+          一行一班：<strong>班級、星期、節次</strong>，例如「五年忠班 星期一 第3節」。班級也可以寫 501、五忠；星期寫「一」或「1」都行。
+          課表上的班級會設定好上課時間，還沒有的班會自動建立（名單是空的）；課表上沒有的班級不會動。
+        </p>
+        <textarea id="timetableTextarea" class="roster-textarea" rows="13"></textarea>
+        <div class="form-actions-inline">
+          <button type="button" class="primary-btn" id="timetableApplyBtn">📅 套用</button>
+          <button type="button" class="secondary-btn" id="timetableResetBtn">↺ 還原成目前課表</button>
+        </div>
       </div>
     </div>
   </div>
