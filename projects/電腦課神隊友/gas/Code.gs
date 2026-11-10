@@ -2,8 +2,9 @@
  * 羅東國小｜115 電腦課神隊友 — Google 試算表自動同步後端 (Google Apps Script)
  *
  * 【部署步驟】
- * 1. 新增一份空白 Google 試算表，在上方選單點選「擴充功能 > Apps Script」。
- * 2. 將本檔案全部內容貼上並取代原本的程式碼，填好下方 SYNC_KEY 與 SPREADSHEET_ID，按 Ctrl+S 儲存。
+ * 1. 到 script.google.com 新增專案（或從試算表「擴充功能 > Apps Script」開都可以）。
+ * 2. 將本檔案全部內容貼上並取代原本的程式碼，填好下方 SYNC_KEY，按 Ctrl+S 儲存。
+ *    存資料的試算表會在第一次開網址時自動建立（見 SPREADSHEET_ID 說明）。
  * 3. 點選右上角「部署 > 新增部署作業」，類型選擇「網頁應用程式 (Web App)」：
  *    - 執行身分：我 (Me)
  *    - 誰可以存取：所有人 (Anyone)
@@ -22,18 +23,37 @@
 
 const SYNC_KEY = "請改成你自己的通關密碼";
 
-// 存資料的試算表 ID：試算表網址 https://docs.google.com/spreadsheets/d/【這一段】/edit 的中間那段。
-// ⚠️ 一定要填。網頁應用程式執行時 getActiveSpreadsheet() 會回傳 null，
-//    就算這支程式是從試算表「擴充功能」建立的也一樣（2026-11-10 實測）。
-const SPREADSHEET_ID = "請貼上試算表 ID";
+// 存資料的試算表 ID（選填）。
+// 留空：第一次被呼叫時自動在你的雲端硬碟建一份「電腦課神隊友_同步資料」，ID 記在
+//       「專案設定 > 指令碼屬性」的 SPREADSHEET_ID，之後都開那一份。
+// 想指定既有試算表：填網址 https://docs.google.com/spreadsheets/d/【這一段】/edit 的中間那段。
+// 為什麼不用 getActiveSpreadsheet()：獨立建立的 Apps Script 專案（不是從試算表「擴充功能」開的）
+// 沒有所屬試算表，回傳 null（2026-11-10 實際部署測出）。
+const SPREADSHEET_ID = "";
+const AUTO_SPREADSHEET_NAME = "電腦課神隊友_同步資料";
 
 function getSpreadsheet_() {
-  if (SPREADSHEET_ID && SPREADSHEET_ID !== "請貼上試算表 ID") {
-    return SpreadsheetApp.openById(SPREADSHEET_ID);
-  }
+  if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const props = PropertiesService.getScriptProperties();
+  const savedId = props.getProperty("SPREADSHEET_ID");
+  if (savedId) return SpreadsheetApp.openById(savedId);
+
   const active = SpreadsheetApp.getActiveSpreadsheet();
-  if (active) return active;
-  throw new Error("SPREADSHEET_ID 還沒填：請在 Code.gs 貼上試算表 ID");
+  if (active) {
+    props.setProperty("SPREADSHEET_ID", active.getId());
+    return active;
+  }
+
+  // 第一次：自動建立。建完再讀一次，萬一兩個請求同時進來各建了一份，只留先記下的那份
+  const created = SpreadsheetApp.create(AUTO_SPREADSHEET_NAME);
+  const raced = props.getProperty("SPREADSHEET_ID");
+  if (raced) {
+    DriveApp.getFileById(created.getId()).setTrashed(true);
+    return SpreadsheetApp.openById(raced);
+  }
+  props.setProperty("SPREADSHEET_ID", created.getId());
+  return created;
 }
 
 // 「📚 Classroom」按鈕要讀的課程（一個年級學期一個課程）。
@@ -114,11 +134,14 @@ function writeState(ss, payload, now, version) {
 // 只回版本號，不回資料；資料一律走 doPost
 function doGet() {
   try {
-    const state = readState(getSpreadsheet_());
+    const ss = getSpreadsheet_();
+    const state = readState(ss);
     return jsonOut({
       ok: true,
       service: "電腦課神隊友同步後端",
       note: "部署成功，試算表可讀寫。資料請由網頁以 POST 讀寫。",
+      spreadsheet: ss.getName(), // 只回名稱（到雲端硬碟搜尋得到），不回 ID
+
       version: state.version,
       keyConfigured: keyIsValid(SYNC_KEY)
     });
