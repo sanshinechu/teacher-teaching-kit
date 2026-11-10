@@ -328,15 +328,23 @@
               <button type="button" class="secondary-btn" id="addNewClassBtn">➕ 新增一個班級</button>
               <button type="button" class="danger-btn" id="deleteCurrentClassBtn">🗑️ 刪除此班級</button>
             </div>
+
+            <hr class="modal-divider">
+            <h4>3. 多個班級一起處理</h4>
+            <div class="form-actions-inline">
+              <button type="button" class="primary-btn" id="openBulkImportBtn">📚 全年級名單大量匯入</button>
+              <button type="button" class="danger-btn" id="openBatchDeleteBtn">🗂️ 勾選批次刪除班級</button>
+            </div>
           </div>
 
           <div class="roster-col">
-            <h4>2. 批次貼上學生名單（一行一位，自動排入 1～29 號主機）</h4>
-            <p class="form-help">可直接從 Excel 或學務系統複製姓名貼上。格式支援「純姓名」或「座號,姓名」（若某座號缺號請留空行或寫「空席」）。</p>
+            <h4>2. 批次貼上本班學生名單（依座號排入 PC-01～29）</h4>
+            <p class="form-help">可直接從 Excel 或學務系統複製「座號、姓名」兩欄貼上，一行一位。有座號就照座號坐（5 號坐 PC-05），缺號不用補空行，標題列會自動略過。只有姓名沒有座號時，照行的順序排。</p>
             <textarea id="bulkRosterTextarea" class="roster-textarea" rows="10" placeholder="01 王小明&#10;02 林小華&#10;03 陳小美..."></textarea>
             <div class="form-actions-inline">
               <button type="button" class="primary-btn" id="applyBulkRosterBtn">📥 套用名單並依座號排入 PC-01~29</button>
               <button type="button" class="secondary-btn" id="resetDefaultSeatOrderBtn">🔄 依座號重排回預設機台</button>
+              <button type="button" class="danger-btn" id="clearRosterBtn">🧹 清空本班名單</button>
             </div>
           </div>
         </div>
@@ -355,12 +363,23 @@
         <div class="sync-section">
           <h4>🔗 模式 A：Google 試算表自動跨機同步（Google Apps Script）</h4>
           <p class="form-help">
-            將專案資料夾內 <code>gas/Code.gs</code> 貼到你的 Google 試算表「擴充功能 &gt; Apps Script」並部署為「網頁應用程式」後，把網址貼在下方即可在資訊組主機與電腦教室講台電腦間自動同步！
+            將專案資料夾內 <code>gas/Code.gs</code> 貼到 Google 試算表「擴充功能 &gt; Apps Script」，改好通關密碼後部署為「網頁應用程式」，再把網址與通關密碼填在下方。
           </p>
-          <input type="url" id="gasWebAppUrlInput" class="full-input" placeholder="https://script.google.com/macros/s/xxxxxx/exec">
+          <p class="form-help">
+            第一台連線時雲端是空的，會問你要不要把這台的資料傳上去；之後的電腦連線會<strong>先下載雲端資料</strong>，不會把雲端蓋掉。兩台都改過時會跳出來問你要留哪一份。
+          </p>
+          <div class="form-row">
+            <label for="gasWebAppUrlInput">網頁應用程式網址：</label>
+            <input type="url" id="gasWebAppUrlInput" class="full-input" placeholder="https://script.google.com/macros/s/xxxxxx/exec" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label for="gasSyncKeyInput">通關密碼（跟 Code.gs 裡的 SYNC_KEY 一樣）：</label>
+            <input type="password" id="gasSyncKeyInput" class="full-input" placeholder="至少 12 個字" autocomplete="off">
+          </div>
           <div class="form-actions-inline">
-            <button type="button" class="primary-btn" id="saveGasUrlBtn">💾 儲存網址並立即同步</button>
-            <button type="button" class="secondary-btn" id="pullFromGasBtn">⬇️ 從試算表讀取最新資料</button>
+            <button type="button" class="primary-btn" id="saveGasUrlBtn">🔗 連線並同步</button>
+            <button type="button" class="secondary-btn" id="pullFromGasBtn">⬇️ 用雲端資料覆蓋這台</button>
+            <button type="button" class="danger-btn" id="disconnectGasBtn">🔌 中斷同步</button>
           </div>
         </div>
 
@@ -377,6 +396,53 @@
             </label>
             <button type="button" class="danger-btn" id="factoryResetBtn">⚠️ 還原預設範例資料</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 5：全年級名單大量匯入 -->
+  <div class="modal-backdrop hidden" id="bulkImportModal">
+    <div class="modal-box wide-modal-box">
+      <div class="modal-header">
+        <h3>📚 全年級名單大量匯入</h3>
+        <button type="button" class="modal-close-btn" data-close="bulkImportModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <p class="form-help">
+          一行一位學生，欄位是<strong>「班級、座號、姓名」</strong>（或「年級、班級、座號、姓名」）。可以從 Excel 或校務系統整片複製貼上，或直接選檔案（.xlsx／.xls／.csv）。
+          班級寫 <code>501</code>、<code>5年1班</code>、<code>五年一班</code> 都可以。有標題列的話會照標題認欄位。
+        </p>
+        <p class="form-help">
+          名單裡有的班級：<strong>整班換成新名單</strong>（上課節次、進度、歷程都保留，同名學生的星星也保留）。名單裡沒有的班級：不會動到。新建的班級上課時間先設星期一第 1 節，匯入後再到各班改。
+        </p>
+        <textarea id="bulkImportTextarea" class="roster-textarea" rows="10" placeholder="501	01	王小明&#10;501	02	林小華&#10;502	01	陳小美..."></textarea>
+        <div class="form-actions-inline">
+          <label class="secondary-btn file-label-btn">
+            📂 選擇檔案 (.xlsx / .xls / .csv)
+            <input type="file" id="bulkImportFileInput" accept=".xlsx,.xls,.csv,.txt" hidden>
+          </label>
+          <button type="button" class="secondary-btn" id="bulkImportPreviewBtn">🔍 預覽</button>
+          <button type="button" class="primary-btn" id="bulkImportApplyBtn" disabled>📥 確認匯入</button>
+        </div>
+        <div id="bulkImportPreview" class="bulk-preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 6：勾選批次刪除班級 -->
+  <div class="modal-backdrop hidden" id="batchDeleteModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🗂️ 勾選批次刪除班級</h3>
+        <button type="button" class="modal-close-btn" data-close="batchDeleteModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <p class="form-help">刪除的班級連同座位、進度、歷程一起移除，無法復原。不確定的話先到「☁️ 同步/備份」匯出備份。至少要留一個班級。</p>
+        <label class="batch-delete-all"><input type="checkbox" id="batchDeleteSelectAll"> 全選</label>
+        <div id="batchDeleteList" class="batch-delete-list"></div>
+        <div class="form-actions-inline">
+          <button type="button" class="danger-btn" id="batchDeleteConfirmBtn">🗑️ 刪除勾選的班級</button>
         </div>
       </div>
     </div>

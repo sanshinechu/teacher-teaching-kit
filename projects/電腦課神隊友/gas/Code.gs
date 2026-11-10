@@ -8,57 +8,152 @@
  *    - 執行身分：我 (Me)
  *    - 誰可以存取：所有人 (Anyone)
  * 4. 複製部署後產生的「網頁應用程式網址 (https://script.google.com/macros/s/.../exec)」，
- *    貼回「電腦課神隊友」網頁右上角「☁️ 同步/備份」設定中即可！
+ *    連同下方 SYNC_KEY 通關密碼，一起貼回「電腦課神隊友」網頁的「☁️ 同步/備份」設定。
+ *
+ * 【安全】資料裡有學生姓名。「所有人」可存取只代表不用登入 Google，
+ *  沒有正確的 SYNC_KEY 一律讀不到也寫不進。
+ *  ⚠️ 部署前一定要把 SYNC_KEY 改成你自己的密碼（至少 12 個字），沒改的話後端會拒絕所有請求。
+ *
+ * 【版本號】每次寫入版本 +1。網頁上傳時會附上「我是根據第幾版改的」，
+ *  雲端已經被別台改得更新時會回 conflict，不會直接覆蓋，由網頁請老師決定留哪一份。
+ *
+ * 【修改程式後】要「部署 > 管理部署作業 > 編輯 > 版本選新版本」才會生效，網址不變。
  */
+
+const SYNC_KEY = "請改成你自己的通關密碼";
 
 const STATE_SHEET_NAME = "系統狀態庫_請勿手動改";
 const PROGRESS_SHEET_NAME = "各班進度總覽";
 const REPAIR_SHEET_NAME = "機台報修紀錄";
 
-function doGet(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ensureSheet(ss, STATE_SHEET_NAME);
-  const jsonStr = sheet.getRange("A2").getValue();
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
 
+function keyIsValid(key) {
+  if (!SYNC_KEY || SYNC_KEY === "請改成你自己的通關密碼" || SYNC_KEY.length < 12) return false;
+  return String(key || "") === SYNC_KEY;
+}
+
+// 試算表單一儲存格上限 50,000 字，全年級名單＋歷程會超過，所以 JSON 拆段存在 A 欄往下
+// 狀態欄位：B2 最後更新時間、C2 版本號、D2 分段數
+const CHUNK_SIZE = 40000;
+
+function readState(ss) {
+  const sheet = ensureSheet(ss, STATE_SHEET_NAME);
+  const meta = sheet.getRange("B2:D2").getValues()[0];
+  // 段數不可超過實際有資料的列數（D2 被手動改成大數字時，避免讀上百萬格卡到逾時）
+  const chunkCount = Math.max(1, Math.min(Number(meta[2]) || 1, sheet.getLastRow() - 1));
+  const parts = sheet.getRange(2, 1, chunkCount, 1).getValues().map(function (r) {
+    return String(r[0] || "").replace(/^~/, "");
+  });
+  const jsonStr = parts.join("");
   let payload = null;
+  let corrupt = false;
   if (jsonStr) {
     try {
       payload = JSON.parse(jsonStr);
     } catch (err) {
-      payload = null;
+      corrupt = true; // 一定要跟「空的」分開：當成空的，網頁會把本機資料傳上來蓋掉
     }
   }
+  return {
+    corrupt: corrupt,
+    payload: payload,
+    updatedAt: meta[0] ? new Date(meta[0]).toISOString() : null,
+    version: Number(meta[1]) || 0
+  };
+}
 
-  return ContentService.createTextOutput(
-    JSON.stringify({
+function writeState(ss, payload, now, version) {
+  const sheet = ensureSheet(ss, STATE_SHEET_NAME);
+  const jsonStr = JSON.stringify(payload);
+  const chunks = [];
+  // 每段前面加「~」：切在任意位置的片段可能以 = + - 開頭被當成公式，
+  // 或像 "1.50" 被轉成數字吃掉字元，加前綴後一律當文字存
+  for (let i = 0; i < jsonStr.length; i += CHUNK_SIZE) {
+    chunks.push(["~" + jsonStr.slice(i, i + CHUNK_SIZE)]);
+  }
+  if (chunks.length === 0) chunks.push(["~"]);
+
+  // 先清掉舊的分段（舊資料可能比較長）
+  const lastRow = Math.max(sheet.getLastRow(), 2);
+  sheet.getRange(2, 1, lastRow - 1, 1).clearContent();
+
+  sheet.getRange("A1:D1").setValues([["完整狀態 JSON（分段）", "最後更新時間", "版本號", "分段數"]]);
+  sheet.getRange(2, 1, chunks.length, 1).setValues(chunks);
+  sheet.getRange("B2:D2").setValues([[now, version, chunks.length]]);
+}
+
+// 直接用瀏覽器打開網址確認部署用：真的讀一次試算表，讀不到就報錯，不會出現假的「部署成功」
+// 只回版本號，不回資料；資料一律走 doPost
+function doGet() {
+  try {
+    const state = readState(SpreadsheetApp.getActiveSpreadsheet());
+    return jsonOut({
       ok: true,
-      updatedAt: sheet.getRange("B2").getValue() || null,
-      payload: payload
-    })
-  ).setMimeType(ContentService.MimeType.JSON);
+      service: "電腦課神隊友同步後端",
+      note: "部署成功，試算表可讀寫。資料請由網頁以 POST 讀寫。",
+      version: state.version,
+      keyConfigured: keyIsValid(SYNC_KEY)
+    });
+  } catch (err) {
+    return jsonOut({ ok: false, error: "spreadsheet_unavailable", detail: String(err) });
+  }
 }
 
 function doPost(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const body = JSON.parse(e.postData.contents || "{}");
-  const payload = body.payload;
-
-  if (payload) {
-    // 1. 儲存完整 JSON 狀態供跨機還原
-    const stateSheet = ensureSheet(ss, STATE_SHEET_NAME);
-    stateSheet.getRange("A1:B1").setValues([["完整狀態 JSON", "最後更新時間"]]);
-    stateSheet.getRange("A2:B2").setValues([[JSON.stringify(payload), new Date()]]);
-
-    // 2. 同步輸出人類易讀的「各班進度總覽」工作表
-    syncReadableProgressSheet(ss, payload);
-
-    // 3. 同步輸出「機台報修紀錄」工作表
-    syncReadableRepairSheet(ss, payload);
+  let body = {};
+  try {
+    body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
+  } catch (err) {
+    return jsonOut({ ok: false, error: "bad_json" });
+  }
+  if (!keyIsValid(body.key)) {
+    return jsonOut({ ok: false, error: "unauthorized" });
   }
 
-  return ContentService.createTextOutput(
-    JSON.stringify({ ok: true, savedAt: new Date().toISOString() })
-  ).setMimeType(ContentService.MimeType.JSON);
+  const isLoad = body.action === "load";
+  const payload = body.payload;
+  if (!isLoad && (!payload || !Array.isArray(payload.classes))) {
+    return jsonOut({ ok: false, error: "bad_payload" });
+  }
+
+  // 讀和寫都要拿同一把鎖：寫到一半（舊段清掉、新段還沒寫完）去讀，會讀到拼錯的資料
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) {
+    return jsonOut({ ok: false, error: "busy" });
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const current = readState(ss);
+    // 資料毀損時只接受「強制覆蓋」（由網頁衝突對話框選「用這台覆蓋」），其餘一律報錯
+    if (current.corrupt && (isLoad || !body.force)) {
+      return jsonOut({ ok: false, error: "corrupt", version: current.version });
+    }
+
+    // 讀取也走 POST：通關密碼放在內文，不會出現在網址上
+    if (isLoad) {
+      return jsonOut({ ok: true, version: current.version, updatedAt: current.updatedAt, payload: current.payload });
+    }
+
+    const baseVersion = Number(body.baseVersion) || 0;
+    if (!body.force && baseVersion !== current.version) {
+      return jsonOut({ ok: false, error: "conflict", version: current.version, updatedAt: current.updatedAt });
+    }
+
+    const newVersion = current.version + 1;
+    const now = new Date();
+    writeState(ss, payload, now, newVersion);
+
+    syncReadableProgressSheet(ss, payload);
+    syncReadableRepairSheet(ss, payload);
+    SpreadsheetApp.flush();
+
+    return jsonOut({ ok: true, version: newVersion, updatedAt: now.toISOString() });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function syncReadableProgressSheet(ss, payload) {

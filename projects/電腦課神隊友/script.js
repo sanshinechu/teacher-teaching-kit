@@ -274,77 +274,340 @@ function loadAppState() {
   }
 }
 
+// ==================== 跨機同步（版本號＋通關密碼） ====================
+// 同步中繼資料：{ key, version, dirty }
+//   version：這台最後一次跟雲端對齊時的雲端版本號
+//   dirty：這台有還沒上傳成功的修改
+// 規則：雲端比較新、這台沒改 → 直接用雲端；這台改了、雲端沒變 → 上傳；
+//       兩邊都改了 → 問老師要留哪一份（後端也會用版本號擋，不會互蓋）
+const SYNC_META_KEY = "lotes_computer_class_sync_meta_v1";
+const SYNC_PUSH_DELAY_MS = 1500;
+const SYNC_FOCUS_THROTTLE_MS = 30000;
+
 let cloudSyncDebounceTimer = null;
+let syncPushing = false;
+let syncPushAgain = false;
+let syncForceNext = false;
+let syncAdoptEpoch = 0;
+let localChangeSeq = 0;
+let lastFocusSyncAt = 0;
+let syncConflictOpen = false;
+
+function loadSyncMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(SYNC_META_KEY) || "{}");
+    return { key: m.key || "", version: Number(m.version) || 0, dirty: !!m.dirty };
+  } catch (err) {
+    return { key: "", version: 0, dirty: false };
+  }
+}
+
+function saveSyncMeta(meta) {
+  localStorage.setItem(SYNC_META_KEY, JSON.stringify(meta));
+}
+
+function getGasUrl() {
+  try {
+    return (localStorage.getItem(GAS_URL_KEY) || "").trim();
+  } catch (err) {
+    return ""; // 瀏覽器停用儲存空間（無痕模式等）時當作沒啟用同步
+  }
+}
+
+function cloudSyncEnabled() {
+  return !!(getGasUrl() && loadSyncMeta().key);
+}
+
+function setSyncStatus(text) {
+  const el = document.getElementById("syncStatusText");
+  if (el) el.textContent = `${text} (${formatTimeHMS(new Date())})`;
+}
 
 function saveAppState(triggerCloud = true) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-    const timeStr = formatTimeHMS(new Date());
-    const gasUrl = localStorage.getItem(GAS_URL_KEY) || "";
-
-    const statusTextEl = document.getElementById("syncStatusText");
-    if (statusTextEl) {
-      if (gasUrl) {
-        statusTextEl.textContent = `已儲存本機，正在同步至試算表... (${timeStr})`;
-      } else {
-        statusTextEl.textContent = `已自動寫入本機 (${timeStr})`;
-      }
-    }
-
-    if (triggerCloud && gasUrl) {
+    if (triggerCloud && cloudSyncEnabled()) {
+      localChangeSeq += 1;
+      const meta = loadSyncMeta();
+      meta.dirty = true;
+      saveSyncMeta(meta);
+      setSyncStatus("已存本機，等待上傳試算表…");
       clearTimeout(cloudSyncDebounceTimer);
-      cloudSyncDebounceTimer = setTimeout(() => {
-        pushStateToGas(gasUrl);
-      }, 900);
+      cloudSyncDebounceTimer = setTimeout(pushStateToGas, SYNC_PUSH_DELAY_MS);
+    } else if (!cloudSyncEnabled()) {
+      setSyncStatus("已自動寫入本機（未啟用試算表同步）");
     }
   } catch (err) {
     console.error("儲存失敗：", err);
+    setSyncStatus("⚠️ 本機儲存失敗");
   }
 }
 
-async function pushStateToGas(gasUrl) {
-  const statusTextEl = document.getElementById("syncStatusText");
+// 用 POST 送通關密碼（不放在網址上，避免留在瀏覽紀錄與伺服器記錄裡）
+// Content-Type 用 text/plain 才不會觸發 CORS 預檢，Apps Script 的回應可以正常讀取
+// 每次連線／中斷都換一個編號；舊連線的回應晚到時直接丟掉，不會被套進新連線
+let syncConnEpoch = 0;
+
+async function gasRequest(body) {
+  const epoch = syncConnEpoch;
+  const meta = loadSyncMeta();
+  const resp = await fetch(getGasUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ ...body, key: meta.key })
+  });
+  const data = await resp.json();
+  if (epoch !== syncConnEpoch) throw new Error("stale_connection");
+  return data || {};
+}
+
+function describeSyncError(data) {
+  if (data.error === "unauthorized") return "通關密碼不對（或 Code.gs 的 SYNC_KEY 還沒改）";
+  if (data.error === "busy") return "試算表忙碌中，稍後自動再試";
+  if (data.error === "corrupt") return "試算表裡的資料讀不出來（可能被手動改過）";
+  return `試算表回應錯誤：${data.error || "未知"}`;
+}
+
+// 換成雲端資料時，保留這台自己的畫面偏好（目前選的班、排序、投影模式）
+function adoptCloudPayload(payload, version) {
+  const keepActive = appState.activeClassId;
+  const keepSort = appState.sortBy;
+  const keepProjection = appState.projectionMode;
+  appState = payload;
+  if (appState.classes.some((c) => c.id === keepActive)) appState.activeClassId = keepActive;
+  if (keepSort) appState.sortBy = keepSort;
+  appState.projectionMode = !!keepProjection;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+  const meta = loadSyncMeta();
+  meta.version = version;
+  meta.dirty = false;
+  saveSyncMeta(meta);
+  localChangeSeq += 1; // 讓正在進行中的上傳不要誤把 dirty 清掉
+  syncAdoptEpoch += 1; // 讓正在進行中的上傳不要把版本號蓋在這份（不同內容的）資料上
+  renderAll();
+  setSyncStatus(`已與試算表同步（第 ${version} 版）`);
+}
+
+async function pushStateToGas(force = false) {
+  if (!cloudSyncEnabled()) return;
+  if (syncPushing) {
+    // 上傳中又有新修改（或要求強制覆蓋）：等這次結束再送一次，強制旗標要帶過去
+    syncPushAgain = true;
+    if (force) syncForceNext = true;
+    return;
+  }
+  syncPushing = true;
+  const useForce = force || syncForceNext;
+  syncForceNext = false;
+  const seqAtSend = localChangeSeq;
+  const adoptAtSend = syncAdoptEpoch;
+  let recheckAfter = false;
   try {
-    await fetch(gasUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "saveAll",
-        updatedAt: new Date().toISOString(),
-        payload: appState
-      })
-    });
-    const timeStr = formatTimeHMS(new Date());
-    if (statusTextEl) {
-      statusTextEl.textContent = `已自動寫入試算表 (${timeStr})`;
+    const meta = loadSyncMeta();
+    setSyncStatus("正在上傳試算表…");
+    const data = await gasRequest({ action: "save", baseVersion: meta.version, force: useForce, payload: appState });
+    if (data.ok && syncAdoptEpoch !== adoptAtSend) {
+      // 上傳途中這台已經改用別份雲端資料：手上的內容不是剛上傳的那份，不能標成這個版本號，重新對一次
+      recheckAfter = true;
+    } else if (data.ok) {
+      const m = loadSyncMeta();
+      m.version = data.version;
+      if (localChangeSeq === seqAtSend) m.dirty = false;
+      saveSyncMeta(m);
+      setSyncStatus(`✅ 已寫入試算表（第 ${data.version} 版）`);
+    } else if (data.error === "conflict") {
+      const decision = await resolveSyncConflict(data.version);
+      if (decision === "overwrite") {
+        syncForceNext = true;
+        syncPushAgain = true;
+      }
+    } else if (data.error === "corrupt") {
+      if (confirm("⚠️ 試算表裡的資料讀不出來（可能被手動改過）。\n\n要用這台的資料修復雲端嗎？")) {
+        syncForceNext = true;
+        syncPushAgain = true;
+      } else {
+        setSyncStatus(`⚠️ ${describeSyncError(data)}；本機已存`);
+      }
+    } else {
+      setSyncStatus(`⚠️ ${describeSyncError(data)}；本機已存`);
     }
   } catch (err) {
-    if (statusTextEl) {
-      statusTextEl.textContent = `本機已存，試算表連線失敗 (${formatTimeHMS(new Date())})`;
+    setSyncStatus("⚠️ 連不上試算表，本機已存，下次存檔或回到此頁時再試");
+  } finally {
+    syncPushing = false;
+    if (syncPushAgain) {
+      syncPushAgain = false;
+      if (loadSyncMeta().dirty) pushStateToGas();
+    } else if (recheckAfter) {
+      reconcileWithCloud();
     }
   }
+}
+
+// 只負責問老師、回傳決定（"cloud"／"overwrite"／"pause"），真正的強制上傳交給 pushStateToGas，
+// 不然在上傳流程裡呼叫會被「上傳中」擋下改排一般上傳，又撞衝突（2026-11-10 測出來的）
+async function resolveSyncConflict(cloudVersion) {
+  if (syncConflictOpen) return "pause";
+  syncConflictOpen = true;
+  try {
+    const useCloud = confirm(
+      `⚠️ 雲端資料已被另一台電腦更新（第 ${cloudVersion} 版），這台也有還沒上傳的修改。\n\n` +
+        "按「確定」：改用雲端版本（這台還沒上傳的修改會放棄）\n" +
+        "按「取消」：再選一次要不要用這台蓋過雲端"
+    );
+    if (useCloud) {
+      const data = await gasRequest({ action: "load" });
+      if (data.ok && data.payload) adoptCloudPayload(data.payload, data.version);
+      else setSyncStatus(`⚠️ ${describeSyncError(data)}`);
+      return "cloud";
+    }
+    const overwrite = confirm(
+      "要用這台的資料覆蓋雲端嗎？\n\n另一台電腦剛剛的修改會被蓋掉。\n按「取消」則兩邊都不動，同步先暫停，可以先到「☁️ 同步/備份」匯出備份再決定。"
+    );
+    if (overwrite) return "overwrite";
+    setSyncStatus("⚠️ 跟雲端有衝突，同步暫停中（到「☁️ 同步/備份」處理）");
+    return "pause";
+  } finally {
+    syncConflictOpen = false;
+  }
+}
+
+// 開頁、切回這個分頁時跟雲端對一次
+async function reconcileWithCloud() {
+  if (!cloudSyncEnabled() || syncPushing) return; // 上傳中不對帳，上傳結束自己會處理
+  const startVersion = loadSyncMeta().version;
+  const startSeq = localChangeSeq;
+  const startAdopt = syncAdoptEpoch;
+  let data;
+  try {
+    data = await gasRequest({ action: "load" });
+  } catch (err) {
+    if (err.message !== "stale_connection") setSyncStatus("⚠️ 連不上試算表，先用本機資料");
+    return;
+  }
+  // 等回應的期間這台有上傳成功、改用別份資料或又改了東西：這份回應已經過期，丟掉
+  if (
+    syncPushing ||
+    loadSyncMeta().version !== startVersion ||
+    localChangeSeq !== startSeq ||
+    syncAdoptEpoch !== startAdopt
+  ) {
+    return;
+  }
+  if (!data.ok) {
+    setSyncStatus(`⚠️ ${describeSyncError(data)}`);
+    return;
+  }
+  const meta = loadSyncMeta();
+  if (!data.payload) {
+    if (meta.dirty) pushStateToGas();
+    else setSyncStatus("試算表還是空的");
+    return;
+  }
+  if (data.version === meta.version) {
+    if (meta.dirty) pushStateToGas();
+    else setSyncStatus(`已是最新（第 ${data.version} 版）`);
+    return;
+  }
+  if (!meta.dirty) {
+    adoptCloudPayload(data.payload, data.version);
+    return;
+  }
+  const decision = await resolveSyncConflict(data.version);
+  if (decision === "overwrite") await pushStateToGas(true);
+}
+
+// 第一次連線（或換網址／密碼）：一律先看雲端，不先上傳
+async function connectCloudSync(url, key) {
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(url)) {
+    alert("網址格式不對，應該長得像 https://script.google.com/macros/s/……/exec");
+    return;
+  }
+  if (key.length < 12) {
+    alert("通關密碼至少 12 個字，要跟 Code.gs 裡的 SYNC_KEY 一模一樣。");
+    return;
+  }
+  syncConnEpoch += 1;
+  clearTimeout(cloudSyncDebounceTimer);
+  localStorage.setItem(GAS_URL_KEY, url);
+  saveSyncMeta({ key, version: 0, dirty: false });
+
+  let data;
+  try {
+    setSyncStatus("正在連線試算表…");
+    data = await gasRequest({ action: "load" });
+  } catch (err) {
+    if (err.message === "stale_connection") return; // 連線途中又換了網址，交給新的那次
+    disconnectCloudSync(false);
+    alert("連不上這個網址。請確認部署時「誰可以存取」選的是「所有人」，而且網址是 /exec 結尾。");
+    return;
+  }
+  if (!data.ok) {
+    disconnectCloudSync(false);
+    alert(`連線失敗：${describeSyncError(data)}`);
+    return;
+  }
+
+  if (data.payload && Array.isArray(data.payload.classes)) {
+    const ok = confirm(
+      `雲端已經有 ${data.payload.classes.length} 個班級的資料（第 ${data.version} 版）。\n\n` +
+        "這台會改用雲端資料，這台目前的資料會被取代。\n要繼續嗎？（不確定的話先按取消，匯出這台的備份）"
+    );
+    if (!ok) {
+      disconnectCloudSync(false);
+      return;
+    }
+    adoptCloudPayload(data.payload, data.version);
+    alert("✅ 已連線，並載入雲端資料。之後這台的修改會自動上傳。");
+  } else {
+    const ok = confirm(
+      `雲端目前是空的。要把這台的 ${appState.classes.length} 個班級上傳，當作第一份資料嗎？\n\n` +
+        "（如果這台還是範例假名單，請先匯入真正的名單再連線）"
+    );
+    if (!ok) {
+      disconnectCloudSync(false);
+      return;
+    }
+    const meta = loadSyncMeta();
+    meta.dirty = true;
+    saveSyncMeta(meta);
+    await pushStateToGas();
+    alert("✅ 已連線並上傳。其他電腦連線時會下載這份資料。");
+  }
+}
+
+function disconnectCloudSync(showMsg = true) {
+  syncConnEpoch += 1;
+  clearTimeout(cloudSyncDebounceTimer);
+  localStorage.removeItem(GAS_URL_KEY);
+  localStorage.removeItem(SYNC_META_KEY);
+  setSyncStatus("已自動寫入本機（未啟用試算表同步）");
+  if (showMsg) alert("已中斷同步。這台的資料留在本機，試算表裡的資料不受影響。");
 }
 
 async function pullStateFromGas() {
-  const gasUrl = (localStorage.getItem(GAS_URL_KEY) || "").trim();
-  if (!gasUrl) {
-    alert("請先輸入 Google Apps Script 網頁應用程式網址！");
+  if (!cloudSyncEnabled()) {
+    alert("請先填網址與通關密碼，按「連線並同步」。");
     return;
   }
+  if (syncPushing) {
+    alert("正在上傳中，等狀態列顯示完成再按一次。");
+    return;
+  }
+  if (!confirm("用雲端資料覆蓋這台？這台還沒上傳的修改會放棄。")) return;
+  clearTimeout(cloudSyncDebounceTimer);
   try {
-    const resp = await fetch(`${gasUrl}?action=loadAll`);
-    const data = await resp.json();
-    if (data && data.payload && Array.isArray(data.payload.classes)) {
-      appState = data.payload;
-      saveAppState(false);
-      renderAll();
-      alert("✅ 已成功從 Google 試算表載入最新資料！");
+    const data = await gasRequest({ action: "load" });
+    if (data.ok && data.payload && Array.isArray(data.payload.classes)) {
+      adoptCloudPayload(data.payload, data.version);
+      alert("✅ 已從試算表載入最新資料！");
+    } else if (data.ok) {
+      alert("⚠️ 試算表目前沒有資料。");
     } else {
-      alert("⚠️ 試算表目前尚無存檔資料，將以本機資料為主。");
+      alert(`讀取失敗：${describeSyncError(data)}`);
     }
   } catch (err) {
-    alert("讀取試算表失敗，請確認網址權限設定為「所有人皆可存取」。");
+    alert("連不上試算表。");
   }
 }
 
@@ -1145,6 +1408,402 @@ function openRosterModal() {
   document.getElementById("rosterModal").classList.remove("hidden");
 }
 
+// ==================== 名單解析與排座（單班、全年級共用） ====================
+const ROSTER_HEADER_PATTERN = /座號|座次|姓名|名字|班級|班別|年級|學號/;
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+// 一行文字切成欄位：有 Tab／逗號就照它切，否則照空白切
+// Tab／逗號切出來的空欄要保留（例如「501,,05,王小明」的備註欄沒填），刪掉會讓欄位跟標題對不上、漏掉學生
+function splitRosterLine(line) {
+  const cleaned = line.replace(/^﻿/, "").replace(/\s+$/, "");
+  if (!cleaned.trim()) return [];
+  if (/\t|,|，/.test(cleaned)) {
+    return cleaned.split(/\t|,|，/).map((p) => p.trim().replace(/^"(.*)"$/, "$1").trim());
+  }
+  return cleaned.trim().split(/\s+/);
+}
+
+// 單班名單：回傳每位學生想坐的 PC。
+// 只要有任何一行帶座號 → 照座號坐（空行忽略）；全部都沒座號 → 照行的順序坐（空行／「空席」保留為空位，相容舊用法）
+function parseSingleClassLines(rawLines) {
+  const parsed = rawLines.map((raw) => {
+    const line = raw.trim();
+    if (!line || line === "空席" || line === "空") return { type: "blank" };
+    const parts = splitRosterLine(line).filter(Boolean); // 單班只有座號、姓名兩欄，空欄直接略過
+    if (parts.length >= 2 && /^\d{1,3}$/.test(parts[0])) {
+      return { type: "student", seatNo: Number(parts[0]), name: parts.slice(1).join(" ") };
+    }
+    if (ROSTER_HEADER_PATTERN.test(line) && !/\d/.test(line)) return { type: "skip", text: line };
+    if (/^\d+$/.test(line)) return { type: "skip", text: line };
+    return { type: "student", seatNo: null, name: line };
+  });
+
+  const hasSeatNumbers = parsed.some((p) => p.type === "student" && p.seatNo);
+  const entries = [];
+  const skipped = parsed.filter((p) => p.type === "skip").map((p) => p.text);
+  let lineSlot = 0;
+  parsed.forEach((p) => {
+    if (p.type === "skip") return;
+    if (!hasSeatNumbers) lineSlot += 1;
+    if (p.type !== "student") return;
+    entries.push({
+      preferredPc: hasSeatNumbers ? p.seatNo : lineSlot,
+      seatNo: p.seatNo,
+      name: p.name
+    });
+  });
+  return { entries, skipped };
+}
+
+// 照 preferredPc 排入 PC-01～29；座號重複或超過 29 的，從 PC-29 往回補進空著的機台
+// （缺號留下的空位在前排中間，補進去座號跟機台會對不上；後排本來就是空位多的地方），再排不下的回傳 overflow
+// 同名學生沿用原本的頭像與星星
+function placeStudentsInSeats(entries, existingClass) {
+  const oldByName = {};
+  Object.values(existingClass?.seats || {}).forEach((s) => {
+    if (s && s.name) oldByName[s.name] = s;
+  });
+  const makeStudent = (entry, pc) => {
+    const old = oldByName[entry.name];
+    return {
+      seatNo: pad2(entry.seatNo || pc),
+      name: entry.name,
+      avatar: old?.avatar || AVATAR_POOL[(pc + String(existingClass?.code || "").length) % AVATAR_POOL.length],
+      done: false,
+      stars: old?.stars || 0,
+      help: false,
+      absent: false
+    };
+  };
+
+  const seats = {};
+  ALL_PC_NUMBERS.forEach((pc) => (seats[String(pc)] = null));
+  const queue = [];
+  entries.forEach((entry) => {
+    const pc = Number(entry.preferredPc);
+    if (pc >= 1 && pc <= 29 && !seats[String(pc)]) {
+      seats[String(pc)] = makeStudent(entry, pc);
+    } else {
+      queue.push(entry);
+    }
+  });
+  [...ALL_PC_NUMBERS].reverse().forEach((pc) => {
+    if (!seats[String(pc)] && queue.length) seats[String(pc)] = makeStudent(queue.shift(), pc);
+  });
+  return { seats, overflow: queue };
+}
+
+// ==================== 全年級名單大量匯入 ====================
+const SHEETJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+let bulkImportSourceRows = null; // 從檔案讀進來的 [{ sheetName, rows }]；null 表示用文字框
+let bulkImportParsed = null;
+
+const CN_DIGITS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+function chineseNumeralsToDigits(str) {
+  return String(str).replace(/[一二三四五六七八九十]+/g, (m) => {
+    if (m === "十") return "10";
+    if (m.startsWith("十")) return String(10 + (CN_DIGITS[m[1]] || 0));
+    if (m.length === 1) return String(CN_DIGITS[m]);
+    if (m.length === 2 && m[1] === "十") return String(CN_DIGITS[m[0]] * 10);
+    return m;
+  });
+}
+
+// 501／5年1班／五年一班／5-1／（年級 5、班級 1）→ "501"
+function normalizeClassCode(gradeVal, classVal) {
+  const c = chineseNumeralsToDigits(String(classVal || "").trim()).replace(/\s+/g, "");
+  const g = chineseNumeralsToDigits(String(gradeVal || "").trim()).replace(/年級?|\s+/g, "");
+  if (/^\d{3}$/.test(c)) return c;
+  let m = c.match(/^(\d)年(\d{1,2})班?$/);
+  if (m) return m[1] + pad2(m[2]);
+  m = c.match(/^(\d)[-_.](\d{1,2})$/);
+  if (m) return m[1] + pad2(m[2]);
+  const cNum = c.replace(/班$/, "");
+  if (/^\d{1,2}$/.test(cNum) && /^\d$/.test(g)) return g + pad2(cNum);
+  return null;
+}
+
+function textToRows(text) {
+  return text.split(/\r?\n/).map(splitRosterLine);
+}
+
+function parseBulkTables(tables) {
+  const byClass = new Map();
+  const errors = [];
+  let total = 0;
+
+  const addStudent = (code, seat, name, where) => {
+    if (!code) {
+      errors.push(`${where}：看不出是哪一班`);
+      return;
+    }
+    if (!/^\d{1,3}$/.test(String(seat))) {
+      errors.push(`${where}：座號「${seat || "（空）"}」不是數字`);
+      return;
+    }
+    if (!name) {
+      errors.push(`${where}：沒有姓名`);
+      return;
+    }
+    if (!byClass.has(code)) byClass.set(code, []);
+    byClass.get(code).push({ preferredPc: Number(seat), seatNo: Number(seat), name: String(name).trim() });
+    total += 1;
+  };
+
+  tables.forEach(({ sheetName, rows }) => {
+    const sheetLabel = sheetName ? `「${sheetName}」` : "";
+    const sheetClass = sheetName ? normalizeClassCode("", sheetName) : null;
+    const headerIdx = rows.slice(0, 5).findIndex((r) => r.some((cell) => ROSTER_HEADER_PATTERN.test(cell)));
+
+    if (headerIdx >= 0) {
+      const header = rows[headerIdx];
+      const findCol = (re) => header.findIndex((h) => re.test(h));
+      const gradeCol = findCol(/年級/);
+      const classCol = header.findIndex((h) => /班級|班別|^班$/.test(h) && !/^年級$/.test(h));
+      const seatCol = findCol(/座號|座次/);
+      const nameCol = findCol(/姓名|名字/);
+      if (seatCol < 0 || nameCol < 0) {
+        errors.push(`${sheetLabel}標題列找不到「座號」或「姓名」欄`);
+        return;
+      }
+      rows.slice(headerIdx + 1).forEach((r, i) => {
+        if (!r.some(Boolean)) return;
+        const code =
+          classCol >= 0 || gradeCol >= 0
+            ? normalizeClassCode(gradeCol >= 0 ? r[gradeCol] : "", classCol >= 0 ? r[classCol] : "")
+            : sheetClass;
+        addStudent(code, r[seatCol], r[nameCol], `${sheetLabel}第 ${headerIdx + i + 2} 列`);
+      });
+      return;
+    }
+
+    rows.forEach((raw, i) => {
+      const r = raw.filter(Boolean);
+      if (!r.length) return;
+      const where = `${sheetLabel}第 ${i + 1} 列`;
+      if (r.length >= 4 && /^\d$/.test(r[0]) && /^\d{1,2}$/.test(r[1]) && /^\d{1,3}$/.test(r[2])) {
+        addStudent(normalizeClassCode(r[0], r[1]), r[2], r[3], where);
+      } else if (r.length >= 3) {
+        // 班級、座號、姓名；也接受 班級、姓名、座號
+        if (!/^\d{1,3}$/.test(r[1]) && /^\d{1,3}$/.test(r[2])) addStudent(normalizeClassCode("", r[0]), r[2], r[1], where);
+        else addStudent(normalizeClassCode("", r[0]), r[1], r.slice(2).join(" "), where);
+      } else if (r.length === 2 && sheetClass) {
+        addStudent(sheetClass, r[0], r[1], where);
+      } else {
+        errors.push(`${where}：欄位不夠（要有班級、座號、姓名）`);
+      }
+    });
+  });
+
+  return { byClass, errors, total };
+}
+
+function resetBulkImportPreview() {
+  bulkImportParsed = null;
+  document.getElementById("bulkImportPreview").innerHTML = "";
+  document.getElementById("bulkImportApplyBtn").disabled = true;
+}
+
+function previewBulkImport() {
+  const tables = bulkImportSourceRows || [
+    { sheetName: "", rows: textToRows(document.getElementById("bulkImportTextarea").value) }
+  ];
+  const result = parseBulkTables(tables);
+  const box = document.getElementById("bulkImportPreview");
+
+  if (result.byClass.size === 0) {
+    bulkImportParsed = null;
+    document.getElementById("bulkImportApplyBtn").disabled = true;
+    box.innerHTML = `<p class="bulk-preview-error">沒有讀到任何學生。${
+      result.errors.length ? "<br>" + result.errors.slice(0, 8).map(escapeHtml).join("<br>") : ""
+    }</p>`;
+    return;
+  }
+
+  const codes = [...result.byClass.keys()].sort();
+  const rowsHtml = codes
+    .map((code) => {
+      const list = result.byClass.get(code);
+      const exists = appState.classes.some((c) => String(c.code) === code);
+      const seatCount = {};
+      list.forEach((s) => (seatCount[s.seatNo] = (seatCount[s.seatNo] || 0) + 1));
+      const dupSeats = Object.keys(seatCount).filter((k) => seatCount[k] > 1);
+      const warns = [];
+      if (dupSeats.length) warns.push(`座號重複：${dupSeats.map(pad2).join("、")}（重複的改坐空位）`);
+      if (list.length > 29) warns.push(`${list.length} 人超過 29 台，最後 ${list.length - 29} 位排不下`);
+      if (list.some((s) => s.seatNo > 29) && list.length <= 29) warns.push("有座號大於 29，會補進空著的機台");
+      return `<tr>
+        <td>${escapeHtml(code)}</td>
+        <td>${list.length}</td>
+        <td>${exists ? "整班更新名單" : "<strong>新建班級</strong>"}</td>
+        <td>${warns.map(escapeHtml).join("<br>") || "—"}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const newCount = codes.filter((code) => !appState.classes.some((c) => String(c.code) === code)).length;
+  bulkImportParsed = result;
+  document.getElementById("bulkImportApplyBtn").disabled = false;
+  box.innerHTML = `
+    <p class="bulk-preview-summary">共 ${result.total} 位學生、${codes.length} 個班級（新建 ${newCount} 班、更新 ${codes.length - newCount} 班）</p>
+    ${
+      result.errors.length
+        ? `<p class="bulk-preview-error">⚠️ 有 ${result.errors.length} 列沒讀進來：<br>${result.errors
+            .slice(0, 8)
+            .map(escapeHtml)
+            .join("<br>")}${result.errors.length > 8 ? "<br>…" : ""}</p>`
+        : ""
+    }
+    <table class="overview-table">
+      <thead><tr><th>班級</th><th>人數</th><th>動作</th><th>注意</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+}
+
+function applyBulkImport() {
+  if (!bulkImportParsed) return;
+  const codes = [...bulkImportParsed.byClass.keys()].sort();
+  const updating = codes.filter((code) => appState.classes.some((c) => String(c.code) === code));
+  if (
+    !confirm(
+      `確定匯入 ${codes.length} 個班級、${bulkImportParsed.total} 位學生？` +
+        (updating.length ? `\n\n這 ${updating.length} 班的名單會整班換掉：${updating.join("、")}` : "")
+    )
+  ) {
+    return;
+  }
+
+  const overflowNotes = [];
+  codes.forEach((code, idx) => {
+    const entries = bulkImportParsed.byClass.get(code);
+    let cls = appState.classes.find((c) => String(c.code) === code);
+    if (!cls) {
+      cls = {
+        id: `cls_${Date.now()}_${idx}`,
+        code,
+        grade: Math.floor(Number(code) / 100) || 7,
+        day: 1,
+        period: 1,
+        todayProgress: "",
+        nextProgress: "",
+        memo: "",
+        competencies: [],
+        history: [],
+        seats: {}
+      };
+      appState.classes.push(cls);
+    }
+    const { seats, overflow } = placeStudentsInSeats(entries, cls);
+    cls.seats = seats;
+    if (overflow.length) overflowNotes.push(`${code}：${overflow.map((s) => s.name).join("、")}`);
+  });
+
+  saveAppState();
+  renderAll();
+  document.getElementById("bulkImportModal").classList.add("hidden");
+  alert(
+    `✅ 已匯入 ${codes.length} 個班級。新建的班級請到「👥 班級名單」設定上課星期與節次。` +
+      (overflowNotes.length ? `\n\n⚠️ 超過 29 台排不下、沒有匯入的學生：\n${overflowNotes.join("\n")}` : "")
+  );
+}
+
+async function readTextWithEncodingGuess(file) {
+  const buf = await file.arrayBuffer();
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
+  } catch (err) {
+    text = new TextDecoder("big5").decode(buf); // 校務系統匯出的 CSV 常是 Big5
+  }
+  return text.replace(/^﻿/, "");
+}
+
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = SHEETJS_URL;
+    s.onload = () => (window.XLSX ? resolve(window.XLSX) : reject(new Error("Excel 讀取元件載入失敗")));
+    s.onerror = () => reject(new Error("Excel 讀取元件下載失敗（網路被擋？可改存成 CSV 再選）"));
+    document.head.appendChild(s);
+  });
+}
+
+async function handleBulkImportFile(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const ext = file.name.split(".").pop().toLowerCase();
+  try {
+    if (ext === "csv" || ext === "txt") {
+      const text = await readTextWithEncodingGuess(file);
+      bulkImportSourceRows = [{ sheetName: "", rows: textToRows(text) }];
+      document.getElementById("bulkImportTextarea").value = text;
+    } else {
+      const XLSX = await loadSheetJs();
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      bulkImportSourceRows = wb.SheetNames.map((name) => ({
+        sheetName: name,
+        rows: XLSX.utils
+          .sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: "" })
+          .map((r) => r.map((cell) => String(cell).trim()))
+      }));
+      document.getElementById("bulkImportTextarea").value = bulkImportSourceRows
+        .map((t) => t.rows.map((r) => r.join("\t")).join("\n"))
+        .join("\n");
+    }
+    previewBulkImport();
+  } catch (err) {
+    bulkImportSourceRows = null;
+    alert(`讀檔失敗：${err.message}`);
+  } finally {
+    e.target.value = "";
+  }
+}
+
+// ==================== 勾選批次刪除班級 ====================
+function openBatchDeleteModal() {
+  const list = document.getElementById("batchDeleteList");
+  const sorted = [...appState.classes].sort((a, b) =>
+    String(a.code).localeCompare(String(b.code), "zh-Hant", { numeric: true })
+  );
+  list.innerHTML = sorted
+    .map((cls) => {
+      const count = Object.values(cls.seats || {}).filter(Boolean).length;
+      return `<label class="batch-delete-item">
+        <input type="checkbox" value="${escapeHtml(cls.id)}">
+        <span class="batch-delete-code">${escapeHtml(cls.code)}</span>
+        <span class="batch-delete-meta">${WEEKDAY_NAMES[cls.day] || "?"}-${cls.period}｜${count} 人</span>
+      </label>`;
+    })
+    .join("");
+  document.getElementById("batchDeleteSelectAll").checked = false;
+  document.getElementById("batchDeleteModal").classList.remove("hidden");
+}
+
+function confirmBatchDelete() {
+  const ids = [...document.querySelectorAll("#batchDeleteList input[type=checkbox]:checked")].map((cb) => cb.value);
+  if (!ids.length) {
+    alert("還沒勾選任何班級。");
+    return;
+  }
+  if (ids.length >= appState.classes.length) {
+    alert("至少要留一個班級。想全部重來的話，先匯入新名單再刪舊班。");
+    return;
+  }
+  const codes = appState.classes.filter((c) => ids.includes(c.id)).map((c) => c.code);
+  if (!confirm(`確定刪除這 ${codes.length} 個班級？無法復原。\n\n${codes.join("、")}`)) return;
+  appState.classes = appState.classes.filter((c) => !ids.includes(c.id));
+  if (!appState.classes.some((c) => c.id === appState.activeClassId)) {
+    appState.activeClassId = appState.classes[0].id;
+  }
+  saveAppState();
+  renderAll();
+  document.getElementById("batchDeleteModal").classList.add("hidden");
+}
+
 // ==================== 課堂迷你倒數計時器 ====================
 function updateTimerUI() {
   const display = document.getElementById("timerDisplay");
@@ -1400,7 +2059,8 @@ function initEvents() {
   document.getElementById("gradeOverviewBtn")?.addEventListener("click", openGradeOverviewModal);
   document.getElementById("rosterManageBtn")?.addEventListener("click", openRosterModal);
   document.getElementById("cloudSyncBtn")?.addEventListener("click", () => {
-    document.getElementById("gasWebAppUrlInput").value = localStorage.getItem(GAS_URL_KEY) || "";
+    document.getElementById("gasWebAppUrlInput").value = getGasUrl();
+    document.getElementById("gasSyncKeyInput").value = loadSyncMeta().key;
     document.getElementById("cloudSyncModal").classList.remove("hidden");
   });
 
@@ -1465,35 +2125,60 @@ function initEvents() {
     const activeClass = getActiveClass();
     if (!activeClass) return;
     const rawLines = document.getElementById("bulkRosterTextarea").value.split(/\r?\n/);
-    const newSeats = {};
-    for (let pc = 1; pc <= 29; pc++) {
-      const line = (rawLines[pc - 1] || "").trim();
-      if (!line || line === "空席" || line === "空") {
-        newSeats[String(pc)] = null;
-      } else {
-        const parts = line.split(/[,，\t\s]+/).filter(Boolean);
-        let seatNo = String(pc).padStart(2, "0");
-        let name = line;
-        if (parts.length >= 2 && /^\d+$/.test(parts[0])) {
-          seatNo = parts[0].padStart(2, "0");
-          name = parts.slice(1).join(" ");
-        }
-        newSeats[String(pc)] = {
-          seatNo,
-          name,
-          avatar: AVATAR_POOL[(pc + activeClass.code.length) % AVATAR_POOL.length],
-          done: false,
-          stars: 0,
-          help: false,
-          absent: false
-        };
-      }
+    const { entries, skipped } = parseSingleClassLines(rawLines);
+    const { seats, overflow } = placeStudentsInSeats(entries, activeClass);
+
+    const studentCount = Object.values(seats).filter(Boolean).length;
+    const notes = [];
+    if (skipped.length) notes.push(`略過 ${skipped.length} 行標題或看不懂的內容：${skipped.slice(0, 3).join("、")}`);
+    if (overflow.length) notes.push(`⚠️ 超過 29 台排不下的 ${overflow.length} 位沒有匯入：${overflow.map((s) => s.name).join("、")}`);
+    if (!confirm(`「${activeClass.code}」將換成 ${studentCount} 位學生（原本的座位會被取代）。${notes.length ? "\n\n" + notes.join("\n") : ""}\n\n確定套用？`)) {
+      return;
     }
-    activeClass.seats = newSeats;
+    activeClass.seats = seats;
     saveAppState();
     renderAll();
     document.getElementById("rosterModal").classList.add("hidden");
   });
+
+  document.getElementById("clearRosterBtn")?.addEventListener("click", () => {
+    const activeClass = getActiveClass();
+    if (!activeClass) return;
+    if (!confirm(`確定要清空「${activeClass.code}」的學生名單嗎？\n（班級、上課節次、進度歷程都會保留，只清掉座位上的學生）`)) return;
+    const emptySeats = {};
+    ALL_PC_NUMBERS.forEach((pc) => (emptySeats[String(pc)] = null));
+    activeClass.seats = emptySeats;
+    saveAppState();
+    renderAll();
+    openRosterModal();
+  });
+
+  // 全年級大量匯入
+  document.getElementById("openBulkImportBtn")?.addEventListener("click", () => {
+    document.getElementById("rosterModal").classList.add("hidden");
+    document.getElementById("bulkImportTextarea").value = "";
+    document.getElementById("bulkImportFileInput").value = "";
+    bulkImportSourceRows = null; // 不清掉的話，上次選的檔案會被當成這次的名單
+    resetBulkImportPreview();
+    document.getElementById("bulkImportModal").classList.remove("hidden");
+  });
+  document.getElementById("bulkImportTextarea")?.addEventListener("input", () => {
+    bulkImportSourceRows = null; // 改了文字就以文字框為準
+    resetBulkImportPreview();
+  });
+  document.getElementById("bulkImportFileInput")?.addEventListener("change", handleBulkImportFile);
+  document.getElementById("bulkImportPreviewBtn")?.addEventListener("click", previewBulkImport);
+  document.getElementById("bulkImportApplyBtn")?.addEventListener("click", applyBulkImport);
+
+  // 勾選批次刪除班級
+  document.getElementById("openBatchDeleteBtn")?.addEventListener("click", () => {
+    document.getElementById("rosterModal").classList.add("hidden");
+    openBatchDeleteModal();
+  });
+  document.getElementById("batchDeleteSelectAll")?.addEventListener("change", (e) => {
+    document.querySelectorAll("#batchDeleteList input[type=checkbox]").forEach((cb) => (cb.checked = e.target.checked));
+  });
+  document.getElementById("batchDeleteConfirmBtn")?.addEventListener("click", confirmBatchDelete);
 
   document.getElementById("resetDefaultSeatOrderBtn")?.addEventListener("click", () => {
     const activeClass = getActiveClass();
@@ -1512,14 +2197,32 @@ function initEvents() {
   });
 
   // 雲端同步與 JSON 備份匯出入
-  document.getElementById("saveGasUrlBtn")?.addEventListener("click", () => {
+  document.getElementById("saveGasUrlBtn")?.addEventListener("click", async () => {
     const url = document.getElementById("gasWebAppUrlInput").value.trim();
-    localStorage.setItem(GAS_URL_KEY, url);
-    saveAppState(true);
-    alert(url ? "✅ 已儲存試算表同步網址並開始自動同步！" : "已切換為純本機儲存模式。");
+    const key = document.getElementById("gasSyncKeyInput").value.trim();
+    if (!url) {
+      alert("請貼上網頁應用程式網址。");
+      return;
+    }
+    await connectCloudSync(url, key);
   });
 
   document.getElementById("pullFromGasBtn")?.addEventListener("click", pullStateFromGas);
+
+  document.getElementById("disconnectGasBtn")?.addEventListener("click", () => {
+    if (!confirm("中斷這台的試算表同步？（試算表裡的資料不會被刪除）")) return;
+    disconnectCloudSync(true);
+    document.getElementById("gasWebAppUrlInput").value = "";
+    document.getElementById("gasSyncKeyInput").value = "";
+  });
+
+  // 切回這個分頁時，抓別台的更新（30 秒內不重複）
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (Date.now() - lastFocusSyncAt < SYNC_FOCUS_THROTTLE_MS) return;
+    lastFocusSyncAt = Date.now();
+    reconcileWithCloud();
+  });
 
   document.getElementById("exportJsonBtn")?.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(appState, null, 2)], { type: "application/json" });
@@ -1575,4 +2278,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initEvents();
   renderAll();
   saveAppState(false);
+  if (cloudSyncEnabled()) {
+    lastFocusSyncAt = Date.now();
+    reconcileWithCloud();
+  }
 });

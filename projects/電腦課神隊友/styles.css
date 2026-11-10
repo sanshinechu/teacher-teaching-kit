@@ -1508,6 +1508,76 @@ body {
   font-weight: 800;
 }
 
+.primary-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* 全年級大量匯入預覽 */
+.bulk-preview {
+  margin-top: 14px;
+}
+
+.bulk-preview-summary {
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.bulk-preview-error {
+  font-size: 0.8rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+
+/* 勾選批次刪除班級 */
+.batch-delete-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.batch-delete-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.batch-delete-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.batch-delete-item:has(input:checked) {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.batch-delete-code {
+  font-weight: 800;
+}
+
+.batch-delete-meta {
+  color: #64748b;
+  font-size: 0.74rem;
+  margin-left: auto;
+}
+
 /* 響應式微調 */
 @media (max-width: 1360px) {
   .workspace-grid {
