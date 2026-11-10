@@ -1715,3 +1715,85 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== 作業繳交連結 ==================== */
+/* 有交作業的座號：頭像換成 🔗 按鈕。兩個類別一起寫，才壓得過 .student-avatar 基底的底色與框色 */
+.student-avatar.seat-link-avatar {
+  position: relative;
+  padding: 0;
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s;
+}
+
+.student-avatar.seat-link-avatar:hover {
+  background: #1d4ed8;
+  transform: scale(1.12);
+}
+
+.seat-link-count {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* 選了某份作業：已交亮藍框、沒交變淡。選擇器帶兩個類別，才壓得過 .seat-card 基底的框色 */
+.seat-card.sub-done {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.seat-card.sub-missing {
+  opacity: 0.45;
+}
+
+.assignment-filter-select {
+  max-width: 190px;
+  padding: 3px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #fff;
+}
+
+.submission-preview-note {
+  font-size: 0.82rem;
+  color: #475569;
+  margin: 4px 0;
+  word-break: break-all;
+}
+
+.submission-manage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.seat-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seat-link-item {
+  text-align: left;
+}

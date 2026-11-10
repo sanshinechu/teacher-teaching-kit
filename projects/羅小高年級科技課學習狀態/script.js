@@ -769,6 +769,7 @@ function renderClassroomGrid() {
   if (!container) return;
   const activeClass = getActiveClass();
   if (!activeClass) return;
+  renderAssignmentFilter(); // 換班時下拉選單要跟著換成那一班的作業
 
   // 切換學生投影視角（180度翻轉）
   const isStudentView = Boolean(appState.projectionMode);
@@ -826,6 +827,20 @@ function renderClassroomGrid() {
       if (faultInfo) card.classList.add("pc-fault");
       if (firstSelectedPcForSwap === pcKey) card.classList.add("swap-selected");
 
+      // 作業連結：選了某份作業時標出已交／未交；沒選時只顯示這個座號共交了幾份
+      const seatLinks = student ? getSeatLinks(activeClass, student.seatNo) : [];
+      const activeAsg = getActiveAssignment(activeClass);
+      const activeAsgUrl = student && activeAsg ? activeAsg.links?.[seatKeyOf(student.seatNo)] : "";
+      if (student && activeAsg) card.classList.add(activeAsgUrl ? "sub-done" : "sub-missing");
+      let linkBtnHtml = "";
+      if (activeAsg ? activeAsgUrl : seatLinks.length) {
+        const tip = activeAsg ? `打開「${activeAsg.title}」` : seatLinks.map((l) => l.title).join("、");
+        // 放在頭像的位置（底部按鈕列已經塞滿 4 顆，再加一顆會擠出座位格）
+        linkBtnHtml = `<button type="button" class="student-avatar seat-link-avatar" data-act="links" data-pc="${pcKey}" title="${escapeHtml(tip)}">🔗${
+          activeAsg || seatLinks.length < 2 ? "" : `<span class="seat-link-count">${seatLinks.length}</span>`
+        }</button>`;
+      }
+
       // 頂部：座號 + 機台編號
       const topHtml = `
         <div class="seat-card-top">
@@ -850,7 +865,7 @@ function renderClassroomGrid() {
       const bodyHtml = student
         ? `
           <div class="seat-card-body">
-            <div class="student-avatar">${student.avatar || "🧑‍💻"}</div>
+            ${linkBtnHtml || `<div class="student-avatar">${student.avatar || "🧑‍💻"}</div>`}
             <div class="student-name" title="${escapeHtml(student.name)}">${escapeHtml(student.name)}</div>
           </div>
         `
@@ -1005,6 +1020,11 @@ function handleSeatMiniAction(pcKey, act, isShift) {
 
   if (!student) return;
 
+  if (act === "links") {
+    handleSeatLinksClick(pcKey);
+    return;
+  }
+
   if (act === "done") {
     student.done = !student.done;
     if (student.done) student.help = false;
@@ -1106,7 +1126,18 @@ function updateLiveClassStats() {
     }
   });
 
-  statsEl.textContent = `🟢 完成 ${doneCount}/${totalSeated - absentCount} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}`;
+  let subText = "";
+  const activeAsg = getActiveAssignment(activeClass);
+  if (activeAsg) {
+    let submitted = 0;
+    ALL_PC_NUMBERS.forEach((num) => {
+      const s = activeClass.seats[String(num)];
+      if (s && activeAsg.links?.[seatKeyOf(s.seatNo)]) submitted++;
+    });
+    subText = ` ｜ 🔗 已交 ${submitted}/${totalSeated}`;
+  }
+
+  statsEl.textContent = `🟢 完成 ${doneCount}/${totalSeated - absentCount} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}${subText}`;
 }
 
 // ==================== 底部 20 項科技能力樹 ====================
@@ -1918,6 +1949,383 @@ async function handleBulkImportFile(e) {
   }
 }
 
+// ==================== 作業繳交連結（依座號） ====================
+// 存在班級底下：cls.assignments = [{ id, title, links: { "09": "https://..." } }]
+// 連結綁「座號」不綁座位格，所以換座位、重新匯入名單都不會掉。
+// 只收座號與網址，不收姓名（來源多半是 Padlet，標題寫 50509＝505 班 9 號）。
+let activeAssignmentId = null; // 座位圖上方下拉選的作業（只是檢視狀態，不存檔、不同步）
+let submissionSourceRows = null; // 從檔案讀進來的列；null 表示用文字框
+let submissionParsed = null;
+
+function getAssignments(cls) {
+  if (!cls) return [];
+  if (!Array.isArray(cls.assignments)) cls.assignments = [];
+  return cls.assignments;
+}
+
+function getActiveAssignment(cls) {
+  return getAssignments(cls).find((a) => a.id === activeAssignmentId) || null;
+}
+
+// 作業名稱比對用：去掉所有空白、全形轉半形、不分大小寫。
+// 同學陸續補交時老師會重複匯入同一份，名稱多一個空格不該變成第二份作業
+function assignmentTitleKey(title) {
+  return String(title || "")
+    .normalize("NFKC")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+function seatKeyOf(seatNo) {
+  const n = parseInt(seatNo, 10);
+  return Number.isFinite(n) ? pad2(n) : "";
+}
+
+// 這個座號交過的所有作業：[{ title, url }]
+function getSeatLinks(cls, seatNo) {
+  const key = seatKeyOf(seatNo);
+  if (!key) return [];
+  return getAssignments(cls)
+    .filter((a) => a.links && a.links[key])
+    .map((a) => ({ title: a.title, url: a.links[key] }));
+}
+
+// 只放行 http／https，其他（javascript: 等）一律不收
+function cleanSubmissionUrl(raw) {
+  const m = String(raw || "").match(/https?:\/\/[^\s"'<>]+/i);
+  if (!m) return "";
+  try {
+    const u = new URL(m[0]);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : "";
+  } catch (err) {
+    return "";
+  }
+}
+
+function openSubmissionUrl(url) {
+  const safe = cleanSubmissionUrl(url);
+  if (safe) window.open(safe, "_blank", "noopener");
+}
+
+// 一列找出「班級＋座號」與「網址」。不看欄位名稱，所以 Padlet 匯出格式變了也認得。
+// 回傳 { code, seat, url } 或 { skip: 原因 }；整列沒有網址回 null（標題列、空行）
+function parseSubmissionRow(cells, defaultCode) {
+  const list = cells.map((c) => String(c == null ? "" : c).trim());
+  const urls = list.map(cleanSubmissionUrl).filter(Boolean);
+  if (!urls.length) return null;
+  // Padlet 匯出檔每列可能另有「貼文本身的網址」，優先取不是 padlet.com 的那個
+  const url = urls.find((u) => !/^https?:\/\/([^/]*\.)?padlet\.com\//i.test(u)) || urls[0];
+
+  let code = null;
+  let seat = null;
+  for (let i = 0; i < list.length && seat === null; i++) {
+    const c = list[i];
+    // 50509（班級 3 碼＋座號 2 碼）、505 9、505-09、505_9
+    let m = c.match(/^(\d{3})(\d{2})$/) || c.match(/^(\d{3})[\s\-_.]+(\d{1,2})$/);
+    if (m) {
+      code = m[1];
+      seat = Number(m[2]);
+      break;
+    }
+    // 兩格分開：班級一格、座號下一格（505,09 或 五年信班,9）
+    const asCode = /^\d{1,2}$/.test(c) ? null : normalizeClassCode("", c);
+    if (asCode && /^\d{1,2}$/.test(list[i + 1] || "")) {
+      code = asCode;
+      seat = Number(list[i + 1]);
+    }
+  }
+  // 只有座號＋網址（最多三格，避免把匯出檔裡的按讚數當成座號）→ 算在目前這一班
+  // 除了座號和網址之外還有別的字（例如「第 3 則」）就不猜，免得把流水號當座號
+  const rest = list.filter((c) => c && !cleanSubmissionUrl(c));
+  if (seat === null && defaultCode && list.length <= 3 && rest.length === 1) {
+    const only = rest.find((c) => /^\d{1,2}$/.test(c));
+    if (only !== undefined) {
+      code = defaultCode;
+      seat = Number(only);
+    }
+  }
+  if (seat === null) return { skip: "看不出班級座號", url };
+  if (seat === 0) return { skip: `${code} 班 00 號（老師示範）`, url };
+  return { code, seat: pad2(seat), url };
+}
+
+function parseSubmissionTables(tables, defaultCode) {
+  const byClass = new Map(); // code → Map(seat → url)
+  const skipped = [];
+  const warnings = [];
+  const urlOwners = new Map(); // url → ["505-01", ...]
+  let total = 0;
+
+  tables.forEach((t) => {
+    t.rows.forEach((row) => {
+      if (!row || !row.length) return;
+      const r = parseSubmissionRow(row, defaultCode);
+      if (!r) return;
+      if (r.skip) {
+        skipped.push(`${r.skip}：${r.url}`);
+        return;
+      }
+      if (!byClass.has(r.code)) byClass.set(r.code, new Map());
+      const seats = byClass.get(r.code);
+      if (seats.has(r.seat) && seats.get(r.seat) !== r.url) {
+        warnings.push(`${r.code} 班 ${r.seat} 號貼了兩次，採用後面那一則`);
+      }
+      if (!seats.has(r.seat)) total++;
+      seats.set(r.seat, r.url);
+    });
+  });
+
+  byClass.forEach((seats, code) => {
+    seats.forEach((url, seat) => {
+      const key = url.replace(/\/+$/, "");
+      if (!urlOwners.has(key)) urlOwners.set(key, []);
+      urlOwners.get(key).push(`${code} 班 ${seat} 號`);
+    });
+  });
+  urlOwners.forEach((owners, url) => {
+    if (owners.length > 1) warnings.push(`同一個連結被 ${owners.join("、")} 重複使用：${url}`);
+  });
+
+  return { byClass, skipped, warnings, total };
+}
+
+function resetSubmissionPreview() {
+  submissionParsed = null;
+  document.getElementById("submissionPreview").innerHTML = "";
+  document.getElementById("submissionApplyBtn").disabled = true;
+}
+
+function previewSubmissionImport() {
+  const activeClass = getActiveClass();
+  const tables = submissionSourceRows || [
+    { sheetName: "", rows: textToRows(document.getElementById("submissionTextarea").value) }
+  ];
+  const result = parseSubmissionTables(tables, activeClass ? String(activeClass.code) : null);
+  const box = document.getElementById("submissionPreview");
+  const applyBtn = document.getElementById("submissionApplyBtn");
+
+  const known = [];
+  const unknownClasses = [];
+  [...result.byClass.keys()].sort().forEach((code) => {
+    const cls = appState.classes.find((c) => String(c.code) === code);
+    if (!cls) {
+      unknownClasses.push(code);
+      return;
+    }
+    const rosterSeats = new Set(
+      Object.values(cls.seats || {})
+        .filter(Boolean)
+        .map((s) => seatKeyOf(s.seatNo))
+    );
+    const seats = [...result.byClass.get(code).keys()].sort();
+    const notInRoster = seats.filter((s) => !rosterSeats.has(s));
+    const missing = [...rosterSeats].filter((s) => s && !result.byClass.get(code).has(s)).sort();
+    known.push({ code, seats, notInRoster, missing });
+  });
+
+  let html = "";
+  if (!result.byClass.size) {
+    html += `<div class="bulk-preview-error">沒有找到可以匯入的資料。每一列要有「班級座號」（例如 50509）和一個網址。</div>`;
+  }
+  known.forEach((k) => {
+    html += `<div class="bulk-preview-summary">✅ ${escapeHtml(k.code)} 班：${k.seats.length} 位有連結（${k.seats.map(escapeHtml).join("、")}）</div>`;
+    if (k.missing.length) {
+      html += `<div class="submission-preview-note">還沒交（名單上有、這次沒有）：${k.missing.map(escapeHtml).join("、")}</div>`;
+    }
+    if (k.notInRoster.length) {
+      html += `<div class="bulk-preview-error">⚠️ 名單上沒有這些座號，可能打錯：${k.notInRoster.map(escapeHtml).join("、")}（仍會匯入）</div>`;
+    }
+  });
+  if (unknownClasses.length) {
+    html += `<div class="bulk-preview-error">⚠️ 工具裡沒有這些班級，不會匯入：${unknownClasses.map(escapeHtml).join("、")}</div>`;
+  }
+  result.warnings.forEach((w) => {
+    html += `<div class="bulk-preview-error">⚠️ ${escapeHtml(w)}</div>`;
+  });
+  if (result.skipped.length) {
+    html += `<div class="submission-preview-note">略過 ${result.skipped.length} 列：${result.skipped.map(escapeHtml).join("；")}</div>`;
+  }
+  const typedTitle = document.getElementById("submissionTitleInput").value.trim();
+  if (known.length && typedTitle) {
+    const key = assignmentTitleKey(typedTitle);
+    const hit = known.filter((k) =>
+      getAssignments(appState.classes.find((c) => String(c.code) === k.code)).some((a) => assignmentTitleKey(a.title) === key)
+    );
+    html =
+      (hit.length
+        ? `<div class="bulk-preview-summary">♻️ 「${escapeHtml(typedTitle)}」已經有了（${hit.map((k) => escapeHtml(k.code)).join("、")} 班），這次是補交更新，不會多出第二份。</div>`
+        : `<div class="submission-preview-note">🆕 會新建一份作業「${escapeHtml(typedTitle)}」。如果其實是補交，請在作業名稱點一下、從清單選已有的那一份。</div>`) + html;
+  }
+  box.innerHTML = html;
+
+  submissionParsed = known.length ? { result, codes: known.map((k) => k.code) } : null;
+  applyBtn.disabled = !submissionParsed;
+}
+
+function applySubmissionImport() {
+  if (!submissionParsed) return;
+  const title = document.getElementById("submissionTitleInput").value.trim();
+  if (!title) {
+    alert("請先填作業名稱（例如：第2個作業_我的角色）。");
+    document.getElementById("submissionTitleInput").focus();
+    return;
+  }
+  let added = 0;
+  let updated = 0;
+  let created = 0;
+  let lastId = null;
+  const titleKey = assignmentTitleKey(title);
+  submissionParsed.codes.forEach((code, idx) => {
+    const cls = appState.classes.find((c) => String(c.code) === code);
+    if (!cls) return;
+    const list = getAssignments(cls);
+    let a = list.find((x) => assignmentTitleKey(x.title) === titleKey);
+    if (!a) {
+      a = { id: `asg_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 8)}`, title, links: {} };
+      list.push(a);
+      created++;
+    }
+    if (!a.links) a.links = {};
+    // 同名作業再匯入一次＝補交：這次有的座號更新，其他座號原本的連結保留，不會多出第二份
+    submissionParsed.result.byClass.get(code).forEach((url, seat) => {
+      if (!a.links[seat]) added++;
+      else if (a.links[seat] !== url) updated++;
+      a.links[seat] = url;
+    });
+    if (cls === getActiveClass()) lastId = a.id;
+  });
+  if (lastId) activeAssignmentId = lastId;
+  saveAppState();
+  renderAll();
+  renderSubmissionManageList();
+  resetSubmissionPreview();
+  document.getElementById("submissionTextarea").value = "";
+  submissionSourceRows = null;
+  alert(`✅ 已匯入「${title}」：新增 ${added} 筆、更新 ${updated} 筆${created ? "" : "（同一份作業，沒有另開新的）"}。`);
+}
+
+async function handleSubmissionFile(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const ext = file.name.split(".").pop().toLowerCase();
+  try {
+    // CSV 也交給試算表元件讀：Padlet 匯出的內文欄常有逗號與換行，自己切會切壞
+    const XLSX = await loadSheetJs();
+    let wb;
+    if (ext === "csv" || ext === "txt") {
+      wb = XLSX.read(await readTextWithEncodingGuess(file), { type: "string" });
+    } else {
+      wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    }
+    submissionSourceRows = wb.SheetNames.map((name) => ({
+      sheetName: name,
+      rows: XLSX.utils
+        .sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: "" })
+        .map((r) => r.map((cell) => String(cell).trim()))
+    }));
+    document.getElementById("submissionTextarea").value = `（已讀入檔案：${file.name}，按「預覽」查看；改這裡的文字會改用文字內容）`;
+    const titleInput = document.getElementById("submissionTitleInput");
+    if (!titleInput.value.trim()) titleInput.value = file.name.replace(/\.[^.]+$/, "");
+    previewSubmissionImport();
+  } catch (err) {
+    submissionSourceRows = null;
+    alert(`讀檔失敗：${err.message}`);
+  } finally {
+    e.target.value = "";
+  }
+}
+
+// 匯入視窗下半部：目前這一班已有的作業，可刪除
+function renderSubmissionManageList() {
+  const box = document.getElementById("submissionManageList");
+  if (!box) return;
+  const cls = getActiveClass();
+  const list = getAssignments(cls);
+  if (!cls || !list.length) {
+    box.innerHTML = `<div class="submission-preview-note">這一班還沒有匯入任何作業連結。</div>`;
+    return;
+  }
+  box.innerHTML = list
+    .map(
+      (a) => `
+      <div class="submission-manage-row">
+        <span>🔗 ${escapeHtml(a.title)}（${Object.keys(a.links || {}).length} 位）</span>
+        <button type="button" class="danger-btn" data-del-assignment="${escapeHtml(a.id)}">🗑️ 刪除</button>
+      </div>`
+    )
+    .join("");
+  box.querySelectorAll("[data-del-assignment]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const a = list.find((x) => x.id === btn.dataset.delAssignment);
+      if (!a || !confirm(`確定刪除 ${cls.code} 班的「${a.title}」？這一班 ${Object.keys(a.links || {}).length} 位的連結會一起刪掉。`)) return;
+      cls.assignments = list.filter((x) => x.id !== a.id);
+      if (activeAssignmentId === a.id) activeAssignmentId = null;
+      saveAppState();
+      renderAll();
+      renderSubmissionManageList();
+    });
+  });
+}
+
+function openSubmissionImportModal() {
+  const cls = getActiveClass();
+  document.getElementById("submissionTextarea").value = "";
+  document.getElementById("submissionFileInput").value = "";
+  document.getElementById("submissionTitleInput").value = getActiveAssignment(cls)?.title || "";
+  document.getElementById("submissionModalClassLabel").textContent = cls ? `${cls.code} 班` : "";
+  const allTitles = new Map();
+  appState.classes.forEach((c) => getAssignments(c).forEach((a) => allTitles.set(assignmentTitleKey(a.title), a.title)));
+  document.getElementById("submissionTitleOptions").innerHTML = [...allTitles.values()]
+    .map((t) => `<option value="${escapeHtml(t)}"></option>`)
+    .join("");
+  submissionSourceRows = null;
+  resetSubmissionPreview();
+  renderSubmissionManageList();
+  document.getElementById("submissionModal").classList.remove("hidden");
+}
+
+// 座位圖上方的作業下拉選單
+function renderAssignmentFilter() {
+  const sel = document.getElementById("assignmentFilterSelect");
+  if (!sel) return;
+  const cls = getActiveClass();
+  const list = getAssignments(cls);
+  if (!list.some((a) => a.id === activeAssignmentId)) activeAssignmentId = null;
+  sel.innerHTML =
+    `<option value="">🔗 全部作業</option>` +
+    list.map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.title)}</option>`).join("");
+  sel.value = activeAssignmentId || "";
+  sel.disabled = !list.length;
+}
+
+// 點座位格的 🔗：選了作業就開那一份；沒選時只有一份直接開，多份跳清單
+function handleSeatLinksClick(pcKey) {
+  const cls = getActiveClass();
+  const student = cls?.seats[pcKey];
+  if (!student) return;
+  const active = getActiveAssignment(cls);
+  const key = seatKeyOf(student.seatNo);
+  if (active) {
+    if (active.links?.[key]) openSubmissionUrl(active.links[key]);
+    return;
+  }
+  const links = getSeatLinks(cls, student.seatNo);
+  if (!links.length) return;
+  if (links.length === 1) {
+    openSubmissionUrl(links[0].url);
+    return;
+  }
+  document.getElementById("seatLinksTitle").textContent = `🔗 ${student.seatNo} 號的作業`;
+  const box = document.getElementById("seatLinksList");
+  box.innerHTML = links
+    .map((l, i) => `<button type="button" class="secondary-btn seat-link-item" data-link-idx="${i}">${escapeHtml(l.title)}</button>`)
+    .join("");
+  box.querySelectorAll("[data-link-idx]").forEach((btn) => {
+    btn.addEventListener("click", () => openSubmissionUrl(links[Number(btn.dataset.linkIdx)].url));
+  });
+  document.getElementById("seatLinksModal").classList.remove("hidden");
+}
+
 // ==================== 從 Classroom 點選進度 ====================
 // 資料來自同步後端的 lessons 動作（後端快取 5 分鐘）；這裡再存一份在記憶體，5 分鐘內開關彈窗不重抓
 // 換連線（網址／密碼）時作廢，不然會把前一個後端的課程帶進來
@@ -2575,6 +2983,21 @@ function initEvents() {
   document.getElementById("bulkImportFileInput")?.addEventListener("change", handleBulkImportFile);
   document.getElementById("bulkImportPreviewBtn")?.addEventListener("click", previewBulkImport);
   document.getElementById("bulkImportApplyBtn")?.addEventListener("click", applyBulkImport);
+
+  // 作業繳交連結
+  document.getElementById("openSubmissionImportBtn")?.addEventListener("click", openSubmissionImportModal);
+  document.getElementById("assignmentFilterSelect")?.addEventListener("change", (e) => {
+    activeAssignmentId = e.target.value || null;
+    renderClassroomGrid();
+  });
+  document.getElementById("submissionTextarea")?.addEventListener("input", () => {
+    submissionSourceRows = null; // 改了文字就以文字框為準
+    resetSubmissionPreview();
+  });
+  document.getElementById("submissionTitleInput")?.addEventListener("input", resetSubmissionPreview);
+  document.getElementById("submissionFileInput")?.addEventListener("change", handleSubmissionFile);
+  document.getElementById("submissionPreviewBtn")?.addEventListener("click", previewSubmissionImport);
+  document.getElementById("submissionApplyBtn")?.addEventListener("click", applySubmissionImport);
 
   // 套用課表
   document.getElementById("openTimetableBtn")?.addEventListener("click", () => {

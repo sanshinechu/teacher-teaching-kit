@@ -76,6 +76,12 @@
             <button type="button" class="micro-reset-btn" id="resetTodayStatusBtn" title="清空本班今日的完成、待協助與請假標記（保留加分）">
               🧹 重置今日狀態
             </button>
+            <select id="assignmentFilterSelect" class="assignment-filter-select" title="選一份作業：已交的座位亮起來、沒交的變淡，點 🔗 直接開作品" disabled>
+              <option value="">🔗 全部作業</option>
+            </select>
+            <button type="button" class="micro-reset-btn" id="openSubmissionImportBtn" title="匯入學生繳交的作業連結（Padlet 匯出檔或貼上文字），依座號顯示在座位格">
+              📥 作業連結
+            </button>
           </div>
 
           <div class="toolbar-right">
@@ -428,6 +434,54 @@
           <button type="button" class="primary-btn" id="bulkImportApplyBtn" disabled>📥 確認匯入</button>
         </div>
         <div id="bulkImportPreview" class="bulk-preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗：作業繳交連結匯入 -->
+  <div class="modal-backdrop hidden" id="submissionModal">
+    <div class="modal-box wide-modal-box">
+      <div class="modal-header">
+        <h3>📥 作業繳交連結匯入 <small id="submissionModalClassLabel"></small></h3>
+        <button type="button" class="modal-close-btn" data-close="submissionModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <p class="form-help">
+          每一列要有<strong>「班級座號」和「網址」</strong>，不需要姓名。班級座號寫 <code>50509</code>、<code>505 9</code>、<code>505,09</code> 都可以（505 班 9 號）；只寫座號和網址的話算在目前這一班。
+          可以貼上文字，或直接選 Padlet 匯出的檔案（.csv／.xlsx），程式會自己找出班級座號和網址那兩格。
+        </p>
+        <p class="form-help">
+          <strong>同學陸續補交時，用同一個作業名稱再匯入一次就好</strong>：這次有的座號更新連結，其他人的保留，不會變成第二份作業。座號 00（老師示範）會略過。連結跟著座號走，換座位不會掉。
+        </p>
+        <div class="lessons-toolbar">
+          <label>作業名稱 <input type="text" id="submissionTitleInput" list="submissionTitleOptions" placeholder="例如：第2個作業_我的角色（點一下可選已有的）" size="36"></label>
+          <datalist id="submissionTitleOptions"></datalist>
+        </div>
+        <textarea id="submissionTextarea" class="roster-textarea" rows="8" placeholder="50501	https://s3.ilc.edu.tw/projects/123456&#10;50502	https://s3.ilc.edu.tw/projects/234567"></textarea>
+        <div class="form-actions-inline">
+          <label class="secondary-btn file-label-btn">
+            📂 選擇 Padlet 匯出檔 (.csv / .xlsx)
+            <input type="file" id="submissionFileInput" accept=".xlsx,.xls,.csv,.txt" hidden>
+          </label>
+          <button type="button" class="secondary-btn" id="submissionPreviewBtn">🔍 預覽</button>
+          <button type="button" class="primary-btn" id="submissionApplyBtn" disabled>📥 確認匯入</button>
+        </div>
+        <div id="submissionPreview" class="bulk-preview"></div>
+        <hr class="modal-divider">
+        <div id="submissionManageList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗：某個座號的多份作業連結 -->
+  <div class="modal-backdrop hidden" id="seatLinksModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="seatLinksTitle">🔗 作業</h3>
+        <button type="button" class="modal-close-btn" data-close="seatLinksModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <div id="seatLinksList" class="seat-links-list"></div>
       </div>
     </div>
   </div>
