@@ -1,5 +1,5 @@
 /**
- * 羅東國小｜115 電腦課神隊友
+ * 羅東國小｜羅小高年級科技課學習狀態
  * 4 排 × 8 格（共 29 台主機：第 1~3 排從右至左 1~24，第 4 排 空、空、28、27、26、25、29、空）
  */
 
@@ -2421,7 +2421,7 @@ function initEvents() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `羅東國小_電腦課神隊友備份_${formatDateISO(getTaipeiNow())}.json`;
+    a.download = `羅東國小_羅小高年級科技課學習狀態_備份_${formatDateISO(getTaipeiNow())}.json`;
     a.click();
     URL.revokeObjectURL(url);
   });

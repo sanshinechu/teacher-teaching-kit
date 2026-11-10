@@ -1,5 +1,5 @@
 /**
- * 羅東國小｜115 電腦課神隊友 — Google 試算表自動同步後端 (Google Apps Script)
+ * 羅東國小｜羅小高年級科技課學習狀態 — Google 試算表自動同步後端 (Google Apps Script)
  *
  * 【部署步驟】
  * 1. 到 script.google.com 新增專案（或從試算表「擴充功能 > Apps Script」開都可以）。
@@ -9,7 +9,7 @@
  *    - 執行身分：我 (Me)
  *    - 誰可以存取：所有人 (Anyone)
  * 4. 複製部署後產生的「網頁應用程式網址 (https://script.google.com/macros/s/.../exec)」，
- *    連同下方 SYNC_KEY 通關密碼，一起貼回「電腦課神隊友」網頁的「☁️ 同步/備份」設定。
+ *    連同下方 SYNC_KEY 通關密碼，一起貼回「羅小高年級科技課學習狀態」網頁的「☁️ 同步/備份」設定。
  *
  * 【安全】資料裡有學生姓名。「所有人」可存取只代表不用登入 Google，
  *  沒有正確的 SYNC_KEY 一律讀不到也寫不進。
@@ -24,13 +24,13 @@
 const SYNC_KEY = "請改成你自己的通關密碼";
 
 // 存資料的試算表 ID（選填）。
-// 留空：第一次被呼叫時自動在你的雲端硬碟建一份「電腦課神隊友_同步資料」，ID 記在
+// 留空：第一次被呼叫時自動在你的雲端硬碟建一份「羅小高年級科技課學習狀態_同步資料」，ID 記在
 //       「專案設定 > 指令碼屬性」的 SPREADSHEET_ID，之後都開那一份。
 // 想指定既有試算表：填網址 https://docs.google.com/spreadsheets/d/【這一段】/edit 的中間那段。
 // 為什麼不用 getActiveSpreadsheet()：獨立建立的 Apps Script 專案（不是從試算表「擴充功能」開的）
 // 沒有所屬試算表，回傳 null（2026-11-10 實際部署測出）。
 const SPREADSHEET_ID = "";
-const AUTO_SPREADSHEET_NAME = "電腦課神隊友_同步資料";
+const AUTO_SPREADSHEET_NAME = "羅小高年級科技課學習狀態_同步資料";
 
 function getSpreadsheet_() {
   if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -138,7 +138,7 @@ function doGet() {
     const state = readState(ss);
     return jsonOut({
       ok: true,
-      service: "電腦課神隊友同步後端",
+      service: "羅小高年級科技課學習狀態同步後端",
       note: "部署成功，試算表可讀寫。資料請由網頁以 POST 讀寫。",
       spreadsheet: ss.getName(), // 只回名稱（到雲端硬碟搜尋得到），不回 ID
 
