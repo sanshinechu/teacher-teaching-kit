@@ -828,10 +828,13 @@ function renderClassroomGrid() {
       if (firstSelectedPcForSwap === pcKey) card.classList.add("swap-selected");
 
       // 作業連結：選了某份作業時標出已交／未交；沒選時只顯示這個座號共交了幾份
-      const seatLinks = student ? getSeatLinks(activeClass, student.seatNo) : [];
+      // 空席也算：沒匯名單（老師不放學生姓名）的班，座號 N 的連結顯示在 PC-N（見 linkSeatNoFor）
+      const linkSeatNo = linkSeatNoFor(activeClass, pcKey);
+      const seatLinks = linkSeatNo ? getSeatLinks(activeClass, linkSeatNo) : [];
       const activeAsg = getActiveAssignment(activeClass);
-      const activeAsgUrl = student && activeAsg ? activeAsg.links?.[seatKeyOf(student.seatNo)] : "";
+      const activeAsgUrl = linkSeatNo && activeAsg ? activeAsg.links?.[seatKeyOf(linkSeatNo)] : "";
       if (student && activeAsg) card.classList.add(activeAsgUrl ? "sub-done" : "sub-missing");
+      if (!student && activeAsgUrl) card.classList.add("sub-done");
       let linkBtnHtml = "";
       if (activeAsg ? activeAsgUrl : seatLinks.length) {
         const tip = activeAsg ? `打開「${activeAsg.title}」` : seatLinks.map((l) => l.title).join("、");
@@ -844,7 +847,7 @@ function renderClassroomGrid() {
       // 頂部：座號 + 機台編號
       const topHtml = `
         <div class="seat-card-top">
-          <span class="student-no-tag">${student ? `${student.seatNo}號` : "空席"}</span>
+          <span class="student-no-tag">${student ? `${student.seatNo}號` : linkBtnHtml ? `${pad2(pcKey)}號` : "空席"}</span>
           <span class="pc-id-badge">${pcLabel}</span>
         </div>
       `;
@@ -869,7 +872,14 @@ function renderClassroomGrid() {
             <div class="student-name" title="${escapeHtml(student.name)}">${escapeHtml(student.name)}</div>
           </div>
         `
-        : `
+        : linkBtnHtml
+          ? `
+          <div class="seat-card-body">
+            ${linkBtnHtml}
+            <div class="empty-seat-label">已交作業</div>
+          </div>
+        `
+          : `
           <div class="seat-card-body">
             <div class="empty-seat-label">🪑 空席（點擊新增）</div>
           </div>
@@ -1018,12 +1028,13 @@ function handleSeatMiniAction(pcKey, act, isShift) {
     return;
   }
 
-  if (!student) return;
-
+  // 空席也可能有連結（沒匯名單的班），所以放在「沒有學生就返回」之前
   if (act === "links") {
     handleSeatLinksClick(pcKey);
     return;
   }
+
+  if (!student) return;
 
   if (act === "done") {
     student.done = !student.done;
@@ -1131,10 +1142,11 @@ function updateLiveClassStats() {
   if (activeAsg) {
     let submitted = 0;
     ALL_PC_NUMBERS.forEach((num) => {
-      const s = activeClass.seats[String(num)];
-      if (s && activeAsg.links?.[seatKeyOf(s.seatNo)]) submitted++;
+      const no = linkSeatNoFor(activeClass, String(num));
+      if (no && activeAsg.links?.[seatKeyOf(no)]) submitted++;
     });
-    subText = ` ｜ 🔗 已交 ${submitted}/${totalSeated}`;
+    // 沒名單的班不知道全班幾人，只報已交人數
+    subText = totalSeated ? ` ｜ 🔗 已交 ${submitted}/${totalSeated}` : ` ｜ 🔗 已交 ${submitted} 位`;
   }
 
   statsEl.textContent = `🟢 完成 ${doneCount}/${totalSeated - absentCount} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}${subText}`;
@@ -2330,23 +2342,35 @@ function renderAssignmentFilter() {
 }
 
 // 點座位格的 🔗：選了作業就開那一份；沒選時只有一份直接開，多份跳清單
+// 這一格要顯示哪個座號的作業：有學生就是他的座號；
+// 空席則用機台編號當座號（PC-09 → 9 號），但這個座號已經有學生坐在別格時不算，免得同一份作業出現兩次。
+// 不需要姓名：老師為了學生個資可以不匯名單，只靠座號。
+function linkSeatNoFor(cls, pcKey) {
+  if (!cls) return null;
+  const student = cls.seats?.[pcKey];
+  if (student) return student.seatNo;
+  const key = pad2(pcKey);
+  const taken = Object.values(cls.seats || {}).some((s) => s && seatKeyOf(s.seatNo) === key);
+  return taken ? null : key;
+}
+
 function handleSeatLinksClick(pcKey) {
   const cls = getActiveClass();
-  const student = cls?.seats[pcKey];
-  if (!student) return;
+  const seatNo = linkSeatNoFor(cls, pcKey);
+  if (!seatNo) return;
   const active = getActiveAssignment(cls);
-  const key = seatKeyOf(student.seatNo);
+  const key = seatKeyOf(seatNo);
   if (active) {
     if (active.links?.[key]) openSubmissionUrl(active.links[key]);
     return;
   }
-  const links = getSeatLinks(cls, student.seatNo);
+  const links = getSeatLinks(cls, seatNo);
   if (!links.length) return;
   if (links.length === 1) {
     openSubmissionUrl(links[0].url);
     return;
   }
-  document.getElementById("seatLinksTitle").textContent = `🔗 ${student.seatNo} 號的作業`;
+  document.getElementById("seatLinksTitle").textContent = `🔗 ${seatNo} 號的作業`;
   const box = document.getElementById("seatLinksList");
   box.innerHTML = links
     .map((l, i) => `<button type="button" class="secondary-btn seat-link-item" data-link-idx="${i}">${escapeHtml(l.title)}</button>`)
