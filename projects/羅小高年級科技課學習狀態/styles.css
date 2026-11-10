@@ -1797,3 +1797,9 @@ body {
 .seat-link-item {
   text-align: left;
 }
+
+.submission-preview-group {
+  border-left: 3px solid #93c5fd;
+  padding-left: 8px;
+  margin: 8px 0;
+}

@@ -2049,44 +2049,66 @@ function parseSubmissionRow(cells, defaultCode) {
   return { code, seat: pad2(seat), url };
 }
 
+// 一次可以匯多份作業：以「# 作業名稱」開頭的一列，表示接下來的列都屬於這份作業。
+// 沒有 # 列的資料算在「作業名稱」欄填的那一份。
+// 回傳 groups: [{ title（可能是空字串＝用輸入欄）, byClass: Map(code → Map(seat → url)), warnings }]
 function parseSubmissionTables(tables, defaultCode) {
-  const byClass = new Map(); // code → Map(seat → url)
+  const groups = [];
   const skipped = [];
-  const warnings = [];
-  const urlOwners = new Map(); // url → ["505-01", ...]
   let total = 0;
+  const groupOf = (title) => {
+    const key = assignmentTitleKey(title);
+    let g = groups.find((x) => assignmentTitleKey(x.title) === key);
+    if (!g) {
+      g = { title, byClass: new Map(), warnings: [] };
+      groups.push(g);
+    }
+    return g;
+  };
 
   tables.forEach((t) => {
+    let currentTitle = ""; // 每張工作表各自從頭算
     t.rows.forEach((row) => {
       if (!row || !row.length) return;
-      const r = parseSubmissionRow(row, defaultCode);
+      const cells = row.map((c) => String(c == null ? "" : c).trim());
+      const first = cells.find((c) => c) || "";
+      if (/^[#＃]/.test(first) && !cells.some(cleanSubmissionUrl)) {
+        currentTitle = cells.filter(Boolean).join(" ").replace(/^[#＃]+\s*/, "").trim();
+        return;
+      }
+      const r = parseSubmissionRow(cells, defaultCode);
       if (!r) return;
       if (r.skip) {
         skipped.push(`${r.skip}：${r.url}`);
         return;
       }
-      if (!byClass.has(r.code)) byClass.set(r.code, new Map());
-      const seats = byClass.get(r.code);
+      const g = groupOf(currentTitle);
+      if (!g.byClass.has(r.code)) g.byClass.set(r.code, new Map());
+      const seats = g.byClass.get(r.code);
       if (seats.has(r.seat) && seats.get(r.seat) !== r.url) {
-        warnings.push(`${r.code} 班 ${r.seat} 號貼了兩次，採用後面那一則`);
+        g.warnings.push(`${r.code} 班 ${r.seat} 號貼了兩次，採用後面那一則`);
       }
       if (!seats.has(r.seat)) total++;
       seats.set(r.seat, r.url);
     });
   });
 
-  byClass.forEach((seats, code) => {
-    seats.forEach((url, seat) => {
-      const key = url.replace(/\/+$/, "");
-      if (!urlOwners.has(key)) urlOwners.set(key, []);
-      urlOwners.get(key).push(`${code} 班 ${seat} 號`);
+  // 同一份作業裡，同一個連結被不同座號使用（多半是貼錯）
+  groups.forEach((g) => {
+    const urlOwners = new Map();
+    g.byClass.forEach((seats, code) => {
+      seats.forEach((url, seat) => {
+        const key = url.replace(/\/+$/, "");
+        if (!urlOwners.has(key)) urlOwners.set(key, []);
+        urlOwners.get(key).push(`${code} 班 ${seat} 號`);
+      });
+    });
+    urlOwners.forEach((owners, url) => {
+      if (owners.length > 1) g.warnings.push(`同一個連結被 ${owners.join("、")} 重複使用：${url}`);
     });
   });
-  urlOwners.forEach((owners, url) => {
-    if (owners.length > 1) warnings.push(`同一個連結被 ${owners.join("、")} 重複使用：${url}`);
-  });
 
-  return { byClass, skipped, warnings, total };
+  return { groups, skipped, total };
 }
 
 function resetSubmissionPreview() {
@@ -2103,97 +2125,105 @@ function previewSubmissionImport() {
   const result = parseSubmissionTables(tables, activeClass ? String(activeClass.code) : null);
   const box = document.getElementById("submissionPreview");
   const applyBtn = document.getElementById("submissionApplyBtn");
-
-  const known = [];
-  const unknownClasses = [];
-  [...result.byClass.keys()].sort().forEach((code) => {
-    const cls = appState.classes.find((c) => String(c.code) === code);
-    if (!cls) {
-      unknownClasses.push(code);
-      return;
-    }
-    const rosterSeats = new Set(
-      Object.values(cls.seats || {})
-        .filter(Boolean)
-        .map((s) => seatKeyOf(s.seatNo))
-    );
-    const seats = [...result.byClass.get(code).keys()].sort();
-    const notInRoster = seats.filter((s) => !rosterSeats.has(s));
-    const missing = [...rosterSeats].filter((s) => s && !result.byClass.get(code).has(s)).sort();
-    known.push({ code, seats, notInRoster, missing });
-  });
+  const typedTitle = document.getElementById("submissionTitleInput").value.trim();
 
   let html = "";
-  if (!result.byClass.size) {
+  let importable = 0;
+  if (!result.groups.length) {
     html += `<div class="bulk-preview-error">沒有找到可以匯入的資料。每一列要有「班級座號」（例如 50509）和一個網址。</div>`;
   }
-  known.forEach((k) => {
-    html += `<div class="bulk-preview-summary">✅ ${escapeHtml(k.code)} 班：${k.seats.length} 位有連結（${k.seats.map(escapeHtml).join("、")}）</div>`;
-    if (k.missing.length) {
-      html += `<div class="submission-preview-note">還沒交（名單上有、這次沒有）：${k.missing.map(escapeHtml).join("、")}</div>`;
+  const plan = [];
+  result.groups.forEach((g) => {
+    const title = g.title || typedTitle;
+    const titleKey = assignmentTitleKey(title);
+    const codes = [...g.byClass.keys()].sort();
+    const knownCodes = codes.filter((code) => appState.classes.some((c) => String(c.code) === code));
+    const unknownCodes = codes.filter((code) => !knownCodes.includes(code));
+    const existing = knownCodes.filter((code) =>
+      getAssignments(appState.classes.find((c) => String(c.code) === code)).some((a) => assignmentTitleKey(a.title) === titleKey)
+    );
+
+    html += `<div class="submission-preview-group">`;
+    if (!title) {
+      html += `<div class="bulk-preview-error">⚠️ 這批資料沒有作業名稱，請在上面的「作業名稱」填好再預覽。</div>`;
+    } else if (existing.length) {
+      html += `<div class="bulk-preview-summary">♻️ 「${escapeHtml(title)}」已經有了（${existing.map(escapeHtml).join("、")} 班），這次是補交更新，不會多出第二份。</div>`;
+    } else {
+      html += `<div class="bulk-preview-summary">🆕 「${escapeHtml(title)}」會新建一份作業。如果其實是補交，請確認名稱跟之前的一樣。</div>`;
     }
-    if (k.notInRoster.length) {
-      html += `<div class="bulk-preview-error">⚠️ 名單上沒有這些座號，可能打錯：${k.notInRoster.map(escapeHtml).join("、")}（仍會匯入）</div>`;
+
+    knownCodes.forEach((code) => {
+      const cls = appState.classes.find((c) => String(c.code) === code);
+      const rosterSeats = new Set(
+        Object.values(cls.seats || {})
+          .filter(Boolean)
+          .map((st) => seatKeyOf(st.seatNo))
+      );
+      const seats = [...g.byClass.get(code).keys()].sort();
+      const notInRoster = seats.filter((st) => !rosterSeats.has(st));
+      const missing = [...rosterSeats].filter((st) => st && !g.byClass.get(code).has(st)).sort();
+      html += `<div class="submission-preview-note">✅ ${escapeHtml(code)} 班：${seats.length} 位有連結（${seats.map(escapeHtml).join("、")}）</div>`;
+      if (missing.length) {
+        html += `<div class="submission-preview-note">　這次沒有的座號：${missing.map(escapeHtml).join("、")}</div>`;
+      }
+      if (notInRoster.length) {
+        html += `<div class="bulk-preview-error">⚠️ ${escapeHtml(code)} 班名單上沒有這些座號，可能打錯：${notInRoster.map(escapeHtml).join("、")}（仍會匯入）</div>`;
+      }
+    });
+    if (unknownCodes.length) {
+      html += `<div class="bulk-preview-error">⚠️ 工具裡沒有這些班級，不會匯入：${unknownCodes.map(escapeHtml).join("、")}</div>`;
     }
-  });
-  if (unknownClasses.length) {
-    html += `<div class="bulk-preview-error">⚠️ 工具裡沒有這些班級，不會匯入：${unknownClasses.map(escapeHtml).join("、")}</div>`;
-  }
-  result.warnings.forEach((w) => {
-    html += `<div class="bulk-preview-error">⚠️ ${escapeHtml(w)}</div>`;
+    g.warnings.forEach((w) => {
+      html += `<div class="bulk-preview-error">⚠️ ${escapeHtml(w)}</div>`;
+    });
+    html += `</div>`;
+
+    if (title && knownCodes.length) {
+      importable++;
+      plan.push({ title, codes: knownCodes, byClass: g.byClass });
+    }
   });
   if (result.skipped.length) {
     html += `<div class="submission-preview-note">略過 ${result.skipped.length} 列：${result.skipped.map(escapeHtml).join("；")}</div>`;
   }
-  const typedTitle = document.getElementById("submissionTitleInput").value.trim();
-  if (known.length && typedTitle) {
-    const key = assignmentTitleKey(typedTitle);
-    const hit = known.filter((k) =>
-      getAssignments(appState.classes.find((c) => String(c.code) === k.code)).some((a) => assignmentTitleKey(a.title) === key)
-    );
-    html =
-      (hit.length
-        ? `<div class="bulk-preview-summary">♻️ 「${escapeHtml(typedTitle)}」已經有了（${hit.map((k) => escapeHtml(k.code)).join("、")} 班），這次是補交更新，不會多出第二份。</div>`
-        : `<div class="submission-preview-note">🆕 會新建一份作業「${escapeHtml(typedTitle)}」。如果其實是補交，請在作業名稱點一下、從清單選已有的那一份。</div>`) + html;
-  }
   box.innerHTML = html;
 
-  submissionParsed = known.length ? { result, codes: known.map((k) => k.code) } : null;
+  // 有任何一批缺作業名稱就先不給匯，免得只匯進一半
+  const missingTitle = result.groups.some((g) => !(g.title || typedTitle));
+  submissionParsed = importable && !missingTitle ? { plan } : null;
   applyBtn.disabled = !submissionParsed;
 }
 
 function applySubmissionImport() {
   if (!submissionParsed) return;
-  const title = document.getElementById("submissionTitleInput").value.trim();
-  if (!title) {
-    alert("請先填作業名稱（例如：第2個作業_我的角色）。");
-    document.getElementById("submissionTitleInput").focus();
-    return;
-  }
   let added = 0;
   let updated = 0;
   let created = 0;
   let lastId = null;
-  const titleKey = assignmentTitleKey(title);
-  submissionParsed.codes.forEach((code, idx) => {
-    const cls = appState.classes.find((c) => String(c.code) === code);
-    if (!cls) return;
-    const list = getAssignments(cls);
-    let a = list.find((x) => assignmentTitleKey(x.title) === titleKey);
-    if (!a) {
-      a = { id: `asg_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 8)}`, title, links: {} };
-      list.push(a);
-      created++;
-    }
-    if (!a.links) a.links = {};
-    // 同名作業再匯入一次＝補交：這次有的座號更新，其他座號原本的連結保留，不會多出第二份
-    submissionParsed.result.byClass.get(code).forEach((url, seat) => {
-      if (!a.links[seat]) added++;
-      else if (a.links[seat] !== url) updated++;
-      a.links[seat] = url;
+  const activeClass = getActiveClass();
+  submissionParsed.plan.forEach((item, gi) => {
+    const titleKey = assignmentTitleKey(item.title);
+    item.codes.forEach((code, idx) => {
+      const cls = appState.classes.find((c) => String(c.code) === code);
+      if (!cls) return;
+      const list = getAssignments(cls);
+      let a = list.find((x) => assignmentTitleKey(x.title) === titleKey);
+      if (!a) {
+        a = { id: `asg_${Date.now()}_${gi}_${idx}_${Math.random().toString(36).slice(2, 8)}`, title: item.title, links: {} };
+        list.push(a);
+        created++;
+      }
+      if (!a.links) a.links = {};
+      // 同名作業再匯入一次＝補交：這次有的座號更新，其他座號原本的連結保留，不會多出第二份
+      item.byClass.get(code).forEach((url, seat) => {
+        if (!a.links[seat]) added++;
+        else if (a.links[seat] !== url) updated++;
+        a.links[seat] = url;
+      });
+      if (cls === activeClass) lastId = a.id;
     });
-    if (cls === getActiveClass()) lastId = a.id;
   });
+  const titles = submissionParsed.plan.map((item) => `「${item.title}」`).join("、");
   if (lastId) activeAssignmentId = lastId;
   saveAppState();
   renderAll();
@@ -2201,7 +2231,10 @@ function applySubmissionImport() {
   resetSubmissionPreview();
   document.getElementById("submissionTextarea").value = "";
   submissionSourceRows = null;
-  alert(`✅ 已匯入「${title}」：新增 ${added} 筆、更新 ${updated} 筆${created ? "" : "（同一份作業，沒有另開新的）"}。`);
+  alert(
+    `✅ 已匯入 ${titles}：新增 ${added} 筆、更新 ${updated} 筆。` +
+      (created ? `\n新建了 ${created} 份班級作業。` : "\n都是既有的作業，沒有另開新的。")
+  );
 }
 
 async function handleSubmissionFile(e) {
@@ -2224,8 +2257,6 @@ async function handleSubmissionFile(e) {
         .map((r) => r.map((cell) => String(cell).trim()))
     }));
     document.getElementById("submissionTextarea").value = `（已讀入檔案：${file.name}，按「預覽」查看；改這裡的文字會改用文字內容）`;
-    const titleInput = document.getElementById("submissionTitleInput");
-    if (!titleInput.value.trim()) titleInput.value = file.name.replace(/\.[^.]+$/, "");
     previewSubmissionImport();
   } catch (err) {
     submissionSourceRows = null;
