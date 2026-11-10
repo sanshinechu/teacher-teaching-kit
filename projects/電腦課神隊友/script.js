@@ -523,8 +523,8 @@ async function connectCloudSync(url, key) {
     alert("網址格式不對，應該長得像 https://script.google.com/macros/s/……/exec");
     return;
   }
-  if (key.length < 12) {
-    alert("通關密碼至少 12 個字，要跟 Code.gs 裡的 SYNC_KEY 一模一樣。");
+  if (key.length < 8) {
+    alert("通關密碼至少 8 碼，要跟 Code.gs 裡的 SYNC_KEY 一模一樣。");
     return;
   }
   syncConnEpoch += 1;

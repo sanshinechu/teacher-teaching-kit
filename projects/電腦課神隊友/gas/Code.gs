@@ -12,7 +12,7 @@
  *
  * 【安全】資料裡有學生姓名。「所有人」可存取只代表不用登入 Google，
  *  沒有正確的 SYNC_KEY 一律讀不到也寫不進。
- *  ⚠️ 部署前一定要把 SYNC_KEY 改成你自己的密碼（至少 12 個字），沒改的話後端會拒絕所有請求。
+ *  ⚠️ 部署前一定要把 SYNC_KEY 改成你自己的密碼（至少 8 碼，英文數字混用），沒改的話後端會拒絕所有請求。
  *
  * 【版本號】每次寫入版本 +1。網頁上傳時會附上「我是根據第幾版改的」，
  *  雲端已經被別台改得更新時會回 conflict，不會直接覆蓋，由網頁請老師決定留哪一份。
@@ -42,7 +42,7 @@ function jsonOut(obj) {
 }
 
 function keyIsValid(key) {
-  if (!SYNC_KEY || SYNC_KEY === "請改成你自己的通關密碼" || SYNC_KEY.length < 12) return false;
+  if (!SYNC_KEY || SYNC_KEY === "請改成你自己的通關密碼" || SYNC_KEY.length < 8) return false;
   return String(key || "") === SYNC_KEY;
 }
 
