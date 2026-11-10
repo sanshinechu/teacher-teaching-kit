@@ -3,7 +3,7 @@
  *
  * 【部署步驟】
  * 1. 新增一份空白 Google 試算表，在上方選單點選「擴充功能 > Apps Script」。
- * 2. 將本檔案全部內容貼上並取代原本的程式碼，按 Ctrl+S 儲存。
+ * 2. 將本檔案全部內容貼上並取代原本的程式碼，填好下方 SYNC_KEY 與 SPREADSHEET_ID，按 Ctrl+S 儲存。
  * 3. 點選右上角「部署 > 新增部署作業」，類型選擇「網頁應用程式 (Web App)」：
  *    - 執行身分：我 (Me)
  *    - 誰可以存取：所有人 (Anyone)
@@ -21,6 +21,20 @@
  */
 
 const SYNC_KEY = "請改成你自己的通關密碼";
+
+// 存資料的試算表 ID：試算表網址 https://docs.google.com/spreadsheets/d/【這一段】/edit 的中間那段。
+// ⚠️ 一定要填。網頁應用程式執行時 getActiveSpreadsheet() 會回傳 null，
+//    就算這支程式是從試算表「擴充功能」建立的也一樣（2026-11-10 實測）。
+const SPREADSHEET_ID = "請貼上試算表 ID";
+
+function getSpreadsheet_() {
+  if (SPREADSHEET_ID && SPREADSHEET_ID !== "請貼上試算表 ID") {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  throw new Error("SPREADSHEET_ID 還沒填：請在 Code.gs 貼上試算表 ID");
+}
 
 // 「📚 Classroom」按鈕要讀的課程（一個年級學期一個課程）。
 // 來源：12_備課工作流/Classroom/五六年級上架/Code.gs 的 COURSE_ID_MAP，換學年要一起改。
@@ -100,7 +114,7 @@ function writeState(ss, payload, now, version) {
 // 只回版本號，不回資料；資料一律走 doPost
 function doGet() {
   try {
-    const state = readState(SpreadsheetApp.getActiveSpreadsheet());
+    const state = readState(getSpreadsheet_());
     return jsonOut({
       ok: true,
       service: "電腦課神隊友同步後端",
@@ -141,7 +155,7 @@ function doPost(e) {
     return jsonOut({ ok: false, error: "busy" });
   }
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet_();
     const current = readState(ss);
     // 資料毀損時只接受「強制覆蓋」（由網頁衝突對話框選「用這台覆蓋」），其餘一律報錯
     if (current.corrupt && (isLoad || !body.force)) {
