@@ -37,28 +37,55 @@ const CLASSROOM_ROWS_TEACHER_VIEW = [
 const ALL_PC_NUMBERS = Array.from({ length: 29 }, (_, idx) => idx + 1);
 
 // 底部 20 項核心科技能力清單
+// 2026-11-10 老師調整：拿掉雷射雕刻／3D繪圖／3D列印，Scratch 拆成動畫、遊戲，2D繪圖改名向量繪圖（id 不變），
+// 新增 Google文件、創意造型木偶。舊資料由 migrateCompetencies() 轉換。
 const TECH_COMPETENCIES = [
   { id: "typing", icon: "⌨️", name: "中英輸入" },
   { id: "doc", icon: "📄", name: "文書排版" },
+  { id: "gdocs", icon: "📝", name: "Google文件" },
   { id: "files", icon: "📁", name: "檔案管理" },
   { id: "sheet", icon: "📊", name: "試算表" },
   { id: "login", icon: "🔑", name: "帳號登入" },
   { id: "submit", icon: "📤", name: "交作業" },
   { id: "cloud", icon: "☁️", name: "雲端共作" },
-  { id: "scratch", icon: "🐱", name: "Scratch" },
+  { id: "scratch_anim", icon: "🐱", name: "Scratch動畫" },
+  { id: "scratch_game", icon: "🎮", name: "Scratch遊戲" },
   { id: "email", icon: "✉️", name: "電子郵件" },
-  { id: "draw2d", icon: "🎨", name: "2D繪圖" },
+  { id: "draw2d", icon: "🎨", name: "向量繪圖" },
   { id: "slides", icon: "🖥️", name: "簡報製作" },
   { id: "video", icon: "🎬", name: "影片剪輯" },
-  { id: "laser", icon: "⚡", name: "雷射雕刻" },
-  { id: "draw3d", icon: "🧊", name: "3D繪圖" },
-  { id: "print3d", icon: "🖨️", name: "3D列印" },
+  { id: "puppet", icon: "🧸", name: "創意造型木偶" },
   { id: "hardware", icon: "🤖", name: "開放硬體" },
   { id: "ai_app", icon: "✨", name: "AI應用" },
   { id: "search", icon: "🔍", name: "搜尋整理" },
   { id: "ai_lit", icon: "🧠", name: "AI素養" },
   { id: "mindmap", icon: "🗺️", name: "心智圖" }
 ];
+const TECH_COMPETENCY_IDS = new Set(TECH_COMPETENCIES.map((c) => c.id));
+
+// 舊版能力 id 轉新版：Scratch 依年級拆（五年級只學過動畫；六年級五年級學過動畫、六上學遊戲），
+// 已移除的項目（雷射雕刻、3D繪圖、3D列印）直接拿掉。回傳是否有改動。
+function migrateCompetencies(state) {
+  let changed = false;
+  (state?.classes || []).forEach((cls) => {
+    const list = cls.competencies || [];
+    const next = [];
+    list.forEach((id) => {
+      if (id === "scratch") {
+        next.push("scratch_anim");
+        if (Number(cls.grade) >= 6) next.push("scratch_game");
+      } else if (TECH_COMPETENCY_IDS.has(id)) {
+        next.push(id);
+      }
+    });
+    const deduped = [...new Set(next)];
+    if (deduped.length !== list.length || deduped.some((id, i) => id !== list[i])) {
+      cls.competencies = deduped;
+      changed = true;
+    }
+  });
+  return changed;
+}
 
 const PERIOD_TIME_MAP = {
   1: { label: "第1節", time: "08:40~09:20", startMin: 8 * 60 + 40, endMin: 9 * 60 + 25 },
@@ -102,6 +129,12 @@ function buildSampleSeats(classSeed, studentCount = 26) {
 }
 
 function createDefaultState() {
+  const s = createDefaultStateRaw();
+  migrateCompetencies(s); // 範例資料還是舊的能力 id，統一轉新版
+  return s;
+}
+
+function createDefaultStateRaw() {
   return {
     activeClassId: "502",
     sortBy: "grade", // 'grade' | 'schedule'
@@ -268,6 +301,7 @@ function loadAppState() {
     if (!parsed || !Array.isArray(parsed.classes) || parsed.classes.length === 0) {
       return createDefaultState();
     }
+    migrateCompetencies(parsed); // 舊版能力 id（scratch、雷射雕刻…）轉新版
     return parsed;
   } catch (err) {
     console.warn("讀取本機快取失敗，使用預設資料：", err);
@@ -374,6 +408,7 @@ function adoptCloudPayload(payload, version) {
   const keepActive = appState.activeClassId;
   const keepSort = appState.sortBy;
   const keepProjection = appState.projectionMode;
+  migrateCompetencies(payload); // 別台還沒更新的舊版資料也轉一次
   appState = payload;
   if (appState.classes.some((c) => c.id === keepActive)) appState.activeClassId = keepActive;
   if (keepSort) appState.sortBy = keepSort;
@@ -1358,7 +1393,7 @@ function openGradeOverviewModal() {
           <td>${escapeHtml(cls.todayProgress || "—")}</td>
           <td>${escapeHtml(cls.nextProgress || "—")}</td>
           <td>${lastDate} (${(cls.history || []).length}筆)</td>
-          <td>${(cls.competencies || []).length} / 20 項</td>
+          <td>${(cls.competencies || []).filter((id) => TECH_COMPETENCY_IDS.has(id)).length} / ${TECH_COMPETENCIES.length} 項</td>
         </tr>
       `;
     })
@@ -2623,6 +2658,7 @@ function initEvents() {
       try {
         const imported = JSON.parse(String(reader.result));
         if (imported && Array.isArray(imported.classes)) {
+          migrateCompetencies(imported);
           appState = imported;
           saveAppState();
           renderAll();
