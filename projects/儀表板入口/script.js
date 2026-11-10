@@ -11,6 +11,7 @@ const moduleIds = new Map([
   ["gallery", "gallery"],
   ["music", "music"],
   ["typing", "typing"],
+  ["classstatus", "classstatus"], // firestore.rules 的 isDashboardModule 白名單要同步加，不然計數寫不進去
   ["timer", "timer"],
   ["quotes", "quotes"],
   ["mood", "mood"]

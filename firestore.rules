@@ -23,6 +23,7 @@ service cloud.firestore {
         'gallery',
         'music',
         'typing',
+        'classstatus',
         'timer',
         'quotes',
         'mood'

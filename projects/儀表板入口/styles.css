@@ -546,6 +546,10 @@ h3 {
   --accent: #FF8A5B;
 }
 
+.classstatus {
+  --accent: #d4a72c;
+}
+
 .timer {
   --accent: #f08a24;
 }
