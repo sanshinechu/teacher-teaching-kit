@@ -171,6 +171,7 @@
                     <option value="學校活動公假（運動會預演 / 戶外教育）">🎪 學校活動暫停一次</option>
                   </optgroup>
                 </select>
+                <button type="button" class="record-log-btn classroom-pick-btn" id="openClassroomLessonsBtn" title="從 Google Classroom 已發佈的節次點選">📚 Classroom</button>
                 <button type="button" class="record-log-btn" id="recordToHistoryBtn">📌 記入歷程</button>
               </div>
             </div>
@@ -426,6 +427,33 @@
           <button type="button" class="primary-btn" id="bulkImportApplyBtn" disabled>📥 確認匯入</button>
         </div>
         <div id="bulkImportPreview" class="bulk-preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 7：從 Classroom 點選節次 -->
+  <div class="modal-backdrop hidden" id="classroomLessonsModal">
+    <div class="modal-box wide-modal-box">
+      <div class="modal-header">
+        <h3>📚 從 Classroom 點選進度（<span id="classroomLessonsClassTitle">502</span>）</h3>
+        <button type="button" class="modal-close-btn" data-close="classroomLessonsModal">✕</button>
+      </div>
+      <div class="modal-content-scroll">
+        <div class="lessons-toolbar">
+          <label>課程：
+            <select id="classroomCourseSelect">
+              <option value="五上">五上</option>
+              <option value="五下">五下</option>
+              <option value="六上">六上</option>
+              <option value="六下">六下</option>
+            </select>
+          </label>
+          <label>記入日期：<input type="date" id="classroomRecordDate"></label>
+          <button type="button" class="primary-btn" id="classroomOneClickBtn" title="最新已發佈的節次設為今日、下一節設為下次">⚡ 一鍵帶入</button>
+          <button type="button" class="secondary-btn" id="classroomRefreshBtn">🔄 重新抓取</button>
+        </div>
+        <p class="form-help" id="classroomLessonsInfo"></p>
+        <div id="classroomLessonsList" class="lessons-list"></div>
       </div>
     </div>
   </div>

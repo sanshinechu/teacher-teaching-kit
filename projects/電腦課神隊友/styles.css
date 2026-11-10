@@ -1578,6 +1578,125 @@ body {
   margin-left: auto;
 }
 
+/* 從 Classroom 點選節次 */
+.classroom-pick-btn {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+}
+
+.lessons-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.lessons-toolbar select,
+.lessons-toolbar input {
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.84rem;
+}
+
+.lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 58vh;
+  overflow-y: auto;
+}
+
+.lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 0.84rem;
+}
+
+.lesson-row.is-draft {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.lesson-row.is-latest {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px #dbeafe;
+}
+
+.lesson-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.lesson-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.lesson-tag.published {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lesson-tag.draft {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.lesson-tag.scheduled {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.lesson-tag.recorded {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.lesson-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.lesson-actions button {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.lesson-actions button.record {
+  background: #2563eb;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .lesson-row {
+    flex-wrap: wrap;
+  }
+  .lesson-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 /* 響應式微調 */
 @media (max-width: 1360px) {
   .workspace-grid {

@@ -22,6 +22,17 @@
 
 const SYNC_KEY = "請改成你自己的通關密碼";
 
+// 「📚 Classroom」按鈕要讀的課程（一個年級學期一個課程）。
+// 來源：12_備課工作流/Classroom/五六年級上架/Code.gs 的 COURSE_ID_MAP，換學年要一起改。
+// 用到這個功能前，要在 Apps Script 左側「服務」加入 Google Classroom API。
+const CLASSROOM_COURSES = {
+  "五上": "871806405545",
+  "五下": "871805678921",
+  "六上": "871804598785",
+  "六下": "871801871757"
+};
+const LESSONS_CACHE_SECONDS = 300;
+
 const STATE_SHEET_NAME = "系統狀態庫_請勿手動改";
 const PROGRESS_SHEET_NAME = "各班進度總覽";
 const REPAIR_SHEET_NAME = "機台報修紀錄";
@@ -113,6 +124,11 @@ function doPost(e) {
     return jsonOut({ ok: false, error: "unauthorized" });
   }
 
+  // 課程清單只讀 Classroom、不碰試算表，不需要拿鎖
+  if (body.action === "lessons") {
+    return jsonOut(listClassroomLessons_(!!body.refresh));
+  }
+
   const isLoad = body.action === "load";
   const payload = body.payload;
   if (!isLoad && (!payload || !Array.isArray(payload.classes))) {
@@ -201,6 +217,56 @@ function syncReadableRepairSheet(ss, payload) {
     });
 
   sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+// 列出各課程的作業（已發佈＋草稿），只回標題、狀態、時間，不含學生資料
+function listClassroomLessons_(refresh) {
+  if (typeof Classroom === "undefined") {
+    return { ok: false, error: "classroom_service_missing" };
+  }
+  const cache = CacheService.getScriptCache();
+  if (!refresh) {
+    const hit = cache.get("lessons_v1");
+    if (hit) return JSON.parse(hit);
+  }
+
+  const courses = {};
+  const errors = [];
+  Object.keys(CLASSROOM_COURSES).forEach(function (key) {
+    const courseId = CLASSROOM_COURSES[key];
+    if (!courseId) return;
+    const items = [];
+    try {
+      let pageToken;
+      do {
+        const r = Classroom.Courses.CourseWork.list(courseId, {
+          courseWorkStates: ["PUBLISHED", "DRAFT"],
+          pageSize: 100,
+          pageToken: pageToken
+        });
+        (r.courseWork || []).forEach(function (w) {
+          items.push({
+            title: w.title || "",
+            state: w.state,
+            updateTime: w.updateTime || null,
+            scheduledTime: w.scheduledTime || null
+          });
+        });
+        pageToken = r.nextPageToken;
+      } while (pageToken);
+      courses[key] = items;
+    } catch (err) {
+      errors.push(key + "：" + String(err).slice(0, 120));
+    }
+  });
+
+  const result = { ok: true, fetchedAt: new Date().toISOString(), courses: courses, errors: errors };
+  try {
+    cache.put("lessons_v1", JSON.stringify(result), LESSONS_CACHE_SECONDS);
+  } catch (err) {
+    // 超過快取上限（100KB）就不快取，照樣回傳
+  }
+  return result;
 }
 
 function ensureSheet(ss, name) {

@@ -1763,6 +1763,190 @@ async function handleBulkImportFile(e) {
   }
 }
 
+// ==================== 從 Classroom 點選進度 ====================
+// 資料來自同步後端的 lessons 動作（後端快取 5 分鐘）；這裡再存一份在記憶體，5 分鐘內開關彈窗不重抓
+// 換連線（網址／密碼）時作廢，不然會把前一個後端的課程帶進來
+const CLASSROOM_CLIENT_CACHE_MS = 5 * 60 * 1000;
+let classroomLessonsData = null;
+let classroomLessonsFetchedAt = 0;
+let classroomLessonsEpoch = -1;
+
+// 依年級與今天日期猜課程：8 月～隔年 1 月是上學期，2～7 月是下學期
+function guessCourseKey(cls) {
+  const month = getTaipeiNow().getMonth() + 1;
+  const term = month >= 2 && month <= 7 ? "下" : "上";
+  const grade = Number(cls?.grade) === 6 ? "六" : "五";
+  return grade + term;
+}
+
+function lessonNumber(title) {
+  const m = String(title).match(/^第\s*(\d+)\s*節/);
+  return m ? Number(m[1]) : null;
+}
+
+function getCourseLessons(courseKey) {
+  const items = (classroomLessonsData?.courses?.[courseKey] || []).filter((w) => lessonNumber(w.title) !== null);
+  items.sort((a, b) => lessonNumber(a.title) - lessonNumber(b.title) || a.title.localeCompare(b.title, "zh-Hant"));
+  return items;
+}
+
+function latestPublishedIndex(lessons) {
+  for (let i = lessons.length - 1; i >= 0; i--) {
+    if (lessons[i].state === "PUBLISHED") return i;
+  }
+  return -1;
+}
+
+async function fetchClassroomLessons(refresh = false) {
+  const info = document.getElementById("classroomLessonsInfo");
+  info.textContent = "正在讀取 Classroom…";
+  try {
+    const data = await gasRequest({ action: "lessons", refresh });
+    if (!data.ok) {
+      info.textContent =
+        data.error === "classroom_service_missing"
+          ? "⚠️ 後端還沒加 Classroom 服務：到 Apps Script 左側「服務」加入 Google Classroom API，再「管理部署作業」換新版本。"
+          : `⚠️ ${describeSyncError(data)}`;
+      return false;
+    }
+    classroomLessonsData = data;
+    classroomLessonsFetchedAt = Date.now();
+    classroomLessonsEpoch = syncConnEpoch;
+    return true;
+  } catch (err) {
+    info.textContent = "⚠️ 連不上同步後端，請確認「☁️ 同步/備份」已連線。";
+    return false;
+  }
+}
+
+function formatShortDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function renderClassroomLessons() {
+  const cls = getActiveClass();
+  const courseKey = document.getElementById("classroomCourseSelect").value;
+  const list = document.getElementById("classroomLessonsList");
+  const info = document.getElementById("classroomLessonsInfo");
+  if (!classroomLessonsData) {
+    list.innerHTML = "";
+    return;
+  }
+  const lessons = getCourseLessons(courseKey);
+  const latestIdx = latestPublishedIndex(lessons);
+  const recorded = new Set((cls?.history || []).map((h) => h.text));
+  const publishedCount = lessons.filter((w) => w.state === "PUBLISHED").length;
+  const errs = classroomLessonsData.errors?.length ? `｜⚠️ ${classroomLessonsData.errors.join("；")}` : "";
+  info.textContent = `${courseKey}：已發佈 ${publishedCount} 節、草稿 ${lessons.length - publishedCount} 節（${formatShortDate(
+    classroomLessonsData.fetchedAt
+  )} ${formatTimeHMS(new Date(classroomLessonsData.fetchedAt))} 抓取）${errs}`;
+
+  if (!lessons.length) {
+    list.innerHTML = `<p class="form-help">這個課程沒有「第 N 節」開頭的作業。</p>`;
+    return;
+  }
+  list.innerHTML = lessons
+    .map((w, idx) => {
+      const isDraft = w.state !== "PUBLISHED";
+      const stateTag = !isDraft
+        ? `<span class="lesson-tag published">已發佈 ${formatShortDate(w.updateTime)}</span>`
+        : w.scheduledTime
+        ? `<span class="lesson-tag scheduled">排程 ${formatShortDate(w.scheduledTime)}</span>`
+        : `<span class="lesson-tag draft">草稿</span>`;
+      return `<div class="lesson-row${isDraft ? " is-draft" : ""}${idx === latestIdx ? " is-latest" : ""}" data-idx="${idx}">
+        <span class="lesson-title">${escapeHtml(w.title)}</span>
+        ${recorded.has(w.title) ? '<span class="lesson-tag recorded">已記錄</span>' : ""}
+        ${stateTag}
+        <span class="lesson-actions">
+          <button type="button" class="record" data-act="record">📌 記入歷程</button>
+          <button type="button" data-act="today">📖 今日</button>
+          <button type="button" data-act="next">🎯 下次</button>
+        </span>
+      </div>`;
+    })
+    .join("");
+
+  list.querySelectorAll(".lesson-row button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest(".lesson-row");
+      applyLessonAction(lessons[Number(row.dataset.idx)].title, btn.dataset.act);
+    });
+  });
+  const latestRow = list.querySelector(".is-latest");
+  if (latestRow) latestRow.scrollIntoView({ block: "center" });
+}
+
+// 依日期由新到舊插入歷程（回補舊日期時不會跑到最上面）
+function addHistoryEntry(cls, date, text) {
+  cls.history = cls.history || [];
+  if (cls.history.some((h) => h.date === date && h.text === text)) return false;
+  const idx = cls.history.findIndex((h) => String(h.date) < date);
+  if (idx === -1) cls.history.push({ date, text });
+  else cls.history.splice(idx, 0, { date, text });
+  return true;
+}
+
+function applyLessonAction(title, act) {
+  const cls = getActiveClass();
+  if (!cls) return;
+  if (act === "record") {
+    const date = document.getElementById("classroomRecordDate").value || formatDateISO(getTaipeiNow());
+    if (!addHistoryEntry(cls, date, title)) {
+      alert("這一天已經記過這一節了。");
+      return;
+    }
+  } else if (act === "today") {
+    cls.todayProgress = title;
+  } else if (act === "next") {
+    cls.nextProgress = title;
+  }
+  saveAppState();
+  renderProgressSidebar();
+  renderClassroomLessons();
+}
+
+function classroomOneClick() {
+  const cls = getActiveClass();
+  const courseKey = document.getElementById("classroomCourseSelect").value;
+  const lessons = getCourseLessons(courseKey);
+  const idx = latestPublishedIndex(lessons);
+  if (idx === -1) {
+    alert(`${courseKey} 還沒有已發佈的節次。`);
+    return;
+  }
+  const today = lessons[idx].title;
+  const next = lessons[idx + 1]?.title || "";
+  if (!confirm(`「${cls.code}」\n今日進度 → ${today}\n下次進度 → ${next || "（沒有下一節）"}\n\n確定帶入？`)) return;
+  cls.todayProgress = today;
+  cls.nextProgress = next; // 最後一節時清空，不要留著舊的「下次」跟今日對不上
+  saveAppState();
+  renderProgressSidebar();
+}
+
+async function openClassroomLessonsModal() {
+  if (!cloudSyncEnabled()) {
+    alert("這個功能透過同步後端讀 Classroom，請先到「☁️ 同步/備份」完成連線。");
+    return;
+  }
+  const cls = getActiveClass();
+  document.getElementById("classroomLessonsClassTitle").textContent = cls.code;
+  document.getElementById("classroomCourseSelect").value = guessCourseKey(cls);
+  document.getElementById("classroomRecordDate").value = formatDateISO(getTaipeiNow());
+  document.getElementById("classroomLessonsModal").classList.remove("hidden");
+  const stale =
+    !classroomLessonsData ||
+    classroomLessonsEpoch !== syncConnEpoch ||
+    Date.now() - classroomLessonsFetchedAt > CLASSROOM_CLIENT_CACHE_MS;
+  if (stale) {
+    classroomLessonsData = null;
+    document.getElementById("classroomLessonsList").innerHTML = "";
+    if (!(await fetchClassroomLessons(false))) return;
+  }
+  renderClassroomLessons();
+}
+
 // ==================== 勾選批次刪除班級 ====================
 function openBatchDeleteModal() {
   const list = document.getElementById("batchDeleteList");
@@ -1984,6 +2168,14 @@ function initEvents() {
     activeClass.history.unshift({ date: todayStr, text });
     saveAppState();
     renderProgressSidebar();
+  });
+
+  // 📚 從 Classroom 點選
+  document.getElementById("openClassroomLessonsBtn")?.addEventListener("click", openClassroomLessonsModal);
+  document.getElementById("classroomCourseSelect")?.addEventListener("change", renderClassroomLessons);
+  document.getElementById("classroomOneClickBtn")?.addEventListener("click", classroomOneClick);
+  document.getElementById("classroomRefreshBtn")?.addEventListener("click", async () => {
+    if (await fetchClassroomLessons(true)) renderClassroomLessons();
   });
 
   // ⬆️ 推為今日
