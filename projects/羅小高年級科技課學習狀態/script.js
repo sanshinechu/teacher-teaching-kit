@@ -1925,6 +1925,64 @@ function classroomOneClick() {
   renderProgressSidebar();
 }
 
+// 已發佈節次的上課日：從發佈日（含當天）往後找第一個本班上課星期。
+// Classroom 只給得出 updateTime（發佈後若再編輯貼文會往後移），沒有真正的發佈時間，所以是推算值。
+function inferClassDate(publishIso, weekday) {
+  const d = new Date(publishIso);
+  d.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 7 && d.getDay() !== Number(weekday); i++) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function classroomBackfill() {
+  const cls = getActiveClass();
+  if (!cls) return;
+  const courseKey = document.getElementById("classroomCourseSelect").value;
+  const published = getCourseLessons(courseKey).filter((w) => w.state === "PUBLISHED" && w.updateTime);
+  if (!published.length) {
+    alert(`${courseKey} 還沒有已發佈的節次。`);
+    return;
+  }
+  const today = getTaipeiNow();
+  today.setHours(0, 0, 0, 0);
+  const recorded = new Set((cls.history || []).map((h) => h.text));
+
+  const toAdd = [];
+  let skippedRecorded = 0;
+  let notYet = 0;
+  published.forEach((w) => {
+    if (recorded.has(w.title)) {
+      skippedRecorded += 1;
+      return;
+    }
+    const date = inferClassDate(w.updateTime, cls.day);
+    if (date > today) {
+      notYet += 1; // 推算的上課日還沒到＝這班還沒上到
+      return;
+    }
+    toAdd.push({ date: formatDateISO(date), text: w.title });
+  });
+
+  if (!toAdd.length) {
+    alert(`沒有要補的節次。（已記過 ${skippedRecorded} 節${notYet ? `、還沒上到 ${notYet} 節` : ""}）`);
+    return;
+  }
+  const preview = toAdd
+    .slice(0, 8)
+    .map((e) => `${e.date}  ${e.text}`)
+    .join("\n");
+  const ok = confirm(
+    `「${cls.code}」要補進 ${toAdd.length} 節（${courseKey}）：\n\n${preview}${toAdd.length > 8 ? "\n…" : ""}\n\n` +
+      `日期是用發佈日推算的「本班上課日」（星期${WEEKDAY_NAMES[cls.day]}），不一定是實際上課那天。\n` +
+      `跳過：已記過 ${skippedRecorded} 節、還沒上到 ${notYet} 節。\n\n確定補入？`
+  );
+  if (!ok) return;
+  toAdd.forEach((e) => addHistoryEntry(cls, e.date, e.text));
+  saveAppState();
+  renderProgressSidebar();
+  renderClassroomLessons();
+}
+
 async function openClassroomLessonsModal() {
   if (!cloudSyncEnabled()) {
     alert("這個功能透過同步後端讀 Classroom，請先到「☁️ 同步/備份」完成連線。");
@@ -2174,6 +2232,7 @@ function initEvents() {
   document.getElementById("openClassroomLessonsBtn")?.addEventListener("click", openClassroomLessonsModal);
   document.getElementById("classroomCourseSelect")?.addEventListener("change", renderClassroomLessons);
   document.getElementById("classroomOneClickBtn")?.addEventListener("click", classroomOneClick);
+  document.getElementById("classroomBackfillBtn")?.addEventListener("click", classroomBackfill);
   document.getElementById("classroomRefreshBtn")?.addEventListener("click", async () => {
     if (await fetchClassroomLessons(true)) renderClassroomLessons();
   });
