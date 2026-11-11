@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>班級作品牆</title>
     <meta name="description" content="讓學生以 Google 帳號登入後，上傳程式作品連結並自動顯示縮圖的班級作品牆。">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=__BUILD__">
   </head>
   <body>
     <main class="app-shell">
@@ -47,6 +47,33 @@
             <button class="ghost-button" type="submit">新增資料夾</button>
           </form>
           <div id="classList" class="class-list" aria-label="班級清單"></div>
+          <details id="bulkWorks" class="bulk-works is-hidden">
+            <summary>批次匯入／匯出作品</summary>
+            <div class="bulk-work-tools">
+              <section aria-labelledby="importWorksTitle">
+                <h3 id="importWorksTitle">匯入作品</h3>
+                <p>可在一份 CSV 填入多個班級。上傳後先預覽，再確認匯入。</p>
+                <button id="workCsvTemplate" class="ghost-button" type="button">下載 CSV 範本</button>
+                <label>
+                  選擇 UTF-8 CSV
+                  <input id="workCsvFile" type="file" accept=".csv,text/csv">
+                </label>
+                <p id="workImportStatus" role="status"></p>
+                <ul id="workImportGroups" class="bulk-results is-hidden" aria-label="各班預覽"></ul>
+                <ul id="workImportIssues" class="bulk-results is-hidden" aria-label="略過的紀錄"></ul>
+                <button id="confirmWorkImport" class="primary-button" type="button" disabled>確認匯入</button>
+              </section>
+              <section aria-labelledby="exportWorksTitle">
+                <h3 id="exportWorksTitle">匯出作品</h3>
+                <fieldset>
+                  <legend>勾選要匯出的班級</legend>
+                  <div id="workExportClasses" class="bulk-class-options"></div>
+                </fieldset>
+                <button id="exportWorkCsv" class="ghost-button" type="button" disabled>下載作品 CSV</button>
+                <p id="workExportStatus" role="status"></p>
+              </section>
+            </div>
+          </details>
         </section>
 
         <section id="activeClassPanel" class="active-class is-empty" aria-live="polite">
@@ -84,6 +111,7 @@
               <textarea id="noteInput" rows="4" placeholder="簡短說明作品特色、使用的程式技巧或想請同學回饋的地方。"></textarea>
             </label>
             <button class="primary-button" type="submit">送出作品</button>
+            <p id="submissionStatus" class="submission-status" role="status"></p>
           </form>
 
           <aside class="preview-panel" aria-labelledby="preview-title">
@@ -136,6 +164,6 @@
     </template>
 
     <script src="firebase-config.js"></script>
-    <script src="script.js" type="module"></script>
+    <script src="script.js?v=__BUILD__" type="module"></script>
   </body>
 </html>

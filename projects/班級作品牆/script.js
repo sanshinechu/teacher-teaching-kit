@@ -1,3 +1,5 @@
+import { readWorkCsv, resolveWorkRows, validateWork, workUrl, writeWorkCsv } from "./work-csv.js";
+
 const firebaseConfig = window.TeacherProjectWallFirebaseConfig || {};
 
 const storageKey = "teacher-project-wall-v1";
@@ -19,6 +21,16 @@ const elements = {
   folderForm: document.querySelector("#folderForm"),
   folderNameInput: document.querySelector("#folderNameInput"),
   classList: document.querySelector("#classList"),
+  bulkWorks: document.querySelector("#bulkWorks"),
+  workCsvTemplate: document.querySelector("#workCsvTemplate"),
+  workCsvFile: document.querySelector("#workCsvFile"),
+  workImportStatus: document.querySelector("#workImportStatus"),
+  workImportGroups: document.querySelector("#workImportGroups"),
+  workImportIssues: document.querySelector("#workImportIssues"),
+  confirmWorkImport: document.querySelector("#confirmWorkImport"),
+  workExportClasses: document.querySelector("#workExportClasses"),
+  exportWorkCsv: document.querySelector("#exportWorkCsv"),
+  workExportStatus: document.querySelector("#workExportStatus"),
   classFolderField: document.querySelector("#classFolderField"),
   classFolderSelect: document.querySelector("#classFolderSelect"),
   activeClassPanel: document.querySelector("#activeClassPanel"),
@@ -28,6 +40,7 @@ const elements = {
   copyShareLinkButton: document.querySelector("#copyShareLinkButton"),
   submissionLayout: document.querySelector(".submission-layout"),
   submissionForm: document.querySelector("#submissionForm"),
+  submissionStatus: document.querySelector("#submissionStatus"),
   titleInput: document.querySelector("#titleInput"),
   urlInput: document.querySelector("#urlInput"),
   noteInput: document.querySelector("#noteInput"),
@@ -57,6 +70,8 @@ const state = {
   classes: [],
   folders: [],
   submissions: [],
+  submitting: false,
+  submissionFeedback: null,
   activeClassId: initialParams.get("class") || "",
   // 資料夾與班級擇一：有班級連結就以班級為主
   activeFolderId: initialParams.get("class") ? "" : initialParams.get("folder") || "",
@@ -78,6 +93,14 @@ const state = {
   unsubscribeFolders: null,
   unsubscribeShowcase: null,
   unsubscribeSubmissions: []
+};
+
+const bulk = {
+  owner: null,
+  classListKey: "",
+  rows: [],
+  importing: false,
+  exporting: false
 };
 
 function loadCollapsedFolders() {
@@ -301,10 +324,12 @@ function createSmallButton(text, onClick) {
 }
 
 function renderClasses() {
-  elements.teacherPanel.classList.toggle("is-hidden", !isTeacherUser());
+  const canManage = isTeacherUser() && !isSharedView();
+  elements.teacherPanel.classList.toggle("is-hidden", !canManage);
   elements.classList.innerHTML = "";
+  renderBulkWorks();
 
-  if (!isTeacherUser()) {
+  if (!canManage) {
     return;
   }
 
@@ -427,10 +452,15 @@ function renderActiveClass() {
   elements.activeClassPanel.classList.toggle("is-empty", !hasClass && !folder);
   const needsLogin = state.mode === "firebase" && !state.user;
   const submitButton = elements.submissionForm.querySelector("button");
+  const feedback = state.submissionFeedback;
   elements.copyClassLinkButton.disabled = !hasClass;
   elements.copyClassLinkButton.classList.toggle("is-hidden", Boolean(folder));
-  submitButton.disabled = !hasClass || needsLogin;
-  if (folder) {
+  submitButton.disabled = !hasClass || needsLogin || state.submitting;
+  elements.submissionStatus.textContent = hasClass && feedback?.classId === classroom.id
+    && feedback.uid === state.user?.uid ? feedback.message : "";
+  if (state.submitting) {
+    submitButton.textContent = "送出中…";
+  } else if (folder) {
     submitButton.textContent = "資料夾只能瀏覽，送作品請先點一個班級";
   } else {
     submitButton.textContent = needsLogin ? "學生請先用 Google 登入再送出" : "送出作品";
@@ -564,21 +594,26 @@ function getClassCode(classroom) {
   return codes ? codes[codes.length - 1] : name;
 }
 
-// 老師自己提交的作品（測試、示範）不算學生成果：作者就是班級的建立者。
+function isImportedWork(work) {
+  const ownerUid = state.classes.find((item) => item.id === work.classId)?.ownerUid;
+  return Boolean(ownerUid) && work.authorUid === ownerUid && work.teacherImport === true;
+}
+
+// 老師自己提交的測試與示範不算學生成果。老師代匯的作品仍顯示在牆上。
 // 示範模式所有人共用同一個 uid，這個判斷不適用。
 function isTeacherWork(work) {
   if (state.mode !== "firebase") {
     return false;
   }
   const ownerUid = state.classes.find((item) => item.id === work.classId)?.ownerUid;
-  return Boolean(ownerUid) && work.authorUid === ownerUid;
+  return Boolean(ownerUid) && work.authorUid === ownerUid && !isImportedWork(work);
 }
 
 // 去識別化的作者標籤：同一班內依「第一次提交的時間」替每位學生編號（例如「501 學生 03」），
 // 同一位學生永遠是同一個編號；姓名與帳號不顯示。資料庫裡的 authorName 沒動，只是不畫出來。
 function buildAuthorLabels() {
   const firstSeen = new Map();
-  state.submissions.filter((work) => !isTeacherWork(work)).forEach((work) => {
+  state.submissions.filter((work) => !isTeacherWork(work) && !isImportedWork(work)).forEach((work) => {
     const key = `${work.classId}|${work.authorUid || work.id}`;
     const time = getSortTime(work.createdAt);
     if (!firstSeen.has(key) || time < firstSeen.get(key)) {
@@ -598,7 +633,9 @@ function buildAuthorLabels() {
       });
   });
 
-  return (work) => labels.get(`${work.classId}|${work.authorUid || work.id}`) || "學生";
+  return (work) => isImportedWork(work)
+    ? "老師匯入"
+    : labels.get(`${work.classId}|${work.authorUid || work.id}`) || "學生";
 }
 
 function createWorkLink(work) {
@@ -820,6 +857,9 @@ async function initFirebase() {
     collection: firestoreModule.collection,
     doc: firestoreModule.doc,
     setDoc: firestoreModule.setDoc,
+    getDocFromServer: firestoreModule.getDocFromServer,
+    getDocsFromServer: firestoreModule.getDocsFromServer,
+    runTransaction: firestoreModule.runTransaction,
     addDoc: firestoreModule.addDoc,
     updateDoc: firestoreModule.updateDoc,
     deleteDoc: firestoreModule.deleteDoc,
@@ -1150,31 +1190,326 @@ async function createClass(name) {
   setActiveClass(classroom.id);
 }
 
-async function addSubmission(payload) {
-  const classroom = getActiveClass();
-  if (!classroom) {
-    window.alert("請先選擇班級。");
-    return;
+function buildWork(classId, user, { title, url, note }) {
+  return {
+    title,
+    url,
+    note,
+    thumbnailUrl: getThumbnailUrl(url),
+    classId,
+    authorUid: user.uid,
+    authorName: user.displayName || user.email || "示範使用者"
+  };
+}
+
+async function fetchClassWorks(classId, authorUid) {
+  if (state.mode !== "firebase") {
+    loadLocalState();
+    return state.submissions.filter((work) => work.classId === classId
+      && (authorUid === undefined || work.authorUid === authorUid));
   }
 
-  const work = {
-    ...payload,
-    classId: classroom.id,
-    authorUid: state.user?.uid || "local-demo",
-    authorName: state.user?.displayName || state.user?.email || "示範使用者",
-    createdAt: new Date().toISOString()
-  };
+  const { db, collection, getDocsFromServer, query, where } = state.firebase;
+  const works = collection(db, "projectWallClasses", classId, "submissions");
+  const source = authorUid === undefined ? works : query(works, where("authorUid", "==", authorUid));
+  const snapshot = await getDocsFromServer(source);
+  return snapshot.docs.map((item) => ({ ...item.data(), id: item.id, classId }));
+}
 
-  if (state.mode === "firebase") {
-    const { db, collection, addDoc, serverTimestamp } = state.firebase;
-    await addDoc(collection(db, "projectWallClasses", classroom.id, "submissions"), {
-      ...work,
-      createdAt: serverTimestamp()
-    });
-  } else {
-    state.submissions.unshift({ id: createId("work"), ...work });
-    saveLocalState();
+async function saveNewWorks(classId, works) {
+  if (state.mode !== "firebase") {
+    loadLocalState();
+    const ids = new Set(state.submissions.map((work) => work.id));
+    const added = works.filter(({ id }) => !ids.has(id));
+    const createdAt = new Date().toISOString();
+    state.submissions.unshift(...added.map(({ id, work }) => ({ id, ...work, createdAt })));
+    if (added.length) saveLocalState();
     renderGallery();
+    return added.length;
+  }
+
+  const { db, doc, getDocFromServer, runTransaction, serverTimestamp } = state.firebase;
+  const entries = works.map(({ id, work }) => ({
+    ref: doc(db, "projectWallClasses", classId, "submissions", id),
+    work
+  }));
+  function matchesWork(stored, work) {
+    return stored?.authorUid === work.authorUid && workUrl(stored.url) === work.url
+      && Boolean(stored.teacherImport) === Boolean(work.teacherImport);
+  }
+  try {
+    return await runTransaction(db, async (transaction) => {
+      const snapshots = await Promise.all(entries.map(({ ref }) => transaction.get(ref)));
+      const added = entries.filter(({ work }, index) => {
+        const stored = snapshots[index].data();
+        if (!stored) return true;
+        if (!matchesWork(stored, work)) throw new Error("作品識別碼與現有資料不符，請聯絡老師。");
+        return false;
+      });
+      added.forEach(({ ref, work }) => transaction.set(ref, { ...work, createdAt: serverTimestamp() }));
+      return added.length;
+    });
+  } catch (error) {
+    // 只有確認同一份作品已由另一個分頁寫入，才把交易衝突視為已送出。
+    if (!["permission-denied", "already-exists", "aborted"].includes(error.code)) throw error;
+    const snapshots = await Promise.all(entries.map(({ ref }) => getDocFromServer(ref)));
+    if (entries.every(({ work }, index) => matchesWork(snapshots[index].data(), work))) return 0;
+    throw error;
+  }
+}
+
+async function workId(kind, ...parts) {
+  const key = JSON.stringify(parts);
+  if (state.mode === "local") return kind + "-" + key;
+  if (!globalThis.crypto?.subtle) throw new Error("請用 HTTPS 或 localhost 開啟作品牆。");
+  const bytes = new TextEncoder().encode(key);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return kind + "-" + Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+function withLocalWorkLock(action) {
+  return state.mode === "local" && navigator.locks
+    ? navigator.locks.request(storageKey, action)
+    : action();
+}
+
+async function addSubmission(classroom, user, payload) {
+  const id = await workId("student", classroom.id, user.uid, payload.url);
+  return withLocalWorkLock(async () => {
+    // 既有作品以隨機 ID 儲存，先讀同一作者的資料，再用固定 ID 處理同時送出。
+    const existing = await fetchClassWorks(classroom.id, user.uid);
+    if (existing.some((work) => workUrl(work.url) === payload.url)) return 0;
+    const work = buildWork(classroom.id, user, payload);
+    return saveNewWorks(classroom.id, [{ id, work }]);
+  });
+}
+
+function getManagedClasses() {
+  if (isSharedView() || !isTeacherUser()) return [];
+  return state.classes.filter((classroom) => isClassOwner(classroom.id));
+}
+
+function updateBulkControls() {
+  elements.workCsvFile.disabled = bulk.importing;
+  elements.confirmWorkImport.disabled = bulk.importing || bulk.rows.length === 0;
+  elements.exportWorkCsv.disabled = bulk.exporting
+    || !elements.workExportClasses.querySelector("input:checked");
+}
+
+function managedClassLabel(classroom, classrooms) {
+  return classrooms.some((other) => other.id !== classroom.id && other.name === classroom.name)
+    ? `${classroom.name}（${classroom.id}）`
+    : classroom.name;
+}
+
+function showBulkList(element, messages) {
+  const items = document.createDocumentFragment();
+  for (const message of messages) {
+    const item = document.createElement("li");
+    item.textContent = message;
+    items.append(item);
+  }
+  element.replaceChildren(items);
+  element.classList.toggle("is-hidden", messages.length === 0);
+}
+
+function clearImportPreview() {
+  bulk.rows = [];
+  showBulkList(elements.workImportGroups, []);
+  showBulkList(elements.workImportIssues, []);
+}
+
+function renderBulkWorks() {
+  const classrooms = getManagedClasses();
+  const owner = isTeacherUser() && !isSharedView() ? state.user.uid : null;
+  const ownerChanged = bulk.owner !== owner;
+  if (ownerChanged) {
+    bulk.owner = owner;
+    clearImportPreview();
+    elements.workCsvFile.value = "";
+    elements.workImportStatus.textContent = "";
+    elements.workExportStatus.textContent = "";
+  }
+  elements.bulkWorks.classList.toggle("is-hidden", classrooms.length === 0);
+  const key = JSON.stringify(classrooms.map(({ id, name }) => [id, name]));
+  if (ownerChanged || bulk.classListKey !== key) {
+    bulk.classListKey = key;
+    const previous = new Map([...elements.workExportClasses.querySelectorAll("input")]
+      .map((input) => [input.value, input.checked]));
+    const options = classrooms.map((classroom) => {
+      const { id } = classroom;
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = id;
+      input.checked = ownerChanged ? true : previous.get(id) ?? true;
+      label.append(input, managedClassLabel(classroom, classrooms));
+      return label;
+    });
+    elements.workExportClasses.replaceChildren(...options);
+  }
+  updateBulkControls();
+}
+
+function downloadWorkCsv(filename, rows) {
+  const blob = new Blob([writeWorkCsv(rows)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function groupWorkRows(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    if (!groups.has(row.classroom.id)) groups.set(row.classroom.id, []);
+    groups.get(row.classroom.id).push(row);
+  }
+  return groups;
+}
+
+async function previewWorkImport(file) {
+  if (bulk.importing || !bulk.owner) return;
+  const owner = bulk.owner;
+  bulk.importing = true;
+  clearImportPreview();
+  elements.workImportStatus.textContent = "正在讀取 CSV 並檢查各班作品…";
+  updateBulkControls();
+  try {
+    const bytes = await file.arrayBuffer();
+    let text;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      throw new Error("請將檔案另存為 UTF-8 CSV，再重新選擇。");
+    }
+    const classrooms = getManagedClasses();
+    const rows = resolveWorkRows(readWorkCsv(text), classrooms, getClassCode);
+    const groups = groupWorkRows(rows.filter((row) => row.classroom));
+    const existingByClass = new Map(await Promise.all([...groups].map(async ([id, group]) => [
+      id, group.some((row) => !row.error) ? await fetchDisplayedWorkUrls(id) : new Set()
+    ])));
+    if (bulk.owner !== owner) return;
+
+    const ready = [];
+    const issues = [];
+    const summaries = [];
+    for (const row of rows.filter((item) => item.error)) {
+      issues.push([row.number, row.error]);
+    }
+    for (const [id, group] of groups) {
+      const existing = existingByClass.get(id);
+      const label = managedClassLabel(group[0].classroom, classrooms);
+      let newCount = 0;
+      for (const row of group) {
+        if (row.error) continue;
+        if (existing.has(row.url)) {
+          issues.push([row.number, `${label}的網址重複（${row.url}）`]);
+        } else {
+          existing.add(row.url);
+          ready.push(row);
+          newCount++;
+        }
+      }
+      summaries.push(`${label}　新增 ${newCount} 件，略過 ${group.length - newCount} 件`);
+    }
+    bulk.rows = ready;
+    showBulkList(elements.workImportGroups, summaries);
+    showBulkList(elements.workImportIssues, issues.sort((a, b) => a[0] - b[0])
+      .map(([number, message]) => `第 ${number} 筆（含欄名）｜${message}`));
+    elements.workImportStatus.textContent = rows.length
+      ? `共 ${rows.length} 筆，預計新增 ${ready.length} 件、略過 ${issues.length} 筆。`
+      : "CSV 裡沒有作品資料。";
+  } catch (error) {
+    if (bulk.owner === owner) {
+      elements.workImportStatus.textContent = `無法預覽。${error.message}`;
+    }
+  } finally {
+    bulk.importing = false;
+    updateBulkControls();
+  }
+}
+
+async function importPreviewedWorks() {
+  if (bulk.importing || !bulk.owner || !bulk.rows.length) return;
+  const user = state.user;
+  const rows = bulk.rows;
+  const groups = groupWorkRows(rows);
+  bulk.importing = true;
+  updateBulkControls();
+  let added = 0;
+  let checked = 0;
+  // 每次建立作品，Firestore 規則都會檢查班級存在，交易最多 20 次規則文件存取。
+  const batchSize = 20;
+  try {
+    for (const [classId, group] of groups) {
+      if (bulk.owner !== user.uid || !isClassOwner(classId)) throw new Error("班級管理權限已變更。");
+      await withLocalWorkLock(async () => {
+        const existing = await fetchDisplayedWorkUrls(classId);
+        // 分批交易，兩次同時匯入也只會新增同一班同一網址一次。
+        for (let offset = 0; offset < group.length; offset += batchSize) {
+          if (bulk.owner !== user.uid || !isClassOwner(classId)) throw new Error("班級管理權限已變更。");
+          const chunk = group.slice(offset, offset + batchSize);
+          const pending = await Promise.all(chunk.filter(({ url }) => !existing.has(url)).map(async (row) => ({
+            id: await workId("import", classId, row.url),
+            work: { ...buildWork(classId, user, row), authorName: "老師匯入", teacherImport: true }
+          })));
+          if (pending.length) added += await saveNewWorks(classId, pending);
+          checked += chunk.length;
+          if (bulk.owner === user.uid) {
+            elements.workImportStatus.textContent = `匯入中，已處理 ${checked}／${rows.length} 筆。`;
+          }
+        }
+      });
+    }
+    if (bulk.owner === user.uid) {
+      clearImportPreview();
+      elements.workImportStatus.textContent = `匯入完成，新增 ${added} 件、略過 ${rows.length - added} 件已存在的作品。`;
+    }
+  } catch (error) {
+    if (bulk.owner === user.uid) {
+      elements.workImportStatus.textContent = `已新增 ${added} 件。${error.message} 可再次按「確認匯入」繼續。`;
+    }
+  } finally {
+    bulk.importing = false;
+    updateBulkControls();
+  }
+}
+
+async function fetchDisplayedWorkUrls(classId) {
+  const works = await fetchClassWorks(classId);
+  return new Set(works.filter((work) => !isTeacherWork(work)).map((work) => workUrl(work.url)));
+}
+
+async function exportSelectedWorks() {
+  if (bulk.exporting || !bulk.owner) return;
+  const owner = bulk.owner;
+  const selected = new Set([...elements.workExportClasses.querySelectorAll("input:checked")]
+    .map((input) => input.value));
+  const classrooms = getManagedClasses().filter(({ id }) => selected.has(id));
+  if (!classrooms.length) return;
+  bulk.exporting = true;
+  elements.workExportStatus.textContent = "正在整理所選班級的作品…";
+  updateBulkControls();
+  try {
+    const groups = await Promise.all(classrooms.map(async (classroom) =>
+      (await fetchClassWorks(classroom.id)).filter((work) => !isTeacherWork(work))
+        .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt))
+        .map((work) => ({ ...work, classroom }))));
+    if (bulk.owner !== owner) return;
+    if (classrooms.some(({ id }) => !isClassOwner(id))) throw new Error("班級管理權限已變更，請重新選擇。");
+    const rows = groups.flat();
+    downloadWorkCsv("班級作品牆.csv", rows);
+    elements.workExportStatus.textContent = `已匯出 ${classrooms.length} 班，共 ${rows.length} 件作品。`;
+  } catch (error) {
+    if (bulk.owner === owner) elements.workExportStatus.textContent = `無法匯出。${error.message}`;
+  } finally {
+    bulk.exporting = false;
+    updateBulkControls();
   }
 }
 
@@ -1445,24 +1780,58 @@ elements.viewToggle.addEventListener("click", (event) => {
 
 elements.urlInput.addEventListener("input", updatePreview);
 
-elements.submissionForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const url = normalizeUrl(elements.urlInput.value);
+elements.workCsvTemplate.addEventListener("click", () => {
+  if (bulk.owner) downloadWorkCsv("班級作品牆匯入範本.csv", []);
+});
+elements.workCsvFile.addEventListener("change", () => {
+  const [file] = elements.workCsvFile.files;
+  elements.workCsvFile.value = "";
+  if (file) void previewWorkImport(file);
+});
+elements.confirmWorkImport.addEventListener("click", importPreviewedWorks);
+elements.workExportClasses.addEventListener("change", updateBulkControls);
+elements.exportWorkCsv.addEventListener("click", exportSelectedWorks);
 
-  if (!state.user) {
-    window.alert("請先登入。");
+elements.submissionForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (state.submitting || isSharedView()) return;
+
+  const classroom = getActiveClass();
+  const user = state.user;
+  if (!classroom || !user) return;
+  const payload = {
+    title: elements.titleInput.value.trim(),
+    url: workUrl(elements.urlInput.value),
+    note: elements.noteInput.value.trim()
+  };
+  const showFeedback = (message) => {
+    state.submissionFeedback = { classId: classroom.id, uid: user.uid, message };
+    renderActiveClass();
+  };
+  const validationError = validateWork(payload);
+  if (validationError) {
+    showFeedback(validationError + "。");
     return;
   }
 
-  addSubmission({
-    title: elements.titleInput.value.trim(),
-    url,
-    note: elements.noteInput.value.trim(),
-    thumbnailUrl: getThumbnailUrl(url)
-  }).then(() => {
-    elements.submissionForm.reset();
-    updatePreview();
-  }).catch((error) => window.alert(error.message));
+  state.submitting = true;
+  const fields = [elements.titleInput, elements.urlInput, elements.noteInput];
+  fields.forEach((field) => { field.readOnly = true; });
+  showFeedback("");
+  try {
+    const added = await addSubmission(classroom, user, payload);
+    if (added && state.activeClassId === classroom.id && state.user?.uid === user.uid) {
+      elements.submissionForm.reset();
+      updatePreview();
+    }
+    showFeedback(added ? "作品已送出。" : "這件作品已送出。");
+  } catch (error) {
+    showFeedback(`送出失敗，請稍後再試。${error.message}`);
+  } finally {
+    state.submitting = false;
+    fields.forEach((field) => { field.readOnly = false; });
+    renderActiveClass();
+  }
 });
 
 initFirebase().catch((error) => {

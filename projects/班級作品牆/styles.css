@@ -229,6 +229,80 @@ button:focus-visible {
   gap: 10px;
 }
 
+.bulk-works {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.bulk-works summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+.bulk-work-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.bulk-work-tools section {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.bulk-work-tools :is(h3, p, ul),
+.submission-status {
+  margin: 0;
+}
+
+.bulk-work-tools p:empty,
+.submission-status:empty {
+  display: none;
+}
+
+.bulk-work-tools fieldset {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.bulk-class-options,
+.bulk-results {
+  max-height: 11rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+.bulk-class-options label {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.bulk-class-options input {
+  width: auto;
+  flex: none;
+}
+
+.bulk-results {
+  padding-left: 1.5em;
+}
+
+.submission-status {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .class-chip {
   padding: 9px 14px;
   color: var(--ink);
