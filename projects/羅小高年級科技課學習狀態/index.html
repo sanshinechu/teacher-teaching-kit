@@ -509,6 +509,18 @@
           <button type="button" class="primary-btn" id="classroomBackfillBtn" title="把已發佈、還沒記過的節次全部記入歷程，日期依本班上課星期推算">📥 補齊已發佈節次</button>
           <button type="button" class="secondary-btn" id="classroomRefreshBtn">🔄 重新抓取</button>
         </div>
+        <details class="multi-class-panel" id="multiClassPanel">
+          <summary>👥 多班一次帶入（五、六年級各班）</summary>
+          <p class="form-help">每班依自己的上課星期推算：已經上過的最新一節 → 今日／上次進度，下一節 → 下次進度。五年級的班讀「五上／五下」、六年級讀「六上／六下」，跟上面選的課程無關。</p>
+          <div id="multiClassGroups" class="multi-class-groups"></div>
+          <div class="multi-class-options">
+            <label><input type="checkbox" id="multiOptProgress" checked> 帶入今日／下次進度</label>
+            <label><input type="checkbox" id="multiOptHistory" checked> 補齊歷次課堂進度</label>
+            <button type="button" class="secondary-btn" id="multiPreviewBtn">🔍 預覽</button>
+            <button type="button" class="primary-btn" id="multiApplyBtn" disabled>✅ 套用到勾選的班</button>
+          </div>
+          <div id="multiClassPreview" class="multi-class-preview"></div>
+        </details>
         <p class="form-help" id="classroomLessonsInfo"></p>
         <div id="classroomLessonsList" class="lessons-list"></div>
       </div>

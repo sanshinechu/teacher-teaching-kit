@@ -847,7 +847,7 @@ function renderClassroomGrid() {
       // 頂部：座號 + 機台編號
       const topHtml = `
         <div class="seat-card-top">
-          <span class="student-no-tag">${student ? `${student.seatNo}號` : linkBtnHtml ? `${pad2(pcKey)}號` : "空席"}</span>
+          <span class="student-no-tag">${student ? `${student.seatNo}號` : `${pad2(pcKey)}號`}</span>
           <span class="pc-id-badge">${pcLabel}</span>
         </div>
       `;
@@ -881,7 +881,7 @@ function renderClassroomGrid() {
         `
           : `
           <div class="seat-card-body">
-            <div class="empty-seat-label">🪑 空席（點擊新增）</div>
+            <div class="empty-seat-label">尚無作業連結</div>
           </div>
         `;
 
@@ -905,7 +905,6 @@ function renderClassroomGrid() {
         `
         : `
           <div class="seat-card-footer">
-            <button type="button" class="seat-mini-btn" data-act="edit-seat" data-pc="${pcKey}">＋安排學生</button>
             <button type="button" class="seat-mini-btn" data-act="pick-repair" data-pc="${pcKey}">🛠️報修</button>
           </div>
         `;
@@ -969,8 +968,9 @@ function bindSeatCardEvents(card, pcKey) {
     }
   });
 
-  // 雙擊卡片可快速修改該座位學生姓名與座號
+  // 雙擊卡片可快速修改該座位學生姓名與座號（空席不能安排學生：座號固定等於機台編號）
   card.addEventListener("dblclick", () => {
+    if (!getActiveClass()?.seats?.[pcKey]) return;
     promptEditSingleSeat(pcKey);
   });
 
@@ -2552,19 +2552,16 @@ function inferClassDate(publishIso, weekday) {
   return d;
 }
 
-function classroomBackfill() {
-  const cls = getActiveClass();
-  if (!cls) return;
-  const courseKey = document.getElementById("classroomCourseSelect").value;
-  const published = getCourseLessons(courseKey).filter((w) => w.state === "PUBLISHED" && w.updateTime);
-  if (!published.length) {
-    alert(`${courseKey} 還沒有已發佈的節次。`);
-    return;
-  }
+function taipeiToday() {
   const today = getTaipeiNow();
   today.setHours(0, 0, 0, 0);
-  const recorded = new Set((cls.history || []).map((h) => h.text));
+  return today;
+}
 
+// 算出某班要補進歷程的節次（單班「補齊」與多班帶入共用）
+function planBackfill(cls, courseKey, today) {
+  const published = getCourseLessons(courseKey).filter((w) => w.state === "PUBLISHED" && w.updateTime);
+  const recorded = new Set((cls.history || []).map((h) => h.text));
   const toAdd = [];
   let skippedRecorded = 0;
   let notYet = 0;
@@ -2580,6 +2577,18 @@ function classroomBackfill() {
     }
     toAdd.push({ date: formatDateISO(date), text: w.title });
   });
+  return { publishedCount: published.length, toAdd, skippedRecorded, notYet };
+}
+
+function classroomBackfill() {
+  const cls = getActiveClass();
+  if (!cls) return;
+  const courseKey = document.getElementById("classroomCourseSelect").value;
+  const { publishedCount, toAdd, skippedRecorded, notYet } = planBackfill(cls, courseKey, taipeiToday());
+  if (!publishedCount) {
+    alert(`${courseKey} 還沒有已發佈的節次。`);
+    return;
+  }
 
   if (!toAdd.length) {
     alert(`沒有要補的節次。（已記過 ${skippedRecorded} 節${notYet ? `、還沒上到 ${notYet} 節` : ""}）`);
@@ -2620,7 +2629,217 @@ async function openClassroomLessonsModal() {
     document.getElementById("classroomLessonsList").innerHTML = "";
     if (!(await fetchClassroomLessons(false))) return;
   }
+  renderMultiClassGroups();
   renderClassroomLessons();
+}
+
+// ==================== 多班一次帶入 Classroom 進度 ====================
+// 預覽算出來的計畫存在這裡，連同當時各班資料的快照；套用前確認資料沒變（例如中間又按了單班一鍵帶入）
+let multiClassPlan = null;
+
+function multiClassSnapshot(cls) {
+  return JSON.stringify({
+    code: cls.code,
+    grade: cls.grade,
+    day: cls.day,
+    todayProgress: cls.todayProgress || "",
+    nextProgress: cls.nextProgress || "",
+    history: cls.history || []
+  });
+}
+
+function invalidateMultiPlan() {
+  multiClassPlan = null;
+  const applyBtn = document.getElementById("multiApplyBtn");
+  if (applyBtn) applyBtn.disabled = true;
+  const preview = document.getElementById("multiClassPreview");
+  if (preview) preview.innerHTML = "";
+}
+
+function renderMultiClassGroups() {
+  const box = document.getElementById("multiClassGroups");
+  if (!box) return;
+  const prevChecked = new Set([...box.querySelectorAll("input[data-cls]:checked")].map((cb) => cb.value));
+  const sorted = [...appState.classes].sort((a, b) =>
+    String(a.code).localeCompare(String(b.code), "zh-Hant", { numeric: true })
+  );
+  const groups = {};
+  // 只列五、六年級：社團等其他班沒有對應的 Classroom 課程
+  sorted.forEach((cls) => {
+    const g = Number(cls.grade);
+    if (g === 5 || g === 6) (groups[g] = groups[g] || []).push(cls);
+  });
+  box.innerHTML = [5, 6]
+    .filter((g) => groups[g]?.length)
+    .map(
+      (g) => `<div class="multi-class-group">
+        <label class="multi-class-group-head"><input type="checkbox" data-grade-all="${g}"> ${g === 6 ? "六" : "五"}年級全選</label>
+        ${groups[g]
+          .map(
+            (cls) => `<label class="multi-class-item">
+              <input type="checkbox" data-cls data-grade="${g}" value="${escapeHtml(cls.id)}"${prevChecked.has(cls.id) ? " checked" : ""}>
+              <b>${escapeHtml(cls.code)}</b><small>週${WEEKDAY_NAMES[cls.day] || "?"}</small>
+            </label>`
+          )
+          .join("")}
+      </div>`
+    )
+    .join("");
+
+  const syncGradeAll = (g) => {
+    const items = [...box.querySelectorAll(`input[data-cls][data-grade="${g}"]`)];
+    const all = box.querySelector(`input[data-grade-all="${g}"]`);
+    all.checked = items.length > 0 && items.every((cb) => cb.checked);
+    all.indeterminate = !all.checked && items.some((cb) => cb.checked);
+  };
+  box.querySelectorAll("input[data-grade-all]").forEach((all) => {
+    const g = all.dataset.gradeAll;
+    syncGradeAll(g);
+    all.addEventListener("change", () => {
+      box.querySelectorAll(`input[data-cls][data-grade="${g}"]`).forEach((cb) => (cb.checked = all.checked));
+      invalidateMultiPlan();
+    });
+  });
+  box.querySelectorAll("input[data-cls]").forEach((cb) =>
+    cb.addEventListener("change", () => {
+      syncGradeAll(cb.dataset.grade);
+      invalidateMultiPlan();
+    })
+  );
+  invalidateMultiPlan();
+}
+
+// 某班「已經上過的最新一節」：已發佈、且依本班上課星期推算的上課日不晚於今天
+function planProgressFor(cls, courseKey, today) {
+  const lessons = getCourseLessons(courseKey);
+  let idx = -1;
+  lessons.forEach((w, i) => {
+    if (w.state === "PUBLISHED" && w.updateTime && inferClassDate(w.updateTime, cls.day) <= today) idx = i;
+  });
+  if (idx === -1) return null;
+  return { today: lessons[idx].title, next: lessons[idx + 1]?.title || "" };
+}
+
+function buildMultiClassPlan() {
+  if (!classroomLessonsData) {
+    alert("還沒讀到 Classroom 資料，請按「🔄 重新抓取」。");
+    return;
+  }
+  const ids = [...document.querySelectorAll("#multiClassGroups input[data-cls]:checked")].map((cb) => cb.value);
+  const doProgress = document.getElementById("multiOptProgress").checked;
+  const doHistory = document.getElementById("multiOptHistory").checked;
+  if (!ids.length) {
+    alert("還沒勾選任何班級。");
+    return;
+  }
+  if (!doProgress && !doHistory) {
+    alert("請至少勾一個要帶入的項目。");
+    return;
+  }
+  const today = taipeiToday();
+  const rows = appState.classes
+    .filter((c) => ids.includes(c.id))
+    .sort((a, b) => String(a.code).localeCompare(String(b.code), "zh-Hant", { numeric: true }))
+    .map((cls) => {
+      const courseKey = guessCourseKey(cls);
+      const base = { id: cls.id, code: cls.code, day: cls.day, courseKey, snapshot: multiClassSnapshot(cls) };
+      // 沒設上課星期就無法推算日期（inferClassDate 會算成發佈日 +7 天），整班跳過
+      if (!/^[0-6]$/.test(String(cls.day ?? ""))) return { ...base, noDay: true, progress: null, backfill: null };
+      let progress = doProgress ? planProgressFor(cls, courseKey, today) : null;
+      // 同一課程裡目前進度已比推算的新（單班一鍵帶入或手動推進過），不要倒退；
+      // 目前進度不在這個課程（例如上學期留下的）就不比，免得擋住新學期帶入
+      let rollbackFrom = null;
+      if (progress && getCourseLessons(courseKey).some((w) => w.title === cls.todayProgress)) {
+        const curNo = lessonNumber(cls.todayProgress);
+        if (curNo > lessonNumber(progress.today)) {
+          rollbackFrom = curNo;
+          progress = null;
+        }
+      }
+      const backfill = doHistory ? planBackfill(cls, courseKey, today) : null;
+      return { ...base, progress, rollbackFrom, backfill };
+    });
+  multiClassPlan = { doProgress, doHistory, rows };
+  renderMultiClassPreview();
+}
+
+function renderMultiClassPreview() {
+  const box = document.getElementById("multiClassPreview");
+  const plan = multiClassPlan;
+  const byId = Object.fromEntries(appState.classes.map((c) => [c.id, c]));
+  const progressCell = (r) => {
+    if (!plan.doProgress) return '<span class="muted">不帶入</span>';
+    if (r.noDay) return '<span class="muted">沒設上課星期，跳過</span>';
+    if (r.rollbackFrom) return `<span class="muted">目前進度（第 ${r.rollbackFrom} 節）比推算的新，不變</span>`;
+    if (!r.progress) return '<span class="muted">還沒上到任何已發佈節次，不變</span>';
+    const cls = byId[r.id];
+    const same = cls && cls.todayProgress === r.progress.today && (cls.nextProgress || "") === r.progress.next;
+    return `${escapeHtml(r.progress.today)}<br>→ 下次：${escapeHtml(r.progress.next || "（沒有下一節）")}${
+      same ? ' <span class="muted">（已是這樣）</span>' : ""
+    }`;
+  };
+  const historyCell = (r) => {
+    if (!plan.doHistory) return '<span class="muted">不補</span>';
+    if (r.noDay) return '<span class="muted">沒設上課星期，跳過</span>';
+    const b = r.backfill;
+    if (!b.publishedCount) return '<span class="muted">課程沒有已發佈節次</span>';
+    const skip = `已記過 ${b.skippedRecorded}${b.notYet ? `、還沒上到 ${b.notYet}` : ""}`;
+    if (!b.toAdd.length) return `<span class="muted">沒有要補的（${skip}）</span>`;
+    const first = b.toAdd[0].date;
+    const last = b.toAdd[b.toAdd.length - 1].date;
+    return `補 ${b.toAdd.length} 節（${first}～${last}）<br><span class="muted">${skip}</span>`;
+  };
+  const progressChanges = (r) => {
+    const cls = byId[r.id];
+    return r.progress && !(cls && cls.todayProgress === r.progress.today && (cls.nextProgress || "") === r.progress.next);
+  };
+  const changes = plan.rows.filter((r) => progressChanges(r) || r.backfill?.toAdd.length).length;
+  box.innerHTML = `<table>
+      <thead><tr><th>班級</th><th>課程</th><th>今日／上次進度</th><th>歷次課堂進度</th></tr></thead>
+      <tbody>${plan.rows
+        .map(
+          (r) => `<tr><td><b>${escapeHtml(r.code)}</b><br><span class="muted">週${WEEKDAY_NAMES[r.day] || "?"}</span></td>
+          <td>${r.courseKey}</td><td>${progressCell(r)}</td><td>${historyCell(r)}</td></tr>`
+        )
+        .join("")}</tbody>
+    </table>
+    <p class="form-help">日期是用 Classroom 發佈日推算的「本班上課日」，不一定是實際上課那天。</p>`;
+  document.getElementById("multiApplyBtn").disabled = changes === 0;
+}
+
+function applyMultiClassPlan() {
+  const plan = multiClassPlan;
+  if (!plan) return;
+  // 先全部檢查再寫入，避免套用到一半才發現預覽已過期
+  const stale = plan.rows.some((r) => {
+    const cls = appState.classes.find((c) => c.id === r.id);
+    return !cls || multiClassSnapshot(cls) !== r.snapshot;
+  });
+  if (stale) {
+    invalidateMultiPlan();
+    alert("班級資料在預覽後有變動，請重新按「🔍 預覽」再套用。");
+    return;
+  }
+  if (!confirm(`照預覽表套用到 ${plan.rows.length} 個班？`)) return;
+  let progressCount = 0;
+  let historyCount = 0;
+  plan.rows.forEach((r) => {
+    const cls = appState.classes.find((c) => c.id === r.id);
+    if (!cls) return;
+    if (r.progress) {
+      cls.todayProgress = r.progress.today;
+      cls.nextProgress = r.progress.next; // 最後一節時清空，不要留著舊的「下次」跟今日對不上
+      progressCount += 1;
+    }
+    (r.backfill?.toAdd || []).forEach((e) => {
+      if (addHistoryEntry(cls, e.date, e.text)) historyCount += 1;
+    });
+  });
+  saveAppState();
+  renderAll();
+  renderClassroomLessons();
+  invalidateMultiPlan();
+  document.getElementById("multiClassPreview").innerHTML = `<p class="form-help">✅ 已套用：${progressCount} 班更新今日／下次進度，共補進 ${historyCount} 筆歷程。</p>`;
 }
 
 // ==================== 勾選批次刪除班級 ====================
@@ -2852,8 +3071,17 @@ function initEvents() {
   document.getElementById("classroomOneClickBtn")?.addEventListener("click", classroomOneClick);
   document.getElementById("classroomBackfillBtn")?.addEventListener("click", classroomBackfill);
   document.getElementById("classroomRefreshBtn")?.addEventListener("click", async () => {
-    if (await fetchClassroomLessons(true)) renderClassroomLessons();
+    invalidateMultiPlan();
+    if (await fetchClassroomLessons(true)) {
+      renderMultiClassGroups(); // 開視窗時若抓取失敗，班級勾選區沒畫過，這裡補畫（會保留原本的勾選）
+      renderClassroomLessons();
+    }
   });
+  document.getElementById("multiPreviewBtn")?.addEventListener("click", buildMultiClassPlan);
+  document.getElementById("multiApplyBtn")?.addEventListener("click", applyMultiClassPlan);
+  ["multiOptProgress", "multiOptHistory"].forEach((id) =>
+    document.getElementById(id)?.addEventListener("change", invalidateMultiPlan)
+  );
 
   // ⬆️ 推為今日
   document.getElementById("promoteNextBtn")?.addEventListener("click", () => {
