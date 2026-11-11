@@ -1153,16 +1153,93 @@ function updateLiveClassStats() {
 }
 
 // ==================== 底部 20 項科技能力樹 ====================
+// 能力列的編輯範圍："class"＝目前班級，"5"／"6"＝整個學年一起改。
+// 刻意不存進 appState：重新整理後一律回到「各班」，免得忘了切回來、點一下就改到全學年
+let compScope = "class";
+
+function gradeClasses(grade) {
+  return appState.classes.filter((c) => Number(c.grade) === Number(grade));
+}
+
+// 只換 20 項正式能力，其他舊 id（畫面上看不到）原樣保留
+function setTechCompetencies(cls, ids) {
+  const legacy = (cls.competencies || []).filter((id) => !TECH_COMPETENCY_IDS.has(id));
+  cls.competencies = [...ids, ...legacy];
+}
+
+function renderCompScopeSwitch() {
+  const box = document.getElementById("compScopeSwitch");
+  if (!box) return;
+  if (compScope !== "class" && !gradeClasses(compScope).length) compScope = "class";
+  const opts = [["class", "各班"]];
+  if (gradeClasses(5).length) opts.push(["5", "五年級學年"]);
+  if (gradeClasses(6).length) opts.push(["6", "六年級學年"]);
+  box.innerHTML = opts
+    .map(([v, label]) => `<button type="button" data-scope="${v}" class="${compScope === v ? "active" : ""}">${label}</button>`)
+    .join("");
+  box.querySelectorAll("button").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      compScope = btn.dataset.scope;
+      renderCompetencyBar();
+    })
+  );
+}
+
+function renderGradeCompetencyBar(grid, classLabel, countPill) {
+  const targets = gradeClasses(compScope);
+  const gradeName = compScope === "6" ? "六年級" : "五年級";
+  const sets = targets.map((c) => new Set(c.competencies || []));
+  const haveCount = (id) => sets.filter((s) => s.has(id)).length;
+  const full = TECH_COMPETENCIES.filter((c) => haveCount(c.id) === targets.length).length;
+  const partial = TECH_COMPETENCIES.filter((c) => {
+    const n = haveCount(c.id);
+    return n > 0 && n < targets.length;
+  }).length;
+  classLabel.textContent = `${gradeName}學年（${targets.map((c) => c.code).join("、")}）`;
+  countPill.textContent = `全學年具備 ${full} / ${TECH_COMPETENCIES.length} 項${partial ? `，${partial} 項只有部分班` : ""}`;
+
+  grid.innerHTML = "";
+  TECH_COMPETENCIES.forEach((item) => {
+    const n = haveCount(item.id);
+    const all = n === targets.length;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `comp-item-btn${all ? " achieved" : n ? " partial" : ""}`;
+    btn.title = all
+      ? `${gradeName}每班都有，點一下全學年拿掉`
+      : `${n} / ${targets.length} 班具備，點一下全學年設為具備`;
+    btn.innerHTML = `<span>${all ? "✓" : item.icon}</span><span>${item.name}</span>${
+      !all && n ? `<span class="comp-partial-count">${n}/${targets.length}</span>` : ""
+    }`;
+    btn.addEventListener("click", () => {
+      targets.forEach((cls) => {
+        const ids = (cls.competencies || []).filter((id) => TECH_COMPETENCY_IDS.has(id) && id !== item.id);
+        setTechCompetencies(cls, all ? ids : [...ids, item.id]);
+      });
+      saveAppState();
+      renderCompetencyBar();
+    });
+    grid.appendChild(btn);
+  });
+}
+
 function renderCompetencyBar() {
   const activeClass = getActiveClass();
   const grid = document.getElementById("competencyGrid");
   const classLabel = document.getElementById("competencyClassLabel");
   const countPill = document.getElementById("competencyCountPill");
   if (!activeClass || !grid) return;
+  renderCompScopeSwitch();
+  grid.closest(".competency-bar")?.classList.toggle("grade-scope", compScope !== "class");
+  if (compScope !== "class") {
+    renderGradeCompetencyBar(grid, classLabel, countPill);
+    return;
+  }
 
   const achievedSet = new Set(activeClass.competencies || []);
   classLabel.textContent = activeClass.code;
-  countPill.textContent = `已具備 ${achievedSet.size} / ${TECH_COMPETENCIES.length} 項`;
+  // 舊 id 不算進來，免得出現「22 / 20 項」
+  countPill.textContent = `已具備 ${[...achievedSet].filter((id) => TECH_COMPETENCY_IDS.has(id)).length} / ${TECH_COMPETENCIES.length} 項`;
 
   grid.innerHTML = "";
   TECH_COMPETENCIES.forEach((item) => {
@@ -2659,21 +2736,29 @@ function invalidateMultiPlan() {
 function renderMultiClassGroups() {
   const box = document.getElementById("multiClassGroups");
   if (!box) return;
+  renderClassPicker(box, invalidateMultiPlan);
+  invalidateMultiPlan();
+}
+
+// 依五、六年級分組的班級勾選區（Classroom 多班帶入用），重繪時保留畫面上原本的勾選
+// 只列五、六年級：社團等其他班沒有對應的 Classroom 課程
+function renderClassPicker(box, onChange) {
   const prevChecked = new Set([...box.querySelectorAll("input[data-cls]:checked")].map((cb) => cb.value));
   const sorted = [...appState.classes].sort((a, b) =>
     String(a.code).localeCompare(String(b.code), "zh-Hant", { numeric: true })
   );
   const groups = {};
-  // 只列五、六年級：社團等其他班沒有對應的 Classroom 課程
   sorted.forEach((cls) => {
-    const g = Number(cls.grade);
-    if (g === 5 || g === 6) (groups[g] = groups[g] || []).push(cls);
+    const n = Number(cls.grade);
+    const g = n === 5 || n === 6 ? String(n) : null;
+    if (g) (groups[g] = groups[g] || []).push(cls);
   });
-  box.innerHTML = [5, 6]
+  const groupName = { 5: "五年級", 6: "六年級" };
+  box.innerHTML = ["5", "6"]
     .filter((g) => groups[g]?.length)
     .map(
       (g) => `<div class="multi-class-group">
-        <label class="multi-class-group-head"><input type="checkbox" data-grade-all="${g}"> ${g === 6 ? "六" : "五"}年級全選</label>
+        <label class="multi-class-group-head"><input type="checkbox" data-grade-all="${g}"> ${groupName[g]}全選</label>
         ${groups[g]
           .map(
             (cls) => `<label class="multi-class-item">
@@ -2697,16 +2782,15 @@ function renderMultiClassGroups() {
     syncGradeAll(g);
     all.addEventListener("change", () => {
       box.querySelectorAll(`input[data-cls][data-grade="${g}"]`).forEach((cb) => (cb.checked = all.checked));
-      invalidateMultiPlan();
+      onChange();
     });
   });
   box.querySelectorAll("input[data-cls]").forEach((cb) =>
     cb.addEventListener("change", () => {
       syncGradeAll(cb.dataset.grade);
-      invalidateMultiPlan();
+      onChange();
     })
   );
-  invalidateMultiPlan();
 }
 
 // 某班「已經上過的最新一節」：已發佈、且依本班上課星期推算的上課日不晚於今天
@@ -3001,20 +3085,25 @@ function initEvents() {
   });
 
   // 科技能力全選與清空
-  document.getElementById("compSelectAllBtn")?.addEventListener("click", () => {
-    const activeClass = getActiveClass();
-    if (!activeClass) return;
-    activeClass.competencies = TECH_COMPETENCIES.map((c) => c.id);
+  // 學年模式下全選／清空會改到整個年級，先確認；兩種模式都只動 20 項正式能力，舊 id 保留
+  const fillCompetencies = (ids, verb) => {
+    if (compScope !== "class") {
+      const targets = gradeClasses(compScope);
+      const gradeName = compScope === "6" ? "六年級" : "五年級";
+      if (!confirm(`${gradeName}學年 ${targets.length} 個班（${targets.map((c) => c.code).join("、")}）的能力全部${verb}？`)) return;
+      targets.forEach((cls) => setTechCompetencies(cls, ids));
+    } else {
+      const activeClass = getActiveClass();
+      if (!activeClass) return;
+      setTechCompetencies(activeClass, ids);
+    }
     saveAppState();
     renderCompetencyBar();
-  });
-  document.getElementById("compClearAllBtn")?.addEventListener("click", () => {
-    const activeClass = getActiveClass();
-    if (!activeClass) return;
-    activeClass.competencies = [];
-    saveAppState();
-    renderCompetencyBar();
-  });
+  };
+  document.getElementById("compSelectAllBtn")?.addEventListener("click", () =>
+    fillCompetencies(TECH_COMPETENCIES.map((c) => c.id), "設為具備")
+  );
+  document.getElementById("compClearAllBtn")?.addEventListener("click", () => fillCompetencies([], "清空"));
 
   // 右側進度欄位即時儲存與交接按鈕
   document.getElementById("todayProgressInput")?.addEventListener("input", (e) => {
