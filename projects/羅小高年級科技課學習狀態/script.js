@@ -36,30 +36,34 @@ const CLASSROOM_ROWS_TEACHER_VIEW = [
 
 const ALL_PC_NUMBERS = Array.from({ length: 29 }, (_, idx) => idx + 1);
 
-// 底部 20 項核心科技能力清單
+// 底部核心科技能力清單（項數以這份清單為準，畫面上的「/ N 項」跟著它算）
 // 2026-11-10 老師調整：拿掉雷射雕刻／3D繪圖／3D列印，Scratch 拆成動畫、遊戲，2D繪圖改名向量繪圖（id 不變），
 // 新增 Google文件、創意造型木偶。舊資料由 migrateCompetencies() 轉換。
+// 2026-11-11 老師調整：拿掉影片剪輯、心智圖、AI應用、試算表（舊資料載入時自動移除），新增 AI生圖、AI影像辨識，
+// 並依三至六年級的學習順序排列、名稱前加註年級（老師確認），共 18 項。
 const TECH_COMPETENCIES = [
-  { id: "typing", icon: "⌨️", name: "中英輸入" },
-  { id: "doc", icon: "📄", name: "文書排版" },
-  { id: "gdocs", icon: "📝", name: "Google文件" },
-  { id: "files", icon: "📁", name: "檔案管理" },
-  { id: "sheet", icon: "📊", name: "試算表" },
-  { id: "login", icon: "🔑", name: "帳號登入" },
-  { id: "submit", icon: "📤", name: "交作業" },
-  { id: "cloud", icon: "☁️", name: "雲端共作" },
-  { id: "scratch_anim", icon: "🐱", name: "Scratch動畫" },
-  { id: "scratch_game", icon: "🎮", name: "Scratch遊戲" },
-  { id: "email", icon: "✉️", name: "電子郵件" },
-  { id: "draw2d", icon: "🎨", name: "向量繪圖" },
-  { id: "slides", icon: "🖥️", name: "簡報製作" },
-  { id: "video", icon: "🎬", name: "影片剪輯" },
-  { id: "puppet", icon: "🧸", name: "創意造型木偶" },
-  { id: "hardware", icon: "🤖", name: "開放硬體" },
-  { id: "ai_app", icon: "✨", name: "AI應用" },
-  { id: "search", icon: "🔍", name: "搜尋整理" },
-  { id: "ai_lit", icon: "🧠", name: "AI素養" },
-  { id: "mindmap", icon: "🗺️", name: "心智圖" }
+  // 三年級
+  { id: "typing", icon: "⌨️", name: "三年級_中英輸入" },
+  { id: "login", icon: "🔑", name: "三年級_帳號登入" },
+  { id: "files", icon: "📁", name: "三年級_檔案管理" },
+  { id: "doc", icon: "📄", name: "三年級_文書排版" },
+  { id: "email", icon: "✉️", name: "三年級_電子郵件" },
+  { id: "puppet", icon: "🧸", name: "三年級_創意造型木偶" },
+  // 四年級
+  { id: "submit", icon: "📤", name: "四年級_交作業" },
+  { id: "gdocs", icon: "📝", name: "四年級_Google文件" },
+  { id: "cloud", icon: "☁️", name: "四年級_雲端共作" },
+  { id: "search", icon: "🔍", name: "四年級_搜尋整理" },
+  { id: "slides", icon: "🖥️", name: "四年級_簡報製作" },
+  // 五年級
+  { id: "scratch_anim", icon: "🐱", name: "五年級_Scratch動畫" },
+  { id: "draw2d", icon: "🎨", name: "五年級_向量繪圖" },
+  { id: "ai_image", icon: "🖼️", name: "五年級_AI生圖" },
+  // 六年級
+  { id: "scratch_game", icon: "🎮", name: "六年級_Scratch遊戲" },
+  { id: "hardware", icon: "🤖", name: "六年級_開放硬體" },
+  { id: "ai_vision", icon: "👁️", name: "六年級_AI影像辨識" },
+  { id: "ai_lit", icon: "🧠", name: "六年級_AI素養" }
 ];
 const TECH_COMPETENCY_IDS = new Set(TECH_COMPETENCIES.map((c) => c.id));
 
@@ -1152,16 +1156,64 @@ function updateLiveClassStats() {
   statsEl.textContent = `🟢 完成 ${doneCount}/${totalSeated - absentCount} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}${subText}`;
 }
 
-// ==================== 底部 20 項科技能力樹 ====================
+// ==================== 底部科技能力樹 ====================
 // 能力列的編輯範圍："class"＝目前班級，"5"／"6"＝整個學年一起改。
 // 刻意不存進 appState：重新整理後一律回到「各班」，免得忘了切回來、點一下就改到全學年
 let compScope = "class";
+// 學年模式先標記、按「確認」才寫入：能力 id → true（全學年設為具備）／false（全學年拿掉）
+const compPending = new Map();
 
 function gradeClasses(grade) {
-  return appState.classes.filter((c) => Number(c.grade) === Number(grade));
+  return appState.classes
+    .filter((c) => Number(c.grade) === Number(grade))
+    .sort((a, b) => String(a.code).localeCompare(String(b.code), "zh-Hant", { numeric: true }));
 }
 
-// 只換 20 項正式能力，其他舊 id（畫面上看不到）原樣保留
+function confirmDiscardCompPending() {
+  if (!compPending.size) return true;
+  if (!confirm(`還有 ${compPending.size} 項標記沒按「確認套用」，要放棄嗎？`)) return false;
+  compPending.clear();
+  return true;
+}
+
+function applyCompPending() {
+  const targets = gradeClasses(compScope);
+  if (!compPending.size || !targets.length) return;
+  targets.forEach((cls) => {
+    const have = new Set((cls.competencies || []).filter((id) => TECH_COMPETENCY_IDS.has(id)));
+    compPending.forEach((on, id) => (on ? have.add(id) : have.delete(id)));
+    setTechCompetencies(cls, TECH_COMPETENCIES.filter((c) => have.has(c.id)).map((c) => c.id));
+  });
+  compPending.clear();
+  saveAppState();
+  renderCompetencyBar();
+}
+
+function renderCompPendingBar(targets) {
+  const bar = document.getElementById("compPendingBar");
+  if (!bar) return;
+  if (compScope === "class" || !compPending.size) {
+    bar.classList.add("hidden");
+    bar.innerHTML = "";
+    return;
+  }
+  const nameOf = Object.fromEntries(TECH_COMPETENCIES.map((c) => [c.id, c.name]));
+  const adds = [...compPending].filter(([, on]) => on).map(([id]) => nameOf[id]);
+  const dels = [...compPending].filter(([, on]) => !on).map(([id]) => nameOf[id]);
+  bar.classList.remove("hidden");
+  bar.innerHTML = `<span class="comp-pending-text">待套用到 ${targets.map((c) => escapeHtml(c.code)).join("、")}：${
+    adds.length ? `<b class="comp-add">＋${adds.map(escapeHtml).join("、")}</b>` : ""
+  }${adds.length && dels.length ? "　" : ""}${dels.length ? `<b class="comp-del">－${dels.map(escapeHtml).join("、")}</b>` : ""}</span>
+    <button type="button" class="primary-btn" id="compPendingApplyBtn">✅ 確認套用到 ${targets.length} 班</button>
+    <button type="button" class="secondary-btn" id="compPendingCancelBtn">↩ 取消</button>`;
+  bar.querySelector("#compPendingApplyBtn").addEventListener("click", applyCompPending);
+  bar.querySelector("#compPendingCancelBtn").addEventListener("click", () => {
+    compPending.clear();
+    renderCompetencyBar();
+  });
+}
+
+// 只換正式能力清單裡的項目，其他舊 id（畫面上看不到）原樣保留
 function setTechCompetencies(cls, ids) {
   const legacy = (cls.competencies || []).filter((id) => !TECH_COMPETENCY_IDS.has(id));
   cls.competencies = [...ids, ...legacy];
@@ -1179,10 +1231,17 @@ function renderCompScopeSwitch() {
     .join("");
   box.querySelectorAll("button").forEach((btn) =>
     btn.addEventListener("click", () => {
+      if (btn.dataset.scope === compScope || !confirmDiscardCompPending()) return;
       compScope = btn.dataset.scope;
       renderCompetencyBar();
     })
   );
+}
+
+// 名稱格式是「三年級_中英輸入」；每個年級的第一項換到新的一列開頭
+function competencyGradeStart(idx) {
+  const gradeOf = (c) => c.name.split("_")[0];
+  return idx === 0 || gradeOf(TECH_COMPETENCIES[idx]) !== gradeOf(TECH_COMPETENCIES[idx - 1]);
 }
 
 function renderGradeCompetencyBar(grid, classLabel, countPill) {
@@ -1199,28 +1258,31 @@ function renderGradeCompetencyBar(grid, classLabel, countPill) {
   countPill.textContent = `全學年具備 ${full} / ${TECH_COMPETENCIES.length} 項${partial ? `，${partial} 項只有部分班` : ""}`;
 
   grid.innerHTML = "";
-  TECH_COMPETENCIES.forEach((item) => {
+  TECH_COMPETENCIES.forEach((item, idx) => {
     const n = haveCount(item.id);
     const all = n === targets.length;
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `comp-item-btn${all ? " achieved" : n ? " partial" : ""}`;
-    btn.title = all
-      ? `${gradeName}每班都有，點一下全學年拿掉`
-      : `${n} / ${targets.length} 班具備，點一下全學年設為具備`;
-    btn.innerHTML = `<span>${all ? "✓" : item.icon}</span><span>${item.name}</span>${
+    const mark = compPending.has(item.id) ? (compPending.get(item.id) ? " pending-add" : " pending-del") : "";
+    btn.className = `comp-item-btn${all ? " achieved" : n ? " partial" : ""}${mark}${competencyGradeStart(idx) ? " grade-start" : ""}`;
+    btn.title = `${n} / ${targets.length} 班具備。點一下標記，按「確認套用」才會寫入`;
+    btn.innerHTML = `<span>${mark ? (compPending.get(item.id) ? "＋" : "－") : all ? "✓" : item.icon}</span><span>${item.name}</span>${
       !all && n ? `<span class="comp-partial-count">${n}/${targets.length}</span>` : ""
     }`;
+    // 標記循環：都沒有 → 設為具備 → 取消；每班都有 → 拿掉 → 取消；部分班有 → 設為具備 → 拿掉 → 取消
     btn.addEventListener("click", () => {
-      targets.forEach((cls) => {
-        const ids = (cls.competencies || []).filter((id) => TECH_COMPETENCY_IDS.has(id) && id !== item.id);
-        setTechCompetencies(cls, all ? ids : [...ids, item.id]);
-      });
-      saveAppState();
+      const cur = compPending.has(item.id) ? compPending.get(item.id) : null;
+      let next;
+      if (cur === null) next = all ? false : true;
+      else if (cur === true && n > 0 && !all) next = false;
+      else next = null;
+      if (next === null) compPending.delete(item.id);
+      else compPending.set(item.id, next);
       renderCompetencyBar();
     });
     grid.appendChild(btn);
   });
+  renderCompPendingBar(targets);
 }
 
 function renderCompetencyBar() {
@@ -1235,18 +1297,19 @@ function renderCompetencyBar() {
     renderGradeCompetencyBar(grid, classLabel, countPill);
     return;
   }
+  renderCompPendingBar([]);
 
   const achievedSet = new Set(activeClass.competencies || []);
   classLabel.textContent = activeClass.code;
-  // 舊 id 不算進來，免得出現「22 / 20 項」
+  // 舊 id 不算進來，免得出現「20 / 18 項」
   countPill.textContent = `已具備 ${[...achievedSet].filter((id) => TECH_COMPETENCY_IDS.has(id)).length} / ${TECH_COMPETENCIES.length} 項`;
 
   grid.innerHTML = "";
-  TECH_COMPETENCIES.forEach((item) => {
+  TECH_COMPETENCIES.forEach((item, idx) => {
     const isAchieved = achievedSet.has(item.id);
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `comp-item-btn${isAchieved ? " achieved" : ""}`;
+    btn.className = `comp-item-btn${isAchieved ? " achieved" : ""}${competencyGradeStart(idx) ? " grade-start" : ""}`;
     btn.innerHTML = `<span>${ isAchieved ? "✓" : item.icon }</span><span>${item.name}</span>`;
     btn.addEventListener("click", () => {
       if (achievedSet.has(item.id)) {
@@ -3085,13 +3148,20 @@ function initEvents() {
   });
 
   // 科技能力全選與清空
-  // 學年模式下全選／清空會改到整個年級，先確認；兩種模式都只動 20 項正式能力，舊 id 保留
-  const fillCompetencies = (ids, verb) => {
+  // 兩種模式都只動正式能力，舊 id 保留
+  // 學年模式不直接寫入，只把每一項標記好，一樣要按「確認套用」
+  const fillCompetencies = (ids) => {
     if (compScope !== "class") {
       const targets = gradeClasses(compScope);
-      const gradeName = compScope === "6" ? "六年級" : "五年級";
-      if (!confirm(`${gradeName}學年 ${targets.length} 個班（${targets.map((c) => c.code).join("、")}）的能力全部${verb}？`)) return;
-      targets.forEach((cls) => setTechCompetencies(cls, ids));
+      const on = ids.length > 0;
+      TECH_COMPETENCIES.forEach((c) => {
+        const n = targets.filter((cls) => (cls.competencies || []).includes(c.id)).length;
+        const changes = on ? n < targets.length : n > 0;
+        if (changes) compPending.set(c.id, on);
+        else compPending.delete(c.id);
+      });
+      renderCompetencyBar();
+      return;
     } else {
       const activeClass = getActiveClass();
       if (!activeClass) return;
@@ -3101,9 +3171,9 @@ function initEvents() {
     renderCompetencyBar();
   };
   document.getElementById("compSelectAllBtn")?.addEventListener("click", () =>
-    fillCompetencies(TECH_COMPETENCIES.map((c) => c.id), "設為具備")
+    fillCompetencies(TECH_COMPETENCIES.map((c) => c.id))
   );
-  document.getElementById("compClearAllBtn")?.addEventListener("click", () => fillCompetencies([], "清空"));
+  document.getElementById("compClearAllBtn")?.addEventListener("click", () => fillCompetencies([]));
 
   // 右側進度欄位即時儲存與交接按鈕
   document.getElementById("todayProgressInput")?.addEventListener("input", (e) => {

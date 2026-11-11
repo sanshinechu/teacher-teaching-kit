@@ -57,7 +57,7 @@
 
     <!-- 主工作區：左座位區 + 右側進度與報修欄 -->
     <div class="workspace-grid">
-      <!-- 左側主面板：座位圖 + 底部 20 項科技能力樹 -->
+      <!-- 左側主面板：座位圖 + 底部科技能力樹 -->
       <main class="seat-main-panel">
         <!-- 座位圖上方控制工具列 -->
         <div class="seat-toolbar">
@@ -112,21 +112,22 @@
           🖥️ 講台與投影大螢幕（電腦老師前視圖・由右至左為 1～8 號） 🖥️
         </div>
 
-        <!-- 底部：班級已具備科技能力（20 項） -->
+        <!-- 底部：班級已具備科技能力（依三至六年級排序） -->
         <section class="competency-bar">
           <div class="competency-header">
             <div class="competency-title">
-              <span class="comp-scope-switch" id="compScopeSwitch" title="切到學年時，點一項能力會套用到該年級每一班"></span>
+              <span class="comp-scope-switch" id="compScopeSwitch" title="切到學年時，點能力只是先標記，按「確認套用」才會寫入該年級每一班"></span>
               🎓 <strong id="competencyClassLabel">502</strong> 已具備科技能力（點選切換）：
-              <span class="competency-count-pill" id="competencyCountPill">已具備 7 / 20 項</span>
+              <span class="competency-count-pill" id="competencyCountPill">已具備 0 / 18 項</span>
             </div>
             <div class="competency-actions">
               <button type="button" class="comp-ctrl-btn" id="compSelectAllBtn">✓ 全選</button>
               <button type="button" class="comp-ctrl-btn" id="compClearAllBtn">✕ 清空</button>
             </div>
           </div>
+          <div class="comp-pending-bar hidden" id="compPendingBar"></div>
           <div class="competency-grid" id="competencyGrid">
-            <!-- 由 script.js 動態渲染 20 項能力按鈕 -->
+            <!-- 由 script.js 動態渲染能力按鈕 -->
           </div>
         </section>
       </main>

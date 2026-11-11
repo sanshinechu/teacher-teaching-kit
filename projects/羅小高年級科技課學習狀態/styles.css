@@ -760,7 +760,7 @@ body {
   box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
 }
 
-/* ==================== 底部：20 項科技能力樹 ==================== */
+/* ==================== 底部：科技能力樹 ==================== */
 .competency-bar {
   background: #f8fafc;
   border: 1px solid var(--border-light);
@@ -815,8 +815,58 @@ body {
 
 .competency-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  /* 一列 6 格：三年級剛好一列，其他年級各自從新的一列開頭（.grade-start） */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 5px;
+}
+
+.comp-item-btn.grade-start {
+  grid-column-start: 1;
+}
+
+/* 學年模式：已標記、還沒按確認 */
+.competency-grid .comp-item-btn.pending-add {
+  background: #dcfce7;
+  color: #15803d;
+  border: 2px solid #22c55e;
+  box-shadow: none;
+}
+
+.competency-grid .comp-item-btn.pending-del {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 2px solid #ef4444;
+  box-shadow: none;
+  text-decoration: line-through;
+}
+
+.comp-pending-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8rem;
+}
+
+.comp-pending-bar.hidden {
+  display: none;
+}
+
+.comp-pending-text {
+  flex: 1 1 240px;
+}
+
+.comp-pending-bar .comp-add {
+  color: #15803d;
+}
+
+.comp-pending-bar .comp-del {
+  color: #b91c1c;
 }
 
 .comp-item-btn {
@@ -1867,7 +1917,7 @@ body {
     grid-template-columns: 1fr;
   }
   .competency-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
