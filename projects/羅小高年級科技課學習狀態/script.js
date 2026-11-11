@@ -67,6 +67,31 @@ const TECH_COMPETENCIES = [
 ];
 const TECH_COMPETENCY_IDS = new Set(TECH_COMPETENCIES.map((c) => c.id));
 
+// 115 學年各班人數（最大座號）：沒匯學生姓名時，超過這個座號的機台視為空席
+const DEFAULT_CLASS_SIZE_MAP = {
+  "405": 25,
+  "501": 23,
+  "502": 23,
+  "503": 24,
+  "504": 24,
+  "505": 25,
+  "506": 24,
+  "601": 25,
+  "602": 26,
+  "603": 26,
+  "604": 25,
+  "605": 27
+};
+
+function getClassMaxSeat(cls) {
+  if (!cls) return 29;
+  const custom = Number(cls.classSize);
+  if (custom >= 1 && custom <= 29) return Math.floor(custom);
+  const byCode = DEFAULT_CLASS_SIZE_MAP[String(cls.code)];
+  if (byCode) return byCode;
+  return 29;
+}
+
 // 舊版能力 id 轉新版：Scratch 依年級拆（五年級只學過動畫；六年級五年級學過動畫、六上學遊戲），
 // 已移除的項目（雷射雕刻、3D繪圖、3D列印）直接拿掉。回傳是否有改動。
 function migrateCompetencies(state) {
@@ -86,6 +111,20 @@ function migrateCompetencies(state) {
     if (deduped.length !== list.length || deduped.some((id, i) => id !== list[i])) {
       cls.competencies = deduped;
       changed = true;
+    }
+    if (!cls.classSize && DEFAULT_CLASS_SIZE_MAP[String(cls.code)]) {
+      cls.classSize = DEFAULT_CLASS_SIZE_MAP[String(cls.code)];
+      changed = true;
+    }
+    if (Array.isArray(cls.assignments)) {
+      cls.assignments.forEach((a) => {
+        if (!a || !a.title) return;
+        const formatted = formatAssignmentTitleForClass(a.title, cls);
+        if (formatted !== a.title) {
+          a.title = formatted;
+          changed = true;
+        }
+      });
     }
   });
   return changed;
@@ -818,6 +857,8 @@ function renderClassroomGrid() {
       const pcLabel = `PC-${String(pcNum).padStart(2, "0")}`;
       const student = activeClass.seats[pcKey] || null;
       const rosterless = !classHasRoster(activeClass);
+      const maxSeat = getClassMaxSeat(activeClass);
+      const inRosterlessRange = rosterless && Number(pcNum) <= maxSeat;
       const faultInfo = appState.pcRepairs[pcKey] || null;
 
       const card = document.createElement("div");
@@ -825,8 +866,8 @@ function renderClassroomGrid() {
       card.dataset.pc = pcKey;
       card.draggable = true;
 
-      // 沒名單的班，空席照座號標記（完成／加分／待協助／請假），見 seatStatusOf
-      const marks = student || (rosterless ? activeClass.seatMarks?.[pcKey] || { done: false, stars: 0, help: false, absent: false } : null);
+      // 沒名單的班，在班級人數（最大座號）範圍內的空席照座號標記（完成／加分／待協助／出席或請假），見 seatStatusOf
+      const marks = student || (inRosterlessRange ? activeClass.seatMarks?.[pcKey] || { done: false, stars: 0, help: false, present: false, absent: false } : null);
       if (!student) card.classList.add("empty-student");
       if (marks?.done) card.classList.add("status-done");
       if (marks?.help) card.classList.add("status-help");
@@ -839,22 +880,25 @@ function renderClassroomGrid() {
       const linkSeatNo = linkSeatNoFor(activeClass, pcKey);
       const seatLinks = linkSeatNo ? getSeatLinks(activeClass, linkSeatNo) : [];
       const activeAsg = getActiveAssignment(activeClass);
+      const isSelectedGrade = activeAssignmentId && String(activeAssignmentId).startsWith(`${classGradeNumber(activeClass)}:`);
+      const hasPickedAsg = Boolean(activeAsg || isSelectedGrade);
       const activeAsgUrl = linkSeatNo && activeAsg ? activeAsg.links?.[seatKeyOf(linkSeatNo)] : "";
-      if (student && activeAsg) card.classList.add(activeAsgUrl ? "sub-done" : "sub-missing");
-      if (!student && activeAsgUrl) card.classList.add("sub-done");
+      if ((student || inRosterlessRange) && hasPickedAsg) card.classList.add(activeAsgUrl ? "sub-done" : "sub-missing");
+      else if (!student && activeAsgUrl) card.classList.add("sub-done");
       let linkBtnHtml = "";
-      if (activeAsg ? activeAsgUrl : seatLinks.length) {
+      if (hasPickedAsg ? activeAsgUrl : seatLinks.length) {
         const tip = activeAsg ? `打開「${activeAsg.title}」` : seatLinks.map((l) => l.title).join("、");
         // 放在頭像的位置（底部按鈕列已經塞滿 4 顆，再加一顆會擠出座位格）
         linkBtnHtml = `<button type="button" class="student-avatar seat-link-avatar" data-act="links" data-pc="${pcKey}" title="${escapeHtml(tip)}">🔗${
-          activeAsg || seatLinks.length < 2 ? "" : `<span class="seat-link-count">${seatLinks.length}</span>`
+          hasPickedAsg || seatLinks.length < 2 ? "" : `<span class="seat-link-count">${seatLinks.length}</span>`
         }</button>`;
       }
 
       // 頂部：座號 + 機台編號
+      const seatTagText = student ? `${student.seatNo}號` : inRosterlessRange || linkBtnHtml ? `${pad2(pcKey)}號` : "空席";
       const topHtml = `
         <div class="seat-card-top">
-          <span class="student-no-tag">${student ? `${student.seatNo}號` : `${pad2(pcKey)}號`}</span>
+          <span class="student-no-tag">${seatTagText}</span>
           <span class="pc-id-badge">${pcLabel}</span>
         </div>
       `;
@@ -892,13 +936,26 @@ function renderClassroomGrid() {
             <div class="empty-seat-label">已交作業</div>${repairInBodyHtml}
           </div>
         `
-          : `
+          : marks
+            ? `
           <div class="seat-card-body">
             <div class="empty-seat-label">尚無作業連結</div>${repairInBodyHtml}
           </div>
+        `
+            : `
+          <div class="seat-card-body">
+            <div class="empty-seat-label">空位</div>
+          </div>
         `;
 
-      // 底部：微型課堂互動燈號（完成、加分、待協助、請假）
+      // 底部：微型課堂互動燈號（完成、加分、待協助、出席／請假）
+      const attClass = marks?.absent ? "active-absent" : marks?.present ? "active-present" : "";
+      const attIcon = marks?.absent ? "😷" : "😊";
+      const attTitle = marks?.absent
+        ? "今日請假（點擊改為有出席；抽籤自動略過）"
+        : marks?.present
+          ? "今日有出席（點擊改為請假，Shift+點擊取消標記）"
+          : "標記今日有出席（再點一下改為請假 😷）";
       const footerHtml = marks
         ? `
           <div class="seat-card-footer">
@@ -911,8 +968,8 @@ function renderClassroomGrid() {
             <button type="button" class="seat-mini-btn ${marks.help ? "active-help" : ""}" data-act="help" data-pc="${pcKey}" title="標記需要老師協助">
               🙋
             </button>
-            <button type="button" class="seat-mini-btn ${marks.absent ? "active-absent" : ""}" data-act="absent" data-pc="${pcKey}" title="標記今日請假（抽籤自動略過）">
-              😷
+            <button type="button" class="seat-mini-btn ${attClass}" data-act="absent" data-pc="${pcKey}" title="${attTitle}">
+              ${attIcon}
             </button>
           </div>
         `
@@ -1030,16 +1087,17 @@ function classHasRoster(cls) {
   return Object.values(cls?.seats || {}).some(Boolean);
 }
 
-// 回傳這個座位要讀寫的狀態物件：有學生就是學生本身；沒名單的班是座號標記；其他（有名單的空席）回 null
+// 回傳這個座位要讀寫的狀態物件：有學生就是學生本身；沒名單的班是座號標記（限班級人數範圍內）；其他（有名單的空席）回 null
 function seatStatusOf(cls, pcKey, create = false) {
   if (!cls) return null;
   if (cls.seats?.[pcKey]) return cls.seats[pcKey];
   if (classHasRoster(cls)) return null;
+  if (Number(pcKey) > getClassMaxSeat(cls)) return null;
   if (!cls.seatMarks || typeof cls.seatMarks !== "object") {
     if (!create) return null;
     cls.seatMarks = {};
   }
-  if (!cls.seatMarks[pcKey] && create) cls.seatMarks[pcKey] = { done: false, stars: 0, help: false, absent: false };
+  if (!cls.seatMarks[pcKey] && create) cls.seatMarks[pcKey] = { done: false, stars: 0, help: false, present: false, absent: false };
   return cls.seatMarks[pcKey] || null;
 }
 
@@ -1083,7 +1141,19 @@ function handleSeatMiniAction(pcKey, act, isShift) {
   } else if (act === "help") {
     student.help = !student.help;
   } else if (act === "absent") {
-    student.absent = !student.absent;
+    if (isShift) {
+      student.present = false;
+      student.absent = false;
+    } else if (student.absent) {
+      student.absent = false;
+      student.present = true;
+    } else if (student.present) {
+      student.present = false;
+      student.absent = true;
+    } else {
+      student.present = true;
+      student.absent = false;
+    }
   }
 
   saveAppState();
@@ -1155,10 +1225,13 @@ function updateLiveClassStats() {
   const statsEl = document.getElementById("classLiveStats");
   if (!activeClass || !statsEl) return;
 
+  const hasRoster = classHasRoster(activeClass);
+  const maxSeat = getClassMaxSeat(activeClass);
   let totalSeated = 0;
   let doneCount = 0;
   let starSum = 0;
   let helpCount = 0;
+  let presentCount = 0;
   let absentCount = 0;
 
   ALL_PC_NUMBERS.forEach((num) => {
@@ -1169,25 +1242,30 @@ function updateLiveClassStats() {
       if (s.done) doneCount++;
       starSum += s.stars || 0;
       if (s.help) helpCount++;
+      if (s.present && !s.absent) presentCount++;
       if (s.absent) absentCount++;
     }
   });
 
+  const classTotal = hasRoster ? totalSeated : maxSeat;
+
   let subText = "";
   const activeAsg = getActiveAssignment(activeClass);
-  if (activeAsg) {
+  const isSelectedGrade = activeAssignmentId && String(activeAssignmentId).startsWith(`${classGradeNumber(activeClass)}:`);
+  if (activeAsg || isSelectedGrade) {
     let submitted = 0;
-    ALL_PC_NUMBERS.forEach((num) => {
-      const no = linkSeatNoFor(activeClass, String(num));
-      if (no && activeAsg.links?.[seatKeyOf(no)]) submitted++;
-    });
-    // 沒名單的班不知道全班幾人，只報已交人數
-    subText = totalSeated ? ` ｜ 🔗 已交 ${submitted}/${totalSeated}` : ` ｜ 🔗 已交 ${submitted} 位`;
+    if (activeAsg) {
+      ALL_PC_NUMBERS.forEach((num) => {
+        const no = linkSeatNoFor(activeClass, String(num));
+        if (no && activeAsg.links?.[seatKeyOf(no)]) submitted++;
+      });
+    }
+    subText = classTotal ? ` ｜ 🔗 已交 ${submitted}/${classTotal}` : ` ｜ 🔗 已交 ${submitted} 位`;
   }
 
-  // 沒名單的班不知道全班幾人，完成只報人數
-  const doneText = totalSeated ? `${doneCount}/${totalSeated - absentCount}` : `${doneCount} 位`;
-  statsEl.textContent = `🟢 完成 ${doneText} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}${subText}`;
+  const effectiveTotal = Math.max(0, classTotal - absentCount);
+  const doneText = classTotal ? `${doneCount}/${effectiveTotal}` : `${doneCount} 位`;
+  statsEl.textContent = `🟢 完成 ${doneText} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😊 出席 ${presentCount} ｜ 😷 請假 ${absentCount}${subText}`;
 }
 
 // ==================== 底部科技能力樹 ====================
@@ -1494,9 +1572,16 @@ function runRandomLottery() {
   const activeClass = getActiveClass();
   if (!activeClass) return;
 
+  const hasRoster = classHasRoster(activeClass);
+  const maxSeat = getClassMaxSeat(activeClass);
   const candidates = ALL_PC_NUMBERS.map((n) => String(n)).filter((key) => {
-    const s = activeClass.seats[key];
-    return s && !s.absent;
+    if (hasRoster) {
+      const s = activeClass.seats[key];
+      return s && !s.absent;
+    }
+    if (Number(key) > maxSeat) return false;
+    const m = activeClass.seatMarks?.[key];
+    return !m?.absent;
   });
 
   if (candidates.length === 0) {
@@ -1525,13 +1610,18 @@ function runRandomLottery() {
 
 function showLotteryWinnerModal(pcKey) {
   const activeClass = getActiveClass();
-  const student = activeClass?.seats[pcKey];
-  if (!student) return;
+  if (!activeClass) return;
+  const student = activeClass.seats[pcKey];
+  const marks = seatStatusOf(activeClass, pcKey);
+  if (!student && !marks) return;
 
   document.getElementById("lotteryPcTag").textContent = `PC-${String(pcKey).padStart(2, "0")}`;
-  document.getElementById("lotteryAvatar").textContent = student.avatar || "🎉";
-  document.getElementById("lotteryStudentName").textContent = `${student.seatNo}號 ${student.name}`;
-  document.getElementById("lotterySeatInfo").textContent = `${activeClass.code} 班 ｜ 目前累積 ⭐ ${student.stars || 0} 顆星`;
+  document.getElementById("lotteryAvatar").textContent = student?.avatar || "🎉";
+  document.getElementById("lotteryStudentName").textContent = student
+    ? `${student.seatNo}號 ${student.name}`
+    : `${pad2(pcKey)}號`;
+  const stars = (student || marks)?.stars || 0;
+  document.getElementById("lotterySeatInfo").textContent = `${activeClass.code} 班 ｜ 目前累積 ⭐ ${stars} 顆星`;
   document.getElementById("lotteryModal").classList.remove("hidden");
 }
 
@@ -1643,6 +1733,8 @@ function openRosterModal() {
   document.getElementById("editClassCodeInput").value = activeClass.code;
   document.getElementById("editClassDaySelect").value = String(activeClass.day);
   document.getElementById("editClassPeriodSelect").value = String(activeClass.period);
+  const sizeInput = document.getElementById("editClassSizeInput");
+  if (sizeInput) sizeInput.value = String(getClassMaxSeat(activeClass));
 
   const lines = [];
   ALL_PC_NUMBERS.forEach((num) => {
@@ -2139,9 +2231,40 @@ async function handleBulkImportFile(e) {
 // 存在班級底下：cls.assignments = [{ id, title, links: { "09": "https://..." } }]
 // 連結綁「座號」不綁座位格，所以換座位、重新匯入名單都不會掉。
 // 只收座號與網址，不收姓名（來源多半是 Padlet，標題寫 50509＝505 班 9 號）。
-let activeAssignmentId = null; // 座位圖上方下拉選的作業（只是檢視狀態，不存檔、不同步）
+let activeAssignmentId = null; // 座位圖上方下拉選的作業鍵（grade:titleKey，只是檢視狀態，不存檔、不同步）
 let submissionSourceRows = null; // 從檔案讀進來的列；null 表示用文字框
 let submissionParsed = null;
+
+function classGradeNumber(cls) {
+  const g = Number(cls?.grade);
+  if (g === 5 || g === 6) return g;
+  const codeNum = parseInt(cls?.code, 10);
+  if (codeNum >= 500 && codeNum < 600) return 5;
+  if (codeNum >= 600 && codeNum < 700) return 6;
+  return g || 0;
+}
+
+function assignmentGradePrefix(clsOrGrade) {
+  const g = typeof clsOrGrade === "number" ? clsOrGrade : classGradeNumber(clsOrGrade);
+  if (g === 5) return "五年級_";
+  if (g === 6) return "六年級_";
+  return "";
+}
+
+function stripAssignmentGradePrefix(title) {
+  return String(title || "")
+    .trim()
+    .replace(/^(?:[三四五六]年級|[3456]年級)[\s_｜|\-－:：]+/u, "")
+    .trim();
+}
+
+function formatAssignmentTitleForClass(title, clsOrGrade) {
+  const raw = String(title || "").trim();
+  if (!raw) return "";
+  const base = stripAssignmentGradePrefix(raw) || raw;
+  const prefix = assignmentGradePrefix(clsOrGrade);
+  return prefix ? `${prefix}${base}` : base;
+}
 
 function getAssignments(cls) {
   if (!cls) return [];
@@ -2149,17 +2272,31 @@ function getAssignments(cls) {
   return cls.assignments;
 }
 
-function getActiveAssignment(cls) {
-  return getAssignments(cls).find((a) => a.id === activeAssignmentId) || null;
-}
-
-// 作業名稱比對用：去掉所有空白、全形轉半形、不分大小寫。
-// 同學陸續補交時老師會重複匯入同一份，名稱多一個空格不該變成第二份作業
+// 作業名稱比對用：去掉年級前綴與所有空白、全形轉半形、不分大小寫。
+// 同學陸續補交時老師會重複匯入同一份，有沒有寫「五年級_」或多一個空格都不該變成第二份作業
 function assignmentTitleKey(title) {
-  return String(title || "")
+  const raw = String(title || "").trim();
+  const base = stripAssignmentGradePrefix(raw) || raw;
+  return base
     .normalize("NFKC")
     .replace(/\s+/g, "")
     .toLowerCase();
+}
+
+function assignmentFilterKey(clsOrGrade, title) {
+  const g = typeof clsOrGrade === "number" ? clsOrGrade : classGradeNumber(clsOrGrade);
+  return `${g}:${assignmentTitleKey(title)}`;
+}
+
+function getActiveAssignment(cls) {
+  if (!cls || !activeAssignmentId) return null;
+  const list = getAssignments(cls);
+  const byId = list.find((a) => a.id === activeAssignmentId);
+  if (byId) return byId;
+  const expectedPrefix = `${classGradeNumber(cls)}:`;
+  if (!String(activeAssignmentId).startsWith(expectedPrefix)) return null;
+  const targetKey = String(activeAssignmentId).slice(expectedPrefix.length);
+  return list.find((a) => assignmentTitleKey(a.title) === targetKey) || null;
 }
 
 function seatKeyOf(seatNo) {
@@ -2328,23 +2465,31 @@ function previewSubmissionImport() {
     const existing = knownCodes.filter((code) =>
       getAssignments(appState.classes.find((c) => String(c.code) === code)).some((a) => assignmentTitleKey(a.title) === titleKey)
     );
+    const firstKnownCls = knownCodes.length
+      ? appState.classes.find((c) => String(c.code) === knownCodes[0])
+      : activeClass;
+    const displayTitle = title ? formatAssignmentTitleForClass(title, firstKnownCls) : "";
 
     html += `<div class="submission-preview-group">`;
     if (!title) {
       html += `<div class="bulk-preview-error">⚠️ 這批資料沒有作業名稱，請在上面的「作業名稱」填好再預覽。</div>`;
     } else if (existing.length) {
-      html += `<div class="bulk-preview-summary">♻️ 「${escapeHtml(title)}」已經有了（${existing.map(escapeHtml).join("、")} 班），這次是補交更新，不會多出第二份。</div>`;
+      html += `<div class="bulk-preview-summary">♻️ 「${escapeHtml(displayTitle)}」已經有了（${existing.map(escapeHtml).join("、")} 班），這次是補交更新，不會多出第二份。</div>`;
     } else {
-      html += `<div class="bulk-preview-summary">🆕 「${escapeHtml(title)}」會新建一份作業。如果其實是補交，請確認名稱跟之前的一樣。</div>`;
+      html += `<div class="bulk-preview-summary">🆕 「${escapeHtml(displayTitle)}」會新建一份作業。如果其實是補交，請確認名稱跟之前的一樣。</div>`;
     }
 
     knownCodes.forEach((code) => {
       const cls = appState.classes.find((c) => String(c.code) === code);
-      const rosterSeats = new Set(
-        Object.values(cls.seats || {})
-          .filter(Boolean)
-          .map((st) => seatKeyOf(st.seatNo))
-      );
+      const hasRoster = classHasRoster(cls);
+      const maxSeat = getClassMaxSeat(cls);
+      const rosterSeats = hasRoster
+        ? new Set(
+            Object.values(cls.seats || {})
+              .filter(Boolean)
+              .map((st) => seatKeyOf(st.seatNo))
+          )
+        : new Set(Array.from({ length: maxSeat }, (_, idx) => pad2(idx + 1)));
       const seats = [...g.byClass.get(code).keys()].sort();
       const notInRoster = seats.filter((st) => !rosterSeats.has(st));
       const missing = [...rosterSeats].filter((st) => st && !g.byClass.get(code).has(st)).sort();
@@ -2353,7 +2498,7 @@ function previewSubmissionImport() {
         html += `<div class="submission-preview-note">　這次沒有的座號：${missing.map(escapeHtml).join("、")}</div>`;
       }
       if (notInRoster.length) {
-        html += `<div class="bulk-preview-error">⚠️ ${escapeHtml(code)} 班名單上沒有這些座號，可能打錯：${notInRoster.map(escapeHtml).join("、")}（仍會匯入）</div>`;
+        html += `<div class="bulk-preview-error">⚠️ ${escapeHtml(code)} 班超過全班座號範圍（1～${maxSeat} 號）或名單上沒有，可能打錯：${notInRoster.map(escapeHtml).join("、")}（仍會匯入）</div>`;
       }
     });
     if (unknownCodes.length) {
@@ -2385,19 +2530,25 @@ function applySubmissionImport() {
   let added = 0;
   let updated = 0;
   let created = 0;
-  let lastId = null;
+  let lastFilterKey = null;
   const activeClass = getActiveClass();
+  const formattedTitles = [];
   submissionParsed.plan.forEach((item, gi) => {
     const titleKey = assignmentTitleKey(item.title);
+    let sampleFormatted = item.title;
     item.codes.forEach((code, idx) => {
       const cls = appState.classes.find((c) => String(c.code) === code);
       if (!cls) return;
+      const formattedTitle = formatAssignmentTitleForClass(item.title, cls);
+      sampleFormatted = formattedTitle;
       const list = getAssignments(cls);
       let a = list.find((x) => assignmentTitleKey(x.title) === titleKey);
       if (!a) {
-        a = { id: `asg_${Date.now()}_${gi}_${idx}_${Math.random().toString(36).slice(2, 8)}`, title: item.title, links: {} };
+        a = { id: `asg_${Date.now()}_${gi}_${idx}_${Math.random().toString(36).slice(2, 8)}`, title: formattedTitle, links: {} };
         list.push(a);
         created++;
+      } else {
+        a.title = formattedTitle;
       }
       if (!a.links) a.links = {};
       // 同名作業再匯入一次＝補交：這次有的座號更新，其他座號原本的連結保留，不會多出第二份
@@ -2406,11 +2557,13 @@ function applySubmissionImport() {
         else if (a.links[seat] !== url) updated++;
         a.links[seat] = url;
       });
-      if (cls === activeClass) lastId = a.id;
+      const fk = assignmentFilterKey(cls, a.title);
+      if (cls === activeClass || !lastFilterKey) lastFilterKey = fk;
     });
+    formattedTitles.push(`「${sampleFormatted}」`);
   });
-  const titles = submissionParsed.plan.map((item) => `「${item.title}」`).join("、");
-  if (lastId) activeAssignmentId = lastId;
+  const titles = formattedTitles.join("、");
+  if (lastFilterKey) activeAssignmentId = lastFilterKey;
   saveAppState();
   renderAll();
   renderSubmissionManageList();
@@ -2475,8 +2628,11 @@ function renderSubmissionManageList() {
     btn.addEventListener("click", () => {
       const a = list.find((x) => x.id === btn.dataset.delAssignment);
       if (!a || !confirm(`確定刪除 ${cls.code} 班的「${a.title}」？這一班 ${Object.keys(a.links || {}).length} 位的連結會一起刪掉。`)) return;
+      const fk = assignmentFilterKey(cls, a.title);
       cls.assignments = list.filter((x) => x.id !== a.id);
-      if (activeAssignmentId === a.id) activeAssignmentId = null;
+      if (activeAssignmentId === a.id || (activeAssignmentId === fk && !collectAssignmentGroups().some((g) => g.items.some((it) => it.key === fk)))) {
+        activeAssignmentId = null;
+      }
       saveAppState();
       renderAll();
       renderSubmissionManageList();
@@ -2491,7 +2647,12 @@ function openSubmissionImportModal() {
   document.getElementById("submissionTitleInput").value = getActiveAssignment(cls)?.title || "";
   document.getElementById("submissionModalClassLabel").textContent = cls ? `${cls.code} 班` : "";
   const allTitles = new Map();
-  appState.classes.forEach((c) => getAssignments(c).forEach((a) => allTitles.set(assignmentTitleKey(a.title), a.title)));
+  appState.classes.forEach((c) =>
+    getAssignments(c).forEach((a) => {
+      const formatted = formatAssignmentTitleForClass(a.title, c);
+      allTitles.set(assignmentFilterKey(c, formatted), formatted);
+    })
+  );
   document.getElementById("submissionTitleOptions").innerHTML = [...allTitles.values()]
     .map((t) => `<option value="${escapeHtml(t)}"></option>`)
     .join("");
@@ -2501,18 +2662,54 @@ function openSubmissionImportModal() {
   document.getElementById("submissionModal").classList.remove("hidden");
 }
 
-// 座位圖上方的作業下拉選單
+function collectAssignmentGroups() {
+  const byGrade = new Map();
+  appState.classes.forEach((c) => {
+    const g = classGradeNumber(c);
+    getAssignments(c).forEach((a) => {
+      if (!a || !a.title) return;
+      const title = formatAssignmentTitleForClass(a.title, c);
+      const fk = assignmentFilterKey(c, title);
+      if (!byGrade.has(g)) byGrade.set(g, new Map());
+      const map = byGrade.get(g);
+      if (!map.has(fk)) map.set(fk, { key: fk, title });
+    });
+  });
+  const order = [5, 6, ...[...byGrade.keys()].filter((g) => g !== 5 && g !== 6).sort((a, b) => a - b)];
+  const groups = [];
+  order.forEach((g) => {
+    const map = byGrade.get(g);
+    if (!map || !map.size) return;
+    const label = g === 5 ? "五年級作業" : g === 6 ? "六年級作業" : "其他作業";
+    groups.push({ grade: g, label, items: [...map.values()] });
+  });
+  return groups;
+}
+
+// 座位圖上方的作業下拉選單（分組列出五年級、六年級作業，換班時維持選取）
 function renderAssignmentFilter() {
   const sel = document.getElementById("assignmentFilterSelect");
   if (!sel) return;
-  const cls = getActiveClass();
-  const list = getAssignments(cls);
-  if (!list.some((a) => a.id === activeAssignmentId)) activeAssignmentId = null;
+  const groups = collectAssignmentGroups();
+  const allKeys = new Set();
+  groups.forEach((g) => g.items.forEach((it) => allKeys.add(it.key)));
+  if (activeAssignmentId && !allKeys.has(activeAssignmentId)) {
+    const cls = getActiveClass();
+    const byId = getAssignments(cls).find((a) => a.id === activeAssignmentId);
+    activeAssignmentId = byId ? assignmentFilterKey(cls, byId.title) : null;
+  }
   sel.innerHTML =
     `<option value="">🔗 全部作業</option>` +
-    list.map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.title)}</option>`).join("");
+    groups
+      .map(
+        (g) =>
+          `<optgroup label="${escapeHtml(g.label)}">` +
+          g.items.map((it) => `<option value="${escapeHtml(it.key)}">${escapeHtml(it.title)}</option>`).join("") +
+          `</optgroup>`
+      )
+      .join("");
   sel.value = activeAssignmentId || "";
-  sel.disabled = !list.length;
+  sel.disabled = !allKeys.size;
 }
 
 // 點座位格的 🔗：選了作業就開那一份；沒選時只有一份直接開，多份跳清單
@@ -2523,6 +2720,7 @@ function linkSeatNoFor(cls, pcKey) {
   if (!cls) return null;
   const student = cls.seats?.[pcKey];
   if (student) return student.seatNo;
+  if (!classHasRoster(cls) && Number(pcKey) > getClassMaxSeat(cls)) return null;
   const key = pad2(pcKey);
   const taken = Object.values(cls.seats || {}).some((s) => s && seatKeyOf(s.seatNo) === key);
   return taken ? null : key;
@@ -3134,6 +3332,21 @@ function initEvents() {
     renderClassroomGrid();
   });
 
+  // 全班出席（一鍵將本班全班座號標記為有出席）
+  document.getElementById("markAllPresentBtn")?.addEventListener("click", () => {
+    const activeClass = getActiveClass();
+    if (!activeClass) return;
+    ALL_PC_NUMBERS.forEach((n) => {
+      const s = seatStatusOf(activeClass, String(n), true);
+      if (s) {
+        s.present = true;
+        s.absent = false;
+      }
+    });
+    saveAppState();
+    renderClassroomGrid();
+  });
+
   // 重置今日狀態
   document.getElementById("resetTodayStatusBtn")?.addEventListener("click", () => {
     const activeClass = getActiveClass();
@@ -3144,6 +3357,7 @@ function initEvents() {
         if (s) {
           s.done = false;
           s.help = false;
+          s.present = false;
           s.absent = false;
         }
       });
@@ -3166,8 +3380,9 @@ function initEvents() {
   document.getElementById("lotteryMarkDoneBtn")?.addEventListener("click", () => {
     if (!currentLotteryPc) return;
     const activeClass = getActiveClass();
-    if (activeClass?.seats[currentLotteryPc]) {
-      activeClass.seats[currentLotteryPc].done = true;
+    const target = seatStatusOf(activeClass, currentLotteryPc, true);
+    if (target) {
+      target.done = true;
       saveAppState();
       renderClassroomGrid();
     }
@@ -3371,6 +3586,12 @@ function initEvents() {
     activeClass.grade = parseInt(newCode, 10) ? Math.floor(parseInt(newCode, 10) / 100) || 6 : 7;
     activeClass.day = Number(document.getElementById("editClassDaySelect").value) || 1;
     activeClass.period = Number(document.getElementById("editClassPeriodSelect").value) || 1;
+    const rawSize = Number(document.getElementById("editClassSizeInput")?.value);
+    if (rawSize >= 1 && rawSize <= 29) {
+      activeClass.classSize = Math.floor(rawSize);
+    } else if (DEFAULT_CLASS_SIZE_MAP[String(newCode)]) {
+      activeClass.classSize = DEFAULT_CLASS_SIZE_MAP[String(newCode)];
+    }
     saveAppState();
     renderAll();
     alert("✅ 已儲存班級基本設定！");

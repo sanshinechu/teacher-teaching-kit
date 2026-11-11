@@ -71,9 +71,12 @@
 
           <div class="toolbar-center">
             <span class="class-live-stats" id="classLiveStats">
-              🟢 完成 0/0 ｜ ⭐ 加分 0 ｜ 🙋 待協助 0 ｜ 😷 請假 0
+              🟢 完成 0/0 ｜ ⭐ 加分 0 ｜ 🙋 待協助 0 ｜ 😊 出席 0 ｜ 😷 請假 0
             </span>
-            <button type="button" class="micro-reset-btn" id="resetTodayStatusBtn" title="清空本班今日的完成、待協助與請假標記（保留加分）">
+            <button type="button" class="micro-reset-btn" id="markAllPresentBtn" title="一鍵將本班全班座號標記為今日有出席">
+              😊 全班出席
+            </button>
+            <button type="button" class="micro-reset-btn" id="resetTodayStatusBtn" title="清空本班今日的完成、待協助與出席／請假標記（保留加分）">
               🧹 重置今日狀態
             </button>
             <select id="assignmentFilterSelect" class="assignment-filter-select" title="選一份作業：已交的座位亮起來、沒交的變淡，點 🔗 直接開作品" disabled>
@@ -332,6 +335,10 @@
                 <option value="7">第 7 節 (15:20~16:00)</option>
               </select>
             </div>
+            <div class="form-row">
+              <label>班級人數（最大座號）：</label>
+              <input type="number" id="editClassSizeInput" min="1" max="29" placeholder="例如 24（超過此座號的機台視為空席）">
+            </div>
             <div class="form-actions-inline">
               <button type="button" class="primary-btn" id="saveClassMetaBtn">💾 儲存班級設定</button>
               <button type="button" class="secondary-btn" id="addNewClassBtn">➕ 新增一個班級</button>
@@ -457,7 +464,7 @@
           一次要匯很多份作業時，在資料前面加一列 <code># 作業名稱</code>，底下的列就算那一份（這時上面的作業名稱可以不填）。
         </p>
         <div class="lessons-toolbar">
-          <label>作業名稱 <input type="text" id="submissionTitleInput" list="submissionTitleOptions" placeholder="例如：第2個作業_我的角色（點一下可選已有的）" size="36"></label>
+          <label>作業名稱 <input type="text" id="submissionTitleInput" list="submissionTitleOptions" placeholder="例如：五年級_第2個作業_我的角色（點一下可選已有的）" size="36"></label>
           <datalist id="submissionTitleOptions"></datalist>
         </div>
         <textarea id="submissionTextarea" class="roster-textarea" rows="8" placeholder="50501	https://s3.ilc.edu.tw/projects/123456&#10;50502	https://s3.ilc.edu.tw/projects/234567"></textarea>

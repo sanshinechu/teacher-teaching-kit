@@ -748,6 +748,12 @@ body {
   color: #fff;
 }
 
+.seat-mini-btn.active-present {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
 .seat-mini-btn.active-absent {
   background: #64748b;
   color: #fff;
