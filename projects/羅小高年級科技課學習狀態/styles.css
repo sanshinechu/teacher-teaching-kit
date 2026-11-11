@@ -638,6 +638,12 @@ body {
   margin: 4px 0;
 }
 
+/* 沒名單的班：報修鈕放在中段最右邊（底部已經是 4 顆標記鈕） */
+.seat-card-body .seat-repair-mini {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
 .student-avatar {
   width: 28px;
   height: 28px;

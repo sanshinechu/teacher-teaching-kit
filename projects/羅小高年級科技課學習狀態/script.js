@@ -817,6 +817,7 @@ function renderClassroomGrid() {
       const pcKey = String(pcNum);
       const pcLabel = `PC-${String(pcNum).padStart(2, "0")}`;
       const student = activeClass.seats[pcKey] || null;
+      const rosterless = !classHasRoster(activeClass);
       const faultInfo = appState.pcRepairs[pcKey] || null;
 
       const card = document.createElement("div");
@@ -824,10 +825,12 @@ function renderClassroomGrid() {
       card.dataset.pc = pcKey;
       card.draggable = true;
 
+      // 沒名單的班，空席照座號標記（完成／加分／待協助／請假），見 seatStatusOf
+      const marks = student || (rosterless ? activeClass.seatMarks?.[pcKey] || { done: false, stars: 0, help: false, absent: false } : null);
       if (!student) card.classList.add("empty-student");
-      if (student?.done) card.classList.add("status-done");
-      if (student?.help) card.classList.add("status-help");
-      if (student?.absent) card.classList.add("status-absent");
+      if (marks?.done) card.classList.add("status-done");
+      if (marks?.help) card.classList.add("status-help");
+      if (marks?.absent) card.classList.add("status-absent");
       if (faultInfo) card.classList.add("pc-fault");
       if (firstSelectedPcForSwap === pcKey) card.classList.add("swap-selected");
 
@@ -868,6 +871,12 @@ function renderClassroomGrid() {
         `;
       }
 
+      // 沒名單的班底部放了 4 顆標記鈕，報修改放在中段右邊
+      const repairInBodyHtml =
+        !student && marks
+          ? `<button type="button" class="seat-mini-btn seat-repair-mini" data-act="pick-repair" data-pc="${pcKey}" title="報修這台">🛠️</button>`
+          : "";
+
       // 中段：學生頭像與姓名（或空席提示）
       const bodyHtml = student
         ? `
@@ -880,29 +889,29 @@ function renderClassroomGrid() {
           ? `
           <div class="seat-card-body">
             ${linkBtnHtml}
-            <div class="empty-seat-label">已交作業</div>
+            <div class="empty-seat-label">已交作業</div>${repairInBodyHtml}
           </div>
         `
           : `
           <div class="seat-card-body">
-            <div class="empty-seat-label">尚無作業連結</div>
+            <div class="empty-seat-label">尚無作業連結</div>${repairInBodyHtml}
           </div>
         `;
 
       // 底部：微型課堂互動燈號（完成、加分、待協助、請假）
-      const footerHtml = student
+      const footerHtml = marks
         ? `
           <div class="seat-card-footer">
-            <button type="button" class="seat-mini-btn ${student.done ? "active-done" : ""}" data-act="done" data-pc="${pcKey}" title="標記今日作業完成">
-              ✓${student.done ? "完成" : ""}
+            <button type="button" class="seat-mini-btn ${marks.done ? "active-done" : ""}" data-act="done" data-pc="${pcKey}" title="標記今日作業完成">
+              ✓
             </button>
-            <button type="button" class="seat-mini-btn ${student.stars > 0 ? "active-star" : ""}" data-act="star" data-pc="${pcKey}" title="左鍵加分，Shift+左鍵扣分">
-              ⭐${student.stars || 0}
+            <button type="button" class="seat-mini-btn ${marks.stars > 0 ? "active-star" : ""}" data-act="star" data-pc="${pcKey}" title="左鍵加分，Shift+左鍵扣分">
+              ⭐${marks.stars || 0}
             </button>
-            <button type="button" class="seat-mini-btn ${student.help ? "active-help" : ""}" data-act="help" data-pc="${pcKey}" title="標記需要老師協助">
+            <button type="button" class="seat-mini-btn ${marks.help ? "active-help" : ""}" data-act="help" data-pc="${pcKey}" title="標記需要老師協助">
               🙋
             </button>
-            <button type="button" class="seat-mini-btn ${student.absent ? "active-absent" : ""}" data-act="absent" data-pc="${pcKey}" title="標記今日請假（抽籤自動略過）">
+            <button type="button" class="seat-mini-btn ${marks.absent ? "active-absent" : ""}" data-act="absent" data-pc="${pcKey}" title="標記今日請假（抽籤自動略過）">
               😷
             </button>
           </div>
@@ -1013,10 +1022,30 @@ function swapTwoSeats(pcA, pcB) {
   saveAppState();
 }
 
+// ==================== 沒匯名單的班：照座號標記 ====================
+// 老師不放學生姓名的班，PC-N 就是 N 號（見 linkSeatNoFor）。完成／加分／待協助／請假
+// 存在 cls.seatMarks[pcKey]，不放進 cls.seats：放進去會被當成「有學生」，影響名單、換位、搜尋等功能。
+// 有名單的班空席就是真的空著，不給標記。
+function classHasRoster(cls) {
+  return Object.values(cls?.seats || {}).some(Boolean);
+}
+
+// 回傳這個座位要讀寫的狀態物件：有學生就是學生本身；沒名單的班是座號標記；其他（有名單的空席）回 null
+function seatStatusOf(cls, pcKey, create = false) {
+  if (!cls) return null;
+  if (cls.seats?.[pcKey]) return cls.seats[pcKey];
+  if (classHasRoster(cls)) return null;
+  if (!cls.seatMarks || typeof cls.seatMarks !== "object") {
+    if (!create) return null;
+    cls.seatMarks = {};
+  }
+  if (!cls.seatMarks[pcKey] && create) cls.seatMarks[pcKey] = { done: false, stars: 0, help: false, absent: false };
+  return cls.seatMarks[pcKey] || null;
+}
+
 function handleSeatMiniAction(pcKey, act, isShift) {
   const activeClass = getActiveClass();
   if (!activeClass) return;
-  const student = activeClass.seats[pcKey];
 
   if (act === "edit-seat") {
     promptEditSingleSeat(pcKey);
@@ -1038,6 +1067,8 @@ function handleSeatMiniAction(pcKey, act, isShift) {
     return;
   }
 
+  if (!["done", "star", "help", "absent"].includes(act)) return;
+  const student = seatStatusOf(activeClass, pcKey, true);
   if (!student) return;
 
   if (act === "done") {
@@ -1131,9 +1162,10 @@ function updateLiveClassStats() {
   let absentCount = 0;
 
   ALL_PC_NUMBERS.forEach((num) => {
-    const s = activeClass.seats[String(num)];
+    const key = String(num);
+    if (activeClass.seats[key]) totalSeated++;
+    const s = seatStatusOf(activeClass, key); // 沒名單的班讀座號標記
     if (s) {
-      totalSeated++;
       if (s.done) doneCount++;
       starSum += s.stars || 0;
       if (s.help) helpCount++;
@@ -1153,7 +1185,9 @@ function updateLiveClassStats() {
     subText = totalSeated ? ` ｜ 🔗 已交 ${submitted}/${totalSeated}` : ` ｜ 🔗 已交 ${submitted} 位`;
   }
 
-  statsEl.textContent = `🟢 完成 ${doneCount}/${totalSeated - absentCount} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}${subText}`;
+  // 沒名單的班不知道全班幾人，完成只報人數
+  const doneText = totalSeated ? `${doneCount}/${totalSeated - absentCount}` : `${doneCount} 位`;
+  statsEl.textContent = `🟢 完成 ${doneText} ｜ ⭐ 加分 ${starSum} ｜ 🙋 待協助 ${helpCount} ｜ 😷 請假 ${absentCount}${subText}`;
 }
 
 // ==================== 底部科技能力樹 ====================
@@ -3105,12 +3139,14 @@ function initEvents() {
     const activeClass = getActiveClass();
     if (!activeClass) return;
     ALL_PC_NUMBERS.forEach((n) => {
-      const s = activeClass.seats[String(n)];
-      if (s) {
-        s.done = false;
-        s.help = false;
-        s.absent = false;
-      }
+      // 學生與沒名單班的座號標記都要清（加分保留）
+      [activeClass.seats[String(n)], activeClass.seatMarks?.[String(n)]].forEach((s) => {
+        if (s) {
+          s.done = false;
+          s.help = false;
+          s.absent = false;
+        }
+      });
     });
     saveAppState();
     renderClassroomGrid();
