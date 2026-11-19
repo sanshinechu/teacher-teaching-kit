@@ -4,6 +4,30 @@ function taipeiAttendanceDate() {
 }
 let attendanceDate = taipeiAttendanceDate();
 
+function isRosterlessSeatActive(cls, seatNo) {
+  const n = Number(seatNo);
+  return n >= 1 && n <= getClassMaxSeat(cls) &&
+    !(cls.disabledSeatNos || []).some(value => Number(value) === n);
+}
+
+function toggleRosterlessSeat(cls, seatNo) {
+  if (classHasRoster(cls)) return;
+  prepareAttendance(cls);
+  captureAttendance(cls);
+  const n = Number(seatNo);
+  const disabled = (cls.disabledSeatNos || []).some(value => Number(value) === n);
+  if (!confirm(disabled
+    ? `恢復 ${pad2(n)} 號？這會恢復原座號的資料，並重新列入點名與抽籤。`
+    : `停用 ${pad2(n)} 號（轉出）？該位置將顯示空席，不列入點名、抽籤及人數統計。原紀錄保留，可隨時恢復。`)) return;
+  cls.disabledSeatNos = (cls.disabledSeatNos || []).filter(value => Number(value) !== n);
+  if (!disabled) cls.disabledSeatNos.push(n);
+  delete cls.attendanceLoadedDate;
+  prepareAttendance(cls);
+  saveAppState();
+  renderAll();
+  openRosterModal();
+}
+
 function ensureStudentId(student) {
   if (!student.id) student.id = `student_${crypto.randomUUID()}`;
   return student.id;
@@ -13,7 +37,7 @@ function attendanceMembers(cls) {
   if (classHasRoster(cls)) {
     return Object.values(cls.seats).filter(Boolean).map(s => [ensureStudentId(s), s]);
   }
-  return ALL_PC_NUMBERS.filter(n => n <= getClassMaxSeat(cls))
+  return ALL_PC_NUMBERS.filter(n => isRosterlessSeatActive(cls, n))
     .map(n => [`seat_${pad2(n)}`, seatStatusOf(cls, String(n), true)]);
 }
 
@@ -77,7 +101,7 @@ function showAttendanceRecord() {
   const dialog = document.getElementById('attendanceRecordDialog');
   document.getElementById('attendanceRecordTitle').textContent = `${cls.code} 班 ${attendanceDate} 點名紀錄`;
   document.getElementById('attendanceRecordRows').innerHTML = entries.map(([id, s]) =>
-    `<tr><td>${escapeHtml(s.seatNo)}</td><td>${escapeHtml(s.name || '未登錄姓名')}${currentIds.has(id) ? '' : '（已轉出／原名單）'}</td><td>${s.absent ? '請假' : s.present ? '出席' : '未點名'}</td></tr>`).join('');
+    `<tr><td>${escapeHtml(s.seatNo)}</td><td>${escapeHtml(s.name || '未登錄姓名')}${currentIds.has(id) ? '' : '（已轉出／停用／原名單）'}</td><td>${s.absent ? '請假' : s.present ? '出席' : '未點名'}</td></tr>`).join('');
   dialog.showModal();
 }
 
@@ -139,6 +163,18 @@ function renderIndividualRoster() {
     const label = document.createElement('span');
     label.textContent = `PC-${pad2(pc)}　${s ? `${s.seatNo} 號 ${s.name}` : '空席'}`;
     row.append(label);
+    if (!classHasRoster(cls) && pc <= getClassMaxSeat(cls)) {
+      const active = isRosterlessSeatActive(cls, pc);
+      label.textContent = `PC-${pad2(pc)}　${pad2(pc)} 號${active ? '（使用中）' : '（已停用・空席）'}`;
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = active ? 'danger-btn' : 'secondary-btn';
+      toggle.textContent = active ? '停用座號（轉出）' : '恢復座號';
+      toggle.onclick = () => toggleRosterlessSeat(cls, pc);
+      row.append(toggle);
+      box.append(row);
+      return;
+    }
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'secondary-btn';

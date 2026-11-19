@@ -860,7 +860,7 @@ function renderClassroomGrid() {
       const student = activeClass.seats[pcKey] || null;
       const rosterless = !classHasRoster(activeClass);
       const maxSeat = getClassMaxSeat(activeClass);
-      const inRosterlessRange = rosterless && Number(pcNum) <= maxSeat;
+      const inRosterlessRange = rosterless && isRosterlessSeatActive(activeClass, pcNum);
       const faultInfo = appState.pcRepairs[pcKey] || null;
 
       const card = document.createElement("div");
@@ -1094,7 +1094,7 @@ function seatStatusOf(cls, pcKey, create = false) {
   if (!cls) return null;
   if (cls.seats?.[pcKey]) return cls.seats[pcKey];
   if (classHasRoster(cls)) return null;
-  if (Number(pcKey) > getClassMaxSeat(cls)) return null;
+  if (!isRosterlessSeatActive(cls, pcKey)) return null;
   if (!cls.seatMarks || typeof cls.seatMarks !== "object") {
     if (!create) return null;
     cls.seatMarks = {};
@@ -1218,7 +1218,7 @@ function updateLiveClassStats() {
     }
   });
 
-  const classTotal = hasRoster ? totalSeated : maxSeat;
+  const classTotal = hasRoster ? totalSeated : ALL_PC_NUMBERS.filter(n => isRosterlessSeatActive(activeClass, n)).length;
 
   let subText = "";
   const activeAsg = getActiveAssignment(activeClass);
@@ -1550,7 +1550,7 @@ function runRandomLottery() {
       const s = activeClass.seats[key];
       return s && !s.absent;
     }
-    if (Number(key) > maxSeat) return false;
+    if (!isRosterlessSeatActive(activeClass, key)) return false;
     const m = activeClass.seatMarks?.[key];
     return !m?.absent;
   });
@@ -2700,7 +2700,7 @@ function linkSeatNoFor(cls, pcKey) {
   if (!cls) return null;
   const student = cls.seats?.[pcKey];
   if (student) return student.seatNo;
-  if (!classHasRoster(cls) && Number(pcKey) > getClassMaxSeat(cls)) return null;
+  if (!classHasRoster(cls) && !isRosterlessSeatActive(cls, pcKey)) return null;
   const key = pad2(pcKey);
   const taken = Object.values(cls.seats || {}).some((s) => s && seatKeyOf(s.seatNo) === key);
   return taken ? null : key;
