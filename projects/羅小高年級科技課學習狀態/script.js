@@ -402,6 +402,7 @@ function setSyncStatus(text) {
 }
 
 function saveAppState(triggerCloud = true) {
+  appState.classes.forEach(captureAttendance);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     if (triggerCloud && cloudSyncEnabled()) {
@@ -812,6 +813,7 @@ function renderClassroomGrid() {
   if (!container) return;
   const activeClass = getActiveClass();
   if (!activeClass) return;
+  prepareAttendance(activeClass);
   renderAssignmentFilter(); // 換班時下拉選單要跟著換成那一班的作業
 
   // 切換學生投影視角（180度翻轉）
@@ -952,10 +954,10 @@ function renderClassroomGrid() {
       const attClass = marks?.absent ? "active-absent" : marks?.present ? "active-present" : "";
       const attIcon = marks?.absent ? "😷" : "😊";
       const attTitle = marks?.absent
-        ? "今日請假（點擊改為有出席；抽籤自動略過）"
+        ? "所選日期請假（點擊改為有出席；抽籤自動略過）"
         : marks?.present
-          ? "今日有出席（點擊改為請假，Shift+點擊取消標記）"
-          : "標記今日有出席（再點一下改為請假 😷）";
+          ? "所選日期有出席（點擊改為請假，Shift+點擊取消標記）"
+          : "標記所選日期有出席（再點一下改為請假 😷）";
       const footerHtml = marks
         ? `
           <div class="seat-card-footer">
@@ -1161,38 +1163,7 @@ function handleSeatMiniAction(pcKey, act, isShift) {
 }
 
 function promptEditSingleSeat(pcKey) {
-  const activeClass = getActiveClass();
-  if (!activeClass) return;
-  const current = activeClass.seats[pcKey];
-  const defaultVal = current ? `${current.seatNo},${current.name}` : `${String(pcKey).padStart(2, "0")},`;
-  const input = prompt(
-    `編輯 PC-${String(pcKey).padStart(2, "0")} 的學生（格式：座號,姓名；留空則設為空席）：`,
-    defaultVal
-  );
-  if (input === null) return;
-  const trimmed = input.trim();
-  if (!trimmed) {
-    activeClass.seats[pcKey] = null;
-  } else {
-    const parts = trimmed.split(/[,，\s]+/).filter(Boolean);
-    let seatNo = String(pcKey).padStart(2, "0");
-    let name = trimmed;
-    if (parts.length >= 2 && /^\d+$/.test(parts[0])) {
-      seatNo = parts[0].padStart(2, "0");
-      name = parts.slice(1).join(" ");
-    }
-    activeClass.seats[pcKey] = {
-      seatNo,
-      name,
-      avatar: current?.avatar || AVATAR_POOL[Number(pcKey) % AVATAR_POOL.length],
-      done: current?.done || false,
-      stars: current?.stars || 0,
-      help: current?.help || false,
-      absent: current?.absent || false
-    };
-  }
-  saveAppState();
-  renderAll();
+  editIndividualStudent(pcKey);
 }
 
 // 當機台故障時，一鍵把該座位學生移到正常的空席
@@ -1736,6 +1707,7 @@ function openRosterModal() {
   const sizeInput = document.getElementById("editClassSizeInput");
   if (sizeInput) sizeInput.value = String(getClassMaxSeat(activeClass));
 
+  renderIndividualRoster();
   const lines = [];
   ALL_PC_NUMBERS.forEach((num) => {
     const s = activeClass.seats[String(num)];
@@ -1807,20 +1779,28 @@ function parseSingleClassLines(rawLines) {
 // （缺號留下的空位在前排中間，補進去座號跟機台會對不上；後排本來就是空位多的地方），再排不下的回傳 overflow
 // 同名學生沿用原本的頭像與星星
 function placeStudentsInSeats(entries, existingClass) {
-  const oldByName = {};
+  if (existingClass) prepareAttendance(existingClass);
+  const oldByName = Object.create(null);
+  const usedOldIds = new Set();
   Object.values(existingClass?.seats || {}).forEach((s) => {
-    if (s && s.name) oldByName[s.name] = s;
+    if (s && s.name) oldByName[s.name] = Object.hasOwn(oldByName, s.name) ? null : s;
   });
   const makeStudent = (entry, pc) => {
-    const old = oldByName[entry.name];
+    const candidate = Object.values(existingClass?.seats || {}).find(s =>
+      s && s.name === entry.name && Number(s.seatNo) === Number(entry.seatNo)) || oldByName[entry.name];
+    const old = candidate && !usedOldIds.has(candidate.id) ? candidate : null;
+    if (old) usedOldIds.add(old.id);
     return {
+      ...(old || {}),
+      id: old?.id || `student_${crypto.randomUUID()}`,
       seatNo: pad2(entry.seatNo || pc),
       name: entry.name,
       avatar: old?.avatar || AVATAR_POOL[(pc + String(existingClass?.code || "").length) % AVATAR_POOL.length],
-      done: false,
+      done: old?.done || false,
       stars: old?.stars || 0,
-      help: false,
-      absent: false
+      help: old?.help || false,
+      present: old?.present || false,
+      absent: old?.absent || false
     };
   };
 
@@ -2161,7 +2141,7 @@ function applyBulkImport() {
       appState.classes.push(cls);
     }
     const { seats, overflow } = placeStudentsInSeats(entries, cls);
-    cls.seats = seats;
+    replaceClassRoster(cls, seats);
     if (overflow.length) overflowNotes.push(`${code}：${overflow.map((s) => s.name).join("、")}`);
   });
 
@@ -3351,6 +3331,7 @@ function initEvents() {
   document.getElementById("resetTodayStatusBtn")?.addEventListener("click", () => {
     const activeClass = getActiveClass();
     if (!activeClass) return;
+    if (!confirm(`清除 ${attendanceDate} 的出席／請假，以及目前的完成／待協助標記？星星會保留。`)) return;
     ALL_PC_NUMBERS.forEach((n) => {
       // 學生與沒名單班的座號標記都要清（加分保留）
       [activeClass.seats[String(n)], activeClass.seatMarks?.[String(n)]].forEach((s) => {
@@ -3645,10 +3626,10 @@ function initEvents() {
     const notes = [];
     if (skipped.length) notes.push(`略過 ${skipped.length} 行標題或看不懂的內容：${skipped.slice(0, 3).join("、")}`);
     if (overflow.length) notes.push(`⚠️ 超過 29 台排不下的 ${overflow.length} 位沒有匯入：${overflow.map((s) => s.name).join("、")}`);
-    if (!confirm(`「${activeClass.code}」將換成 ${studentCount} 位學生（原本的座位會被取代）。${notes.length ? "\n\n" + notes.join("\n") : ""}\n\n確定套用？`)) {
+    if (!confirm(`「${activeClass.code}」將換成 ${studentCount} 位學生（原本的座位會被取代；學生異動建議用上方個別管理，避免座號作品對錯人）。${notes.length ? "\n\n" + notes.join("\n") : ""}\n\n確定套用？`)) {
       return;
     }
-    activeClass.seats = seats;
+    replaceClassRoster(activeClass, seats);
     saveAppState();
     renderAll();
     document.getElementById("rosterModal").classList.add("hidden");
@@ -3660,7 +3641,8 @@ function initEvents() {
     if (!confirm(`確定要清空「${activeClass.code}」的學生名單嗎？\n（班級、上課節次、進度歷程都會保留，只清掉座位上的學生）`)) return;
     const emptySeats = {};
     ALL_PC_NUMBERS.forEach((pc) => (emptySeats[String(pc)] = null));
-    activeClass.seats = emptySeats;
+    prepareAttendance(activeClass);
+    replaceClassRoster(activeClass, emptySeats);
     saveAppState();
     renderAll();
     openRosterModal();

@@ -2029,3 +2029,15 @@ body {
   padding-left: 8px;
   margin: 8px 0;
 }
+
+/* 日期點名與個別學生管理 */
+#attendanceDate, #attendanceRecordedDates { padding: 5px; border: 1px solid #cbd5e1; border-radius: 6px; max-width: 100%; }
+#attendanceDateNote { font-size: 12px; color: #334155; }
+.individual-roster { max-height: 260px; overflow-y: auto; }
+.individual-roster-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #e2e8f0; }
+.individual-roster-row span { flex: 1; overflow-wrap: anywhere; }
+#assignUndatedAttendanceBtn[hidden] { display: none; }
+.attendance-record-dialog { border: 1px solid #cbd5e1; border-radius: 12px; max-width: 90vw; max-height: 80vh; overflow: auto; padding: 20px; }
+.attendance-record-dialog::backdrop { background: #0f172a66; }
+.attendance-record-dialog table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.attendance-record-dialog td, .attendance-record-dialog th { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }

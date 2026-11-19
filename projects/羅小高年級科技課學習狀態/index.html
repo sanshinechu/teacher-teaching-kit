@@ -70,14 +70,21 @@
           </div>
 
           <div class="toolbar-center">
+            <label for="attendanceDate">本次上課日期：</label>
+            <input type="date" id="attendanceDate" aria-describedby="attendanceDateNote">
+            <button type="button" class="micro-reset-btn" id="attendanceTodayBtn">回到今天</button>
+            <select id="attendanceRecordedDates" aria-label="查看已記錄的點名日期"></select>
+            <span id="attendanceDateNote" role="status"></span>
+            <button type="button" class="micro-reset-btn" id="viewAttendanceRecordBtn">查看點名紀錄</button>
+            <button type="button" class="micro-reset-btn" id="assignUndatedAttendanceBtn" hidden>將舊點名歸入所選日期</button>
             <span class="class-live-stats" id="classLiveStats">
               🟢 完成 0/0 ｜ ⭐ 加分 0 ｜ 🙋 待協助 0 ｜ 😊 出席 0 ｜ 😷 請假 0
             </span>
-            <button type="button" class="micro-reset-btn" id="markAllPresentBtn" title="一鍵將本班全班座號標記為今日有出席">
+            <button type="button" class="micro-reset-btn" id="markAllPresentBtn" title="一鍵將本班全班座號標記為所選日期有出席">
               😊 全班出席
             </button>
-            <button type="button" class="micro-reset-btn" id="resetTodayStatusBtn" title="清空本班今日的完成、待協助與出席／請假標記（保留加分）">
-              🧹 重置今日狀態
+            <button type="button" class="micro-reset-btn" id="resetTodayStatusBtn" title="清空目前完成、待協助與所選日期的出席／請假標記（保留加分）">
+              🧹 清除本次標記
             </button>
             <select id="assignmentFilterSelect" class="assignment-filter-select" title="選一份作業：已交的座位亮起來、沒交的變淡，點 🔗 直接開作品" disabled>
               <option value="">🔗 全部作業</option>
@@ -355,7 +362,11 @@
           </div>
 
           <div class="roster-col">
-            <h4>2. 批次貼上本班學生名單（依座號排入 PC-01～29）</h4>
+            <h4>2. 個別學生異動</h4>
+            <p class="form-help">轉入請在空席按「新增」；更名、換座號按「編輯」，保留原機台與紀錄。換成另一位學生請先「轉出」再新增。轉出資料與作品會封存，可從 JSON 備份取回。</p>
+            <div id="individualRoster" class="individual-roster"></div>
+            <hr class="modal-divider">
+            <h4>整班重新匯入：批次貼上本班學生名單（依座號排入 PC-01～29）</h4>
             <p class="form-help">可直接從 Excel 或學務系統複製「座號、姓名」兩欄貼上，一行一位。有座號就照座號坐（5 號坐 PC-05），缺號不用補空行，標題列會自動略過。只有姓名沒有座號時，照行的順序排。</p>
             <textarea id="bulkRosterTextarea" class="roster-textarea" rows="10" placeholder="01 王小明&#10;02 林小華&#10;03 陳小美..."></textarea>
             <div class="form-actions-inline">
@@ -575,6 +586,13 @@
     </div>
   </div>
 
+  <dialog id="attendanceRecordDialog" class="attendance-record-dialog">
+    <h3 id="attendanceRecordTitle"></h3>
+    <p>包含當日已記錄、後來轉出的學生。點名標記只屬於所選日期。</p>
+    <table><thead><tr><th>座號</th><th>學生</th><th>點名狀態</th></tr></thead><tbody id="attendanceRecordRows"></tbody></table>
+    <form method="dialog"><button class="secondary-btn">關閉</button></form>
+  </dialog>
   <script src="script.js?v=__BUILD__"></script>
+  <script src="class-records.js?v=__BUILD__"></script>
 </body>
 </html>
