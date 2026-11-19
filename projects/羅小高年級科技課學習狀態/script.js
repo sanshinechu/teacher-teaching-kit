@@ -859,8 +859,8 @@ function renderClassroomGrid() {
       const pcLabel = `PC-${String(pcNum).padStart(2, "0")}`;
       const student = activeClass.seats[pcKey] || null;
       const rosterless = !classHasRoster(activeClass);
-      const maxSeat = getClassMaxSeat(activeClass);
-      const inRosterlessRange = rosterless && isRosterlessSeatActive(activeClass, pcNum);
+      const rosterlessNo = rosterless ? rosterlessSeatNoAt(activeClass, pcKey) : null;
+      const inRosterlessRange = rosterlessNo !== null;
       const faultInfo = appState.pcRepairs[pcKey] || null;
 
       const card = document.createElement("div");
@@ -869,7 +869,7 @@ function renderClassroomGrid() {
       card.draggable = true;
 
       // 沒名單的班，在班級人數（最大座號）範圍內的空席照座號標記（完成／加分／待協助／出席或請假），見 seatStatusOf
-      const marks = student || (inRosterlessRange ? activeClass.seatMarks?.[pcKey] || { done: false, stars: 0, help: false, present: false, absent: false } : null);
+      const marks = student || (inRosterlessRange ? seatStatusOf(activeClass, pcKey) || { done: false, stars: 0, help: false, present: false, absent: false } : null);
       if (!student) card.classList.add("empty-student");
       if (marks?.done) card.classList.add("status-done");
       if (marks?.help) card.classList.add("status-help");
@@ -897,7 +897,7 @@ function renderClassroomGrid() {
       }
 
       // 頂部：座號 + 機台編號
-      const seatTagText = student ? `${student.seatNo}號` : inRosterlessRange || linkBtnHtml ? `${pad2(pcKey)}號` : "空席";
+      const seatTagText = student ? `${student.seatNo}號` : inRosterlessRange || linkBtnHtml ? `${pad2(rosterlessNo || linkSeatNo)}號` : "空席";
       const topHtml = `
         <div class="seat-card-top">
           <span class="student-no-tag">${seatTagText}</span>
@@ -1075,6 +1075,11 @@ function bindSeatCardEvents(card, pcKey) {
 function swapTwoSeats(pcA, pcB) {
   const activeClass = getActiveClass();
   if (!activeClass) return;
+  if (!classHasRoster(activeClass)) {
+    swapRosterlessSeats(activeClass, pcA, pcB);
+    saveAppState();
+    return;
+  }
   const temp = activeClass.seats[pcA] || null;
   activeClass.seats[pcA] = activeClass.seats[pcB] || null;
   activeClass.seats[pcB] = temp;
@@ -1082,8 +1087,8 @@ function swapTwoSeats(pcA, pcB) {
 }
 
 // ==================== 沒匯名單的班：照座號標記 ====================
-// 老師不放學生姓名的班，PC-N 就是 N 號（見 linkSeatNoFor）。完成／加分／待協助／請假
-// 存在 cls.seatMarks[pcKey]，不放進 cls.seats：放進去會被當成「有學生」，影響名單、換位、搜尋等功能。
+// 老師不放學生姓名的班，rosterlessSeatOrder 記錄各機台的座號（預設 PC-N = N 號）。
+// 完成／加分／待協助／請假存在 cls.seatMarks[座號]，不放進 cls.seats：放進去會被當成「有學生」，影響名單、換位、搜尋等功能。
 // 有名單的班空席就是真的空著，不給標記。
 function classHasRoster(cls) {
   return Object.values(cls?.seats || {}).some(Boolean);
@@ -1094,7 +1099,9 @@ function seatStatusOf(cls, pcKey, create = false) {
   if (!cls) return null;
   if (cls.seats?.[pcKey]) return cls.seats[pcKey];
   if (classHasRoster(cls)) return null;
-  if (!isRosterlessSeatActive(cls, pcKey)) return null;
+  const seatNo = rosterlessSeatNoAt(cls, pcKey);
+  if (seatNo === null) return null;
+  pcKey = String(seatNo); // 狀態以座號保存，換機台時不用搬動紀錄
   if (!cls.seatMarks || typeof cls.seatMarks !== "object") {
     if (!create) return null;
     cls.seatMarks = {};
@@ -1550,8 +1557,8 @@ function runRandomLottery() {
       const s = activeClass.seats[key];
       return s && !s.absent;
     }
-    if (!isRosterlessSeatActive(activeClass, key)) return false;
-    const m = activeClass.seatMarks?.[key];
+    if (rosterlessSeatNoAt(activeClass, key) === null) return false;
+    const m = seatStatusOf(activeClass, key);
     return !m?.absent;
   });
 
@@ -1590,7 +1597,7 @@ function showLotteryWinnerModal(pcKey) {
   document.getElementById("lotteryAvatar").textContent = student?.avatar || "🎉";
   document.getElementById("lotteryStudentName").textContent = student
     ? `${student.seatNo}號 ${student.name}`
-    : `${pad2(pcKey)}號`;
+    : `${pad2(rosterlessSeatNoAt(activeClass, pcKey))}號`;
   const stars = (student || marks)?.stars || 0;
   document.getElementById("lotterySeatInfo").textContent = `${activeClass.code} 班 ｜ 目前累積 ⭐ ${stars} 顆星`;
   document.getElementById("lotteryModal").classList.remove("hidden");
@@ -2700,7 +2707,10 @@ function linkSeatNoFor(cls, pcKey) {
   if (!cls) return null;
   const student = cls.seats?.[pcKey];
   if (student) return student.seatNo;
-  if (!classHasRoster(cls) && !isRosterlessSeatActive(cls, pcKey)) return null;
+  if (!classHasRoster(cls)) {
+    const seatNo = rosterlessSeatNoAt(cls, pcKey);
+    return seatNo === null ? null : pad2(seatNo);
+  }
   const key = pad2(pcKey);
   const taken = Object.values(cls.seats || {}).some((s) => s && seatKeyOf(s.seatNo) === key);
   return taken ? null : key;
@@ -3703,6 +3713,13 @@ function initEvents() {
   document.getElementById("resetDefaultSeatOrderBtn")?.addEventListener("click", () => {
     const activeClass = getActiveClass();
     if (!activeClass) return;
+    if (!classHasRoster(activeClass)) {
+      delete activeClass.rosterlessSeatOrder;
+      saveAppState();
+      renderAll();
+      openRosterModal();
+      return;
+    }
     const students = Object.values(activeClass.seats).filter(Boolean);
     students.sort((a, b) => Number(a.seatNo) - Number(b.seatNo));
     const reordered = {};

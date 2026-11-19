@@ -10,6 +10,25 @@ function isRosterlessSeatActive(cls, seatNo) {
     !(cls.disabledSeatNos || []).some(value => Number(value) === n);
 }
 
+// 機台與座號分開保存；未換位的舊資料沿用 PC-N = N 號。
+function rosterlessSeatNoAt(cls, pcKey, includeInactive = false) {
+  const n = Number(cls.rosterlessSeatOrder?.[String(pcKey)] ?? pcKey);
+  if (!Number.isInteger(n) || n < 1 || n > 29) return null;
+  return includeInactive || isRosterlessSeatActive(cls, n) ? n : null;
+}
+
+function rosterlessPcForSeat(cls, seatNo) {
+  return ALL_PC_NUMBERS.find(pc => rosterlessSeatNoAt(cls, pc, true) === Number(seatNo));
+}
+
+function swapRosterlessSeats(cls, pcA, pcB) {
+  const a = rosterlessSeatNoAt(cls, pcA, true);
+  const b = rosterlessSeatNoAt(cls, pcB, true);
+  cls.rosterlessSeatOrder ||= {};
+  cls.rosterlessSeatOrder[String(pcA)] = b;
+  cls.rosterlessSeatOrder[String(pcB)] = a;
+}
+
 function toggleRosterlessSeat(cls, seatNo) {
   if (classHasRoster(cls)) return;
   prepareAttendance(cls);
@@ -37,8 +56,8 @@ function attendanceMembers(cls) {
   if (classHasRoster(cls)) {
     return Object.values(cls.seats).filter(Boolean).map(s => [ensureStudentId(s), s]);
   }
-  return ALL_PC_NUMBERS.filter(n => isRosterlessSeatActive(cls, n))
-    .map(n => [`seat_${pad2(n)}`, seatStatusOf(cls, String(n), true)]);
+  return ALL_PC_NUMBERS.filter(pc => rosterlessSeatNoAt(cls, pc) !== null)
+    .map(pc => [`seat_${pad2(rosterlessSeatNoAt(cls, pc))}`, seatStatusOf(cls, String(pc), true)]);
 }
 
 function captureAttendance(cls) {
@@ -157,6 +176,8 @@ function renderIndividualRoster() {
   if (!box || !cls) return;
   box.innerHTML = '';
   ALL_PC_NUMBERS.forEach(pc => {
+    // 無姓名模式依座號列出，不把換位後的機台誤列成可新增的空席。
+    if (!classHasRoster(cls) && pc > getClassMaxSeat(cls)) return;
     const s = cls.seats[String(pc)];
     const row = document.createElement('div');
     row.className = 'individual-roster-row';
@@ -165,7 +186,7 @@ function renderIndividualRoster() {
     row.append(label);
     if (!classHasRoster(cls) && pc <= getClassMaxSeat(cls)) {
       const active = isRosterlessSeatActive(cls, pc);
-      label.textContent = `PC-${pad2(pc)}　${pad2(pc)} 號${active ? '（使用中）' : '（已停用・空席）'}`;
+      label.textContent = `${pad2(pc)} 號　PC-${pad2(rosterlessPcForSeat(cls, pc))}${active ? '（使用中）' : '（已停用・空席）'}`;
       const toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = active ? 'danger-btn' : 'secondary-btn';
