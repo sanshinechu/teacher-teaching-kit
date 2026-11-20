@@ -97,6 +97,15 @@ function getClassMaxSeat(cls) {
 function migrateCompetencies(state) {
   let changed = false;
   (state?.classes || []).forEach((cls) => {
+    // 三位數班級代號（如 405、502、601）以百位數為準校正年級，避免舊資料寫錯成別年級
+    const gradeMatch = String(cls.code || "").trim().match(/^([1-6])\d{2}$/);
+    if (gradeMatch) {
+      const inferredGrade = Number(gradeMatch[1]);
+      if (Number(cls.grade) !== inferredGrade) {
+        cls.grade = inferredGrade;
+        changed = true;
+      }
+    }
     const list = cls.competencies || [];
     const next = [];
     list.forEach((id) => {
@@ -2751,12 +2760,12 @@ let classroomLessonsData = null;
 let classroomLessonsFetchedAt = 0;
 let classroomLessonsEpoch = -1;
 
-// 取得 Classroom 支援的年級（只認 5、6 年級；若 grade 異常則從班級代碼如 601 推算，不靜默當成五年級）
+// 取得 Classroom 支援的年級（只認 5、6 年級；三位數班級代號如 601 優先以百位數為準，不被錯誤的 grade 欄位帶偏）
 function resolveClassroomGrade(cls) {
-  const g = Number(cls?.grade);
-  if (g === 5 || g === 6) return g;
   const m = String(cls?.code || "").trim().match(/^([56])\d{2}$/);
-  return m ? Number(m[1]) : null;
+  if (m) return Number(m[1]);
+  const g = Number(cls?.grade);
+  return g === 5 || g === 6 ? g : null;
 }
 
 // 依年級與今天日期猜課程：8 月～隔年 1 月是上學期，2～7 月是下學期；非五、六年級回傳 null
