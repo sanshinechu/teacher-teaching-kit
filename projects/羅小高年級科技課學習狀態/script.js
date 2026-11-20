@@ -1445,6 +1445,18 @@ function renderProgressSidebar() {
   nextInput.value = activeClass.nextProgress || "";
   memoInput.value = activeClass.memo || "";
 
+  // 快速帶入單元依目前班級年級只顯示該年級的單元（五年級只看五上，六年級只看六上／六下）
+  const quickSelect = document.getElementById("quickUnitSelect");
+  if (quickSelect) {
+    const classGrade = resolveClassroomGrade(activeClass);
+    quickSelect.querySelectorAll("optgroup[data-grade]").forEach((group) => {
+      const visible = !classGrade || Number(group.dataset.grade) === classGrade;
+      group.hidden = !visible;
+      group.disabled = !visible;
+    });
+    quickSelect.value = "";
+  }
+
   const historyArr = activeClass.history || [];
   countPill.textContent = `${historyArr.length} 筆歷程`;
 
