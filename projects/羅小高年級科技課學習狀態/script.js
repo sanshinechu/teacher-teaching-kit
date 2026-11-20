@@ -1445,12 +1445,11 @@ function renderProgressSidebar() {
   nextInput.value = activeClass.nextProgress || "";
   memoInput.value = activeClass.memo || "";
 
-  // 快速帶入單元依目前班級年級與學期只顯示對應單元（上學期不顯示五下、六下）
+  // 快速帶入單元依目前班級年級與學期只顯示對應單元（9～1 月顯示上學期、2～6 月顯示下學期）
   const quickSelect = document.getElementById("quickUnitSelect");
   if (quickSelect) {
     const classGrade = resolveClassroomGrade(activeClass);
-    const month = getTaipeiNow().getMonth() + 1;
-    const currentTerm = month >= 2 && month <= 7 ? "下" : "上";
+    const currentTerm = getCurrentSemesterTerm();
     quickSelect.querySelectorAll("optgroup[data-grade], optgroup[data-term]").forEach((group) => {
       const gradeOk = !classGrade || !group.dataset.grade || Number(group.dataset.grade) === classGrade;
       const termOk = !group.dataset.term || group.dataset.term === currentTerm;
@@ -2784,13 +2783,17 @@ function resolveClassroomGrade(cls) {
   return g === 5 || g === 6 ? g : null;
 }
 
-// 依年級與今天日期猜課程：8 月～隔年 1 月是上學期，2～7 月是下學期；非五、六年級回傳 null
+// 取得目前學期：2～6 月為下學期，9～1 月（含 7～8 月備課期）為上學期
+function getCurrentSemesterTerm() {
+  const month = getTaipeiNow().getMonth() + 1;
+  return month >= 2 && month <= 6 ? "下" : "上";
+}
+
+// 依年級與目前學期猜課程；非五、六年級回傳 null
 function guessCourseKey(cls) {
   const gradeNum = resolveClassroomGrade(cls);
   if (!gradeNum) return null;
-  const month = getTaipeiNow().getMonth() + 1;
-  const term = month >= 2 && month <= 7 ? "下" : "上";
-  return (gradeNum === 6 ? "六" : "五") + term;
+  return (gradeNum === 6 ? "六" : "五") + getCurrentSemesterTerm();
 }
 
 // 檢查「目前班級年級」與「選到的課程／節次標題」是否不符；相符回空字串，不符回警告文字
@@ -3049,8 +3052,21 @@ async function openClassroomLessonsModal() {
   }
   const cls = getActiveClass();
   document.getElementById("classroomLessonsClassTitle").textContent = cls.code;
-  const guessedCourse = guessCourseKey(cls);
-  if (guessedCourse) document.getElementById("classroomCourseSelect").value = guessedCourse;
+  const currentTerm = getCurrentSemesterTerm();
+  const courseSelect = document.getElementById("classroomCourseSelect");
+  if (courseSelect) {
+    courseSelect.querySelectorAll("option").forEach((opt) => {
+      const visible = opt.value.endsWith(currentTerm);
+      opt.hidden = !visible;
+      opt.disabled = !visible;
+    });
+    const guessedCourse = guessCourseKey(cls);
+    if (guessedCourse) courseSelect.value = guessedCourse;
+    else if (!courseSelect.value.endsWith(currentTerm)) {
+      const firstVisible = courseSelect.querySelector("option:not([disabled])");
+      if (firstVisible) courseSelect.value = firstVisible.value;
+    }
+  }
   document.getElementById("classroomRecordDate").value = formatDateISO(getTaipeiNow());
   document.getElementById("classroomLessonsModal").classList.remove("hidden");
   const stale =
