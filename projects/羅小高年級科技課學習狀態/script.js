@@ -2751,12 +2751,46 @@ let classroomLessonsData = null;
 let classroomLessonsFetchedAt = 0;
 let classroomLessonsEpoch = -1;
 
-// 依年級與今天日期猜課程：8 月～隔年 1 月是上學期，2～7 月是下學期
+// 取得 Classroom 支援的年級（只認 5、6 年級；若 grade 異常則從班級代碼如 601 推算，不靜默當成五年級）
+function resolveClassroomGrade(cls) {
+  const g = Number(cls?.grade);
+  if (g === 5 || g === 6) return g;
+  const m = String(cls?.code || "").trim().match(/^([56])\d{2}$/);
+  return m ? Number(m[1]) : null;
+}
+
+// 依年級與今天日期猜課程：8 月～隔年 1 月是上學期，2～7 月是下學期；非五、六年級回傳 null
 function guessCourseKey(cls) {
+  const gradeNum = resolveClassroomGrade(cls);
+  if (!gradeNum) return null;
   const month = getTaipeiNow().getMonth() + 1;
   const term = month >= 2 && month <= 7 ? "下" : "上";
-  const grade = Number(cls?.grade) === 6 ? "六" : "五";
-  return grade + term;
+  return (gradeNum === 6 ? "六" : "五") + term;
+}
+
+// 檢查「目前班級年級」與「選到的課程／節次標題」是否不符；相符回空字串，不符回警告文字
+function getCourseMismatchWarning(cls, courseKey, sampleTitles = []) {
+  if (!cls) return "";
+  const gradeNum = resolveClassroomGrade(cls);
+  if (!gradeNum) {
+    return `目前班級「${cls.code}」不是五、六年級，Classroom 只有五、六年級課程`;
+  }
+  const expectedPrefix = gradeNum === 6 ? "六" : "五";
+  const otherPrefix = gradeNum === 6 ? "五" : "六";
+  if (courseKey && !String(courseKey).startsWith(expectedPrefix)) {
+    return `目前班級「${cls.code}」是${expectedPrefix}年級，但選的課程是「${courseKey}」`;
+  }
+  const wrongTitle = (sampleTitles || []).find((t) => new RegExp(`${otherPrefix}[上下]-`).test(String(t || "")));
+  if (wrongTitle) {
+    return `目前班級「${cls.code}」是${expectedPrefix}年級，但節次內容看起來屬於${otherPrefix}年級（${wrongTitle}）`;
+  }
+  return "";
+}
+
+function confirmCourseMismatchIfNeeded(cls, courseKey, sampleTitles = []) {
+  const warn = getCourseMismatchWarning(cls, courseKey, sampleTitles);
+  if (!warn) return true;
+  return confirm(`⚠️ ${warn}\n\n確定還是要套用到「${cls.code}」嗎？`);
 }
 
 function lessonNumber(title) {
@@ -2819,9 +2853,16 @@ function renderClassroomLessons() {
   const recorded = new Set((cls?.history || []).map((h) => h.text));
   const publishedCount = lessons.filter((w) => w.state === "PUBLISHED").length;
   const errs = classroomLessonsData.errors?.length ? `｜⚠️ ${classroomLessonsData.errors.join("；")}` : "";
-  info.textContent = `${courseKey}：已發佈 ${publishedCount} 節、草稿 ${lessons.length - publishedCount} 節（${formatShortDate(
+  const mismatchWarn = getCourseMismatchWarning(
+    cls,
+    courseKey,
+    lessons.slice(0, 5).map((w) => w.title)
+  );
+  info.classList.toggle("is-warn", Boolean(mismatchWarn));
+  const baseInfo = `${courseKey}：已發佈 ${publishedCount} 節、草稿 ${lessons.length - publishedCount} 節（${formatShortDate(
     classroomLessonsData.fetchedAt
   )} ${formatTimeHMS(new Date(classroomLessonsData.fetchedAt))} 抓取）${errs}`;
+  info.textContent = mismatchWarn ? `⚠️ ${mismatchWarn}｜${baseInfo}` : baseInfo;
 
   if (!lessons.length) {
     list.innerHTML = `<p class="form-help">這個課程沒有「第 N 節」開頭的作業。</p>`;
@@ -2871,6 +2912,8 @@ function addHistoryEntry(cls, date, text) {
 function applyLessonAction(title, act) {
   const cls = getActiveClass();
   if (!cls) return;
+  const courseKey = document.getElementById("classroomCourseSelect").value;
+  if (!confirmCourseMismatchIfNeeded(cls, courseKey, [title])) return;
   if (act === "record") {
     const date = document.getElementById("classroomRecordDate").value || formatDateISO(getTaipeiNow());
     if (!addHistoryEntry(cls, date, title)) {
@@ -2898,6 +2941,7 @@ function classroomOneClick() {
   }
   const today = lessons[idx].title;
   const next = lessons[idx + 1]?.title || "";
+  if (!confirmCourseMismatchIfNeeded(cls, courseKey, [today, next])) return;
   if (!confirm(`「${cls.code}」\n今日進度 → ${today}\n下次進度 → ${next || "（沒有下一節）"}\n\n確定帶入？`)) return;
   cls.todayProgress = today;
   cls.nextProgress = next; // 最後一節時清空，不要留著舊的「下次」跟今日對不上
@@ -2956,6 +3000,7 @@ function classroomBackfill() {
     alert(`沒有要補的節次。（已記過 ${skippedRecorded} 節${notYet ? `、還沒上到 ${notYet} 節` : ""}）`);
     return;
   }
+  if (!confirmCourseMismatchIfNeeded(cls, courseKey, toAdd.map((e) => e.text))) return;
   const preview = toAdd
     .slice(0, 8)
     .map((e) => `${e.date}  ${e.text}`)
@@ -2979,7 +3024,8 @@ async function openClassroomLessonsModal() {
   }
   const cls = getActiveClass();
   document.getElementById("classroomLessonsClassTitle").textContent = cls.code;
-  document.getElementById("classroomCourseSelect").value = guessCourseKey(cls);
+  const guessedCourse = guessCourseKey(cls);
+  if (guessedCourse) document.getElementById("classroomCourseSelect").value = guessedCourse;
   document.getElementById("classroomRecordDate").value = formatDateISO(getTaipeiNow());
   document.getElementById("classroomLessonsModal").classList.remove("hidden");
   const stale =
@@ -3111,9 +3157,10 @@ function buildMultiClassPlan() {
     .sort((a, b) => String(a.code).localeCompare(String(b.code), "zh-Hant", { numeric: true }))
     .map((cls) => {
       const courseKey = guessCourseKey(cls);
-      const base = { id: cls.id, code: cls.code, day: cls.day, courseKey, snapshot: multiClassSnapshot(cls) };
+      const base = { id: cls.id, code: cls.code, day: cls.day, courseKey: courseKey || "—", snapshot: multiClassSnapshot(cls) };
+      if (!courseKey) return { ...base, noGrade: true, progress: null, backfill: null, mismatchWarn: "" };
       // 沒設上課星期就無法推算日期（inferClassDate 會算成發佈日 +7 天），整班跳過
-      if (!/^[0-6]$/.test(String(cls.day ?? ""))) return { ...base, noDay: true, progress: null, backfill: null };
+      if (!/^[0-6]$/.test(String(cls.day ?? ""))) return { ...base, noDay: true, progress: null, backfill: null, mismatchWarn: "" };
       let progress = doProgress ? planProgressFor(cls, courseKey, today) : null;
       // 同一課程裡目前進度已比推算的新（單班一鍵帶入或手動推進過），不要倒退；
       // 目前進度不在這個課程（例如上學期留下的）就不比，免得擋住新學期帶入
@@ -3126,7 +3173,9 @@ function buildMultiClassPlan() {
         }
       }
       const backfill = doHistory ? planBackfill(cls, courseKey, today) : null;
-      return { ...base, progress, rollbackFrom, backfill };
+      const sampleTitles = [progress?.today, progress?.next, ...(backfill?.toAdd || []).map((e) => e.text)].filter(Boolean);
+      const mismatchWarn = getCourseMismatchWarning(cls, courseKey, sampleTitles);
+      return { ...base, progress, rollbackFrom, backfill, mismatchWarn };
     });
   multiClassPlan = { doProgress, doHistory, rows };
   renderMultiClassPreview();
@@ -3138,6 +3187,7 @@ function renderMultiClassPreview() {
   const byId = Object.fromEntries(appState.classes.map((c) => [c.id, c]));
   const progressCell = (r) => {
     if (!plan.doProgress) return '<span class="muted">不帶入</span>';
+    if (r.noGrade) return '<span class="muted">非五、六年級，跳過</span>';
     if (r.noDay) return '<span class="muted">沒設上課星期，跳過</span>';
     if (r.rollbackFrom) return `<span class="muted">目前進度（第 ${r.rollbackFrom} 節）比推算的新，不變</span>`;
     if (!r.progress) return '<span class="muted">還沒上到任何已發佈節次，不變</span>';
@@ -3149,6 +3199,7 @@ function renderMultiClassPreview() {
   };
   const historyCell = (r) => {
     if (!plan.doHistory) return '<span class="muted">不補</span>';
+    if (r.noGrade) return '<span class="muted">非五、六年級，跳過</span>';
     if (r.noDay) return '<span class="muted">沒設上課星期，跳過</span>';
     const b = r.backfill;
     if (!b.publishedCount) return '<span class="muted">課程沒有已發佈節次</span>';
@@ -3168,7 +3219,7 @@ function renderMultiClassPreview() {
       <tbody>${plan.rows
         .map(
           (r) => `<tr><td><b>${escapeHtml(r.code)}</b><br><span class="muted">週${WEEKDAY_NAMES[r.day] || "?"}</span></td>
-          <td>${r.courseKey}</td><td>${progressCell(r)}</td><td>${historyCell(r)}</td></tr>`
+          <td>${escapeHtml(r.courseKey)}${r.mismatchWarn ? `<br><span class="muted">⚠️ 年級不符</span>` : ""}</td><td>${progressCell(r)}</td><td>${historyCell(r)}</td></tr>`
         )
         .join("")}</tbody>
     </table>
@@ -3187,6 +3238,10 @@ function applyMultiClassPlan() {
   if (stale) {
     invalidateMultiPlan();
     alert("班級資料在預覽後有變動，請重新按「🔍 預覽」再套用。");
+    return;
+  }
+  const warnings = plan.rows.map((r) => r.mismatchWarn).filter(Boolean);
+  if (warnings.length && !confirm(`⚠️ 發現以下年級不符警告：\n\n${warnings.join("\n")}\n\n確定還是要套用嗎？`)) {
     return;
   }
   if (!confirm(`照預覽表套用到 ${plan.rows.length} 個班？`)) return;

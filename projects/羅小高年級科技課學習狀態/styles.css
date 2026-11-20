@@ -1576,6 +1576,15 @@ body {
   line-height: 1.5;
 }
 
+.form-help.is-warn {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 700;
+}
+
 .form-actions-inline {
   display: flex;
   gap: 8px;
