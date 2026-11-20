@@ -1445,12 +1445,16 @@ function renderProgressSidebar() {
   nextInput.value = activeClass.nextProgress || "";
   memoInput.value = activeClass.memo || "";
 
-  // 快速帶入單元依目前班級年級只顯示該年級的單元（五年級只看五上，六年級只看六上／六下）
+  // 快速帶入單元依目前班級年級與學期只顯示對應單元（上學期不顯示五下、六下）
   const quickSelect = document.getElementById("quickUnitSelect");
   if (quickSelect) {
     const classGrade = resolveClassroomGrade(activeClass);
-    quickSelect.querySelectorAll("optgroup[data-grade]").forEach((group) => {
-      const visible = !classGrade || Number(group.dataset.grade) === classGrade;
+    const month = getTaipeiNow().getMonth() + 1;
+    const currentTerm = month >= 2 && month <= 7 ? "下" : "上";
+    quickSelect.querySelectorAll("optgroup[data-grade], optgroup[data-term]").forEach((group) => {
+      const gradeOk = !classGrade || !group.dataset.grade || Number(group.dataset.grade) === classGrade;
+      const termOk = !group.dataset.term || group.dataset.term === currentTerm;
+      const visible = gradeOk && termOk;
       group.hidden = !visible;
       group.disabled = !visible;
     });
